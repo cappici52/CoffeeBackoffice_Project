@@ -86,25 +86,9 @@ async function openBusinessDate(sql: Sql, date = businessDate()) {
     "DAY_ALREADY_CLOSED",
   );
 }
-async function payment(sql: Sql, id: string, method: string, actor: User) {
-  await sql.query("SELECT pg_advisory_xact_lock(7301003)");
-  await openBusinessDate(sql);
-  const order = (
-    await sql.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [id])
-  ).rows[0];
-  fail(order, 404, "ORDER_NOT_FOUND");
-  const paid = (
-    await sql.query("SELECT * FROM payments WHERE order_id=$1", [id])
-  ).rows[0];
-  if (paid) {
-    fail(
-      paid.status === "paid" && paid.method === method,
-      409,
-      "PAYMENT_CONFLICT",
-    );
-    return;
-  }
-  fail(order.status === "pending", 409, "INVALID_ORDER_TRANSITION");
+// Caller holds the order lock. Confirmation consumes snapshot ingredients once,
+// whether staff accepts a dine-in order or receives an advance payment.
+async function confirmOrder(sql: Sql, id: string, actor: User) {
   const items = (
     await sql.query(
       "SELECT qty,ingredients FROM order_items WHERE order_id=$1",
@@ -133,6 +117,34 @@ async function payment(sql: Sql, id: string, method: string, actor: User) {
       "INSUFFICIENT_STOCK",
     );
     await moveStock(sql, actor, ingredientId, "sale", -qty, "ขายออเดอร์", id);
+  }
+  await sql.query(
+    "UPDATE orders SET confirmed_at=now(),confirmed_by=$2,version=version+1 WHERE id=$1",
+    [id, actor.id],
+  );
+}
+async function payment(sql: Sql, id: string, method: string, actor: User) {
+  await sql.query("SELECT pg_advisory_xact_lock(7301003)");
+  const order = (
+    await sql.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [id])
+  ).rows[0];
+  fail(order, 404, "ORDER_NOT_FOUND");
+  const paid = (
+    await sql.query("SELECT * FROM payments WHERE order_id=$1", [id])
+  ).rows[0];
+  if (paid) {
+    fail(
+      paid.status === "paid" && paid.method === method,
+      409,
+      "PAYMENT_CONFLICT",
+    );
+    return;
+  }
+  await openBusinessDate(sql);
+  fail(order.status !== "cancelled", 409, "INVALID_ORDER_TRANSITION");
+  if (!order.confirmed_at) {
+    fail(order.status === "pending", 409, "INVALID_ORDER_TRANSITION");
+    await confirmOrder(sql, id, actor);
   }
   await sql.query(
     "INSERT INTO payments (order_id,method,amount_satang,status,confirmed_by) VALUES ($1,$2,$3,'paid',$4)",
@@ -442,7 +454,7 @@ export function ordersRouter(
     res.json(
       (
         await db.query(
-          "SELECT count(*)::int AS unpaid, count(*) FILTER(WHERE o.source='qr')::int AS qr_unpaid FROM orders o LEFT JOIN payments p ON p.order_id=o.id WHERE o.status='pending' AND p.order_id IS NULL",
+          "SELECT count(*)::int AS unpaid, count(*) FILTER(WHERE o.source='qr')::int AS qr_unpaid FROM orders o LEFT JOIN payments p ON p.order_id=o.id WHERE o.status<>'cancelled' AND p.order_id IS NULL",
         )
       ).rows[0],
     ),
@@ -457,6 +469,30 @@ export function ordersRouter(
       .strict()
       .parse(req.body);
     await db.transaction((sql) => payment(sql, id, p.method, res.locals.user));
+    res.json({ order: await orderDetail(db, id) });
+  });
+  r.post("/orders/:id/confirm", front, async (req, res) => {
+    const id = idSchema.parse(req.params.id);
+    z.object({}).strict().parse(req.body);
+    const actor = res.locals.user as User;
+    await db.transaction(async (sql) => {
+      await sql.query("SELECT pg_advisory_xact_lock(7301003)");
+      const order = (
+        await sql.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [id])
+      ).rows[0];
+      fail(order, 404, "ORDER_NOT_FOUND");
+      fail(order.status !== "cancelled", 409, "INVALID_ORDER_TRANSITION");
+      if (order.confirmed_at) return;
+      fail(
+        order.type === "dine-in" && order.status === "pending",
+        409,
+        "INVALID_ORDER_TRANSITION",
+      );
+      await openBusinessDate(sql);
+      await confirmOrder(sql, id, actor);
+      await logStatus(sql, id, order.status, order.status, actor);
+      await record(sql, actor, "order.confirmed", "order", id);
+    });
     res.json({ order: await orderDetail(db, id) });
   });
   r.post("/orders/:id/status", front, async (req, res) => {
@@ -491,7 +527,7 @@ export function ordersRouter(
       ).rows[0];
       if (p.status === "completed") {
         fail(
-          o.status === "ready" && paid?.status === "paid",
+          o.status === "ready" && o.confirmed_at,
           409,
           "INVALID_ORDER_TRANSITION",
         );
@@ -513,6 +549,12 @@ export function ordersRouter(
           );
           fail(p.confirm_refund, 400, "REFUND_CONFIRMATION_REQUIRED");
           await openBusinessDate(sql, paid.date);
+          await sql.query(
+            "UPDATE payments SET status='refunded',refunded_at=now() WHERE order_id=$1",
+            [id],
+          );
+        }
+        if (o.confirmed_at) {
           // Only unstarted orders can return their ingredients to stock.
           const started =
             (
@@ -544,10 +586,6 @@ export function ordersRouter(
               );
             }
           }
-          await sql.query(
-            "UPDATE payments SET status='refunded',refunded_at=now() WHERE order_id=$1",
-            [id],
-          );
         }
         await sql.query(
           "UPDATE order_items SET status='cancelled' WHERE order_id=$1",
@@ -572,7 +610,7 @@ export function ordersRouter(
       .parse(req.query);
     const orders = (
       await db.query(
-        "SELECT o.id,o.order_no,o.type,o.table_no,o.note,o.created_at,o.status FROM orders o JOIN payments p ON p.order_id=o.id WHERE o.status IN ('pending','preparing','ready') AND p.status='paid' ORDER BY o.created_at,o.id",
+        "SELECT o.id,o.order_no,o.type,o.table_no,o.note,o.created_at,o.status FROM orders o WHERE o.status IN ('pending','preparing','ready') AND o.confirmed_at IS NOT NULL ORDER BY o.created_at,o.id",
       )
     ).rows;
     const items = (
@@ -582,7 +620,7 @@ export function ordersRouter(
           .map((c) => "i." + c)
           .join(
             ",",
-          )} FROM order_items i JOIN orders o ON o.id=i.order_id JOIN payments p ON p.order_id=o.id WHERE o.status IN ('pending','preparing','ready') AND p.status='paid' AND ($1='all' OR i.station=$1) ORDER BY o.created_at,i.product_name`,
+          )} FROM order_items i JOIN orders o ON o.id=i.order_id WHERE o.status IN ('pending','preparing','ready') AND o.confirmed_at IS NOT NULL AND ($1='all' OR i.station=$1) ORDER BY o.created_at,i.product_name`,
         [p.station],
       )
     ).rows;
@@ -630,16 +668,7 @@ export function ordersRouter(
         409,
         "INVALID_ORDER_TRANSITION",
       );
-      fail(
-        (
-          await sql.query(
-            "SELECT order_id FROM payments WHERE order_id=$1 AND status='paid'",
-            [order.id],
-          )
-        ).rows[0],
-        409,
-        "PAYMENT_REQUIRED",
-      );
+      fail(order.confirmed_at, 409, "ORDER_CONFIRMATION_REQUIRED");
       const current = (
         await sql.query("SELECT * FROM order_items WHERE id=$1 FOR UPDATE", [
           id,

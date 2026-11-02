@@ -148,6 +148,29 @@ function OrderDetail({
   const [failure, setFailure] = useState("");
   const [busy, setBusy] = useState(false);
   const o = resource.data?.order;
+  async function accept() {
+    if (
+      !o ||
+      !(await confirm({
+        title: "ยืนยัน " + orderNo(o.order_no) + " และส่งเข้าบาร์?",
+        description: "เริ่มเตรียมออเดอร์ ลูกค้าชำระที่เคาน์เตอร์หลังทานเสร็จ",
+        label: "ยืนยันและส่งเข้าบาร์",
+      }))
+    )
+      return;
+    setBusy(true);
+    setFailure("");
+    try {
+      await mutate("/orders/" + id + "/confirm", "POST", {});
+      resource.reload();
+      onChange();
+      toast("ส่งเข้าคิวแล้ว · รอรับชำระหลังทานเสร็จ");
+    } catch (e) {
+      setFailure(e instanceof Error ? e.message : "บันทึกไม่สำเร็จ");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function complete() {
     if (
       !o ||
@@ -226,7 +249,11 @@ function OrderDetail({
                 (o.payment_method === "cash" ? "เงินสด" : "PromptPay")
               : o.payment_status === "refunded"
                 ? "คืนเงินแล้ว"
-                : "ยังไม่รับชำระ"}
+                : o.status === "cancelled"
+                  ? "ยกเลิก · ไม่มียอดชำระ"
+                  : o.type === "dine-in"
+                    ? "ยังไม่รับชำระ · ชำระหลังทานเสร็จ"
+                    : "ยังไม่รับชำระ"}
           </p>
           {o.cancel_reason && (
             <Notice tone="warning">เหตุผลยกเลิก: {o.cancel_reason}</Notice>
@@ -236,8 +263,23 @@ function OrderDetail({
               <Link className="button" to={"/receipt/" + id}>
                 ใบเสร็จ
               </Link>
-              {!o.payment_status && o.status === "pending" && (
-                <button className="primary" onClick={() => setAction("pay")}>
+              {!o.confirmed_at &&
+                o.status === "pending" &&
+                o.type === "dine-in" && (
+                  <button
+                    className="primary"
+                    disabled={busy}
+                    onClick={() => void accept()}
+                  >
+                    ยืนยันและส่งเข้าบาร์
+                  </button>
+                )}
+              {!o.payment_status && o.status !== "cancelled" && (
+                <button
+                  className="primary"
+                  disabled={busy}
+                  onClick={() => setAction("pay")}
+                >
                   รับชำระ
                 </button>
               )}

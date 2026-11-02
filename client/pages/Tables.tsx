@@ -70,7 +70,7 @@ export default function Tables() {
           <h2>QR สั่งอาหารประจำโต๊ะ</h2>
           <p className="muted">
             ลูกค้าเลือกเมนูและติดตามออเดอร์ของตัวเอง
-            พนักงานรับชำระก่อนส่งเข้าบาร์
+            พนักงานยืนยันก่อนส่งเข้าบาร์ ลูกค้าชำระหลังทานเสร็จ
           </p>
         </div>
         <button className="primary" onClick={() => setEditor("new")}>

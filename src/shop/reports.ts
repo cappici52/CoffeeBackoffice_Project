@@ -118,7 +118,7 @@ export function reportsRouter(
         "DAY_ALREADY_CLOSED",
       );
       const open = await sql.query(
-        "SELECT id FROM orders WHERE status IN ('pending','preparing','ready') AND (created_at AT TIME ZONE 'Asia/Bangkok')::date <= $1::date LIMIT 1",
+        "SELECT o.id FROM orders o LEFT JOIN payments p ON p.order_id=o.id WHERE (o.status IN ('pending','preparing','ready') OR (o.status='completed' AND p.order_id IS NULL)) AND (o.created_at AT TIME ZONE 'Asia/Bangkok')::date <= $1::date LIMIT 1",
         [input.date],
       );
       fail(!open.rows.length, 409, "OPEN_ORDERS_EXIST");

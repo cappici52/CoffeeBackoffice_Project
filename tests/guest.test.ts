@@ -6,6 +6,7 @@ import { readConfig } from "../src/config.js";
 import { migrate } from "../src/migrate.js";
 import { seedOwner } from "../src/seed.js";
 import { newToken, tokenHash } from "../src/security.js";
+import { businessDate } from "../src/shop/shared.js";
 import { testDatabase } from "./database.js";
 
 const origin = "http://localhost:3001";
@@ -238,7 +239,7 @@ test("tracking needs an independent order capability; QR knowledge and IDs canno
     .get("/api/guest/tables/" + qr + "/orders")
     .expect(404);
 });
-test("payment and KDS transitions are reflected to only that customer; stock deducted once", async () => {
+test("staff accepts, prepares and serves before payment; settling later deducts no extra stock", async () => {
   const stored = (
     await fixture.db.query("SELECT id FROM orders WHERE request_key=$1", [
       body.request_key,
@@ -256,16 +257,26 @@ test("payment and KDS transitions are reflected to only that customer; stock ded
     .set("Cookie", kitchen)
     .send({ status: "preparing" })
     .expect(409);
-  await request(app)
-    .post("/api/orders/" + stored.id + "/pay")
-    .set("Origin", origin)
-    .set("Cookie", cashier)
-    .send({ method: "cash" })
-    .expect(200);
-  const paid = (
+  for (const session of ["", kitchen])
+    await request(app)
+      .post("/api/orders/" + stored.id + "/confirm")
+      .set("Origin", origin)
+      .set("Cookie", session)
+      .send({})
+      .expect(session ? 403 : 401);
+  const accepts = await Promise.all([
+    admin("/orders/" + stored.id + "/confirm", {}),
+    admin("/orders/" + stored.id + "/confirm", {}),
+  ]);
+  expect(accepts.map((r) => r.status)).toEqual([200, 200]);
+  const accepted = (
     await request(app).get("/api/guest/orders/" + body.tracking_token)
   ).body.order;
-  expect(paid.payment_status).toBe("paid");
+  expect(accepted.confirmed_at).toBeTruthy();
+  expect(accepted.payment_status).toBeNull();
+  expect(
+    (await request(app).get("/api/kds").set("Cookie", kitchen)).body.orders,
+  ).toHaveLength(1);
   for (const status of ["preparing", "ready"]) {
     await request(app)
       .post("/api/kds/items/" + item + "/status")
@@ -289,6 +300,35 @@ test("payment and KDS transitions are reflected to only that customer; stock ded
       .order.status,
   ).toBe("completed");
   expect(
+    (await request(app).get("/api/guest/orders/" + body.tracking_token)).body
+      .order.payment_status,
+  ).toBeNull();
+  expect(
+    (await request(app).get("/api/orders/summary").set("Cookie", cashier)).body
+      .unpaid,
+  ).toBe(1);
+  await admin("/reports/close", { date: businessDate() }).expect(409, {
+    error: "OPEN_ORDERS_EXIST",
+  });
+  const pay = () =>
+    request(app)
+      .post("/api/orders/" + stored.id + "/pay")
+      .set("Origin", origin)
+      .set("Cookie", cashier)
+      .send({ method: "cash" });
+  expect((await Promise.all([pay(), pay()])).map((r) => r.status)).toEqual([
+    200, 200,
+  ]);
+  const settled = (
+    await request(app).get("/api/guest/orders/" + body.tracking_token)
+  ).body.order;
+  expect(settled.status).toBe("completed");
+  expect(settled.payment_status).toBe("paid");
+  expect(
+    (await request(app).get("/api/orders/summary").set("Cookie", cashier)).body
+      .unpaid,
+  ).toBe(0);
+  expect(
     Number(
       (
         await fixture.db.query(
@@ -298,6 +338,88 @@ test("payment and KDS transitions are reflected to only that customer; stock ded
       ).rows[0]?.current_stock,
     ),
   ).toBe(982);
+});
+test("accepted unpaid cancellations return only unstarted stock and reject later payment", async () => {
+  for (const started of [false, true]) {
+    const payload = orderBody();
+    await guest(payload).expect(201);
+    const id = (
+      await fixture.db.query("SELECT id FROM orders WHERE request_key=$1", [
+        payload.request_key,
+      ])
+    ).rows[0]!.id;
+    const before = Number(
+      (
+        await fixture.db.query(
+          "SELECT current_stock FROM ingredients WHERE id=$1",
+          [ingredient],
+        )
+      ).rows[0]!.current_stock,
+    );
+    const confirmed = (
+      await admin("/orders/" + id + "/confirm", {}).expect(200)
+    ).body.order;
+    if (started)
+      await request(app)
+        .post("/api/kds/items/" + confirmed.items[0].id + "/status")
+        .set("Origin", origin)
+        .set("Cookie", kitchen)
+        .send({ status: "preparing" })
+        .expect(204);
+    for (let i = 0; i < 2; i++)
+      await admin("/orders/" + id + "/status", {
+        status: "cancelled",
+        reason: "customer cancelled",
+      }).expect(200);
+    await admin("/orders/" + id + "/pay", { method: "cash" }).expect(409);
+    await admin("/orders/" + id + "/confirm", {}).expect(409);
+    expect(
+      Number(
+        (
+          await fixture.db.query(
+            "SELECT current_stock FROM ingredients WHERE id=$1",
+            [ingredient],
+          )
+        ).rows[0]!.current_stock,
+      ),
+    ).toBe(before - (started ? 18 : 0));
+    expect(
+      (await request(app).get("/api/guest/orders/" + payload.tracking_token))
+        .body.order.payment_status,
+    ).toBeNull();
+  }
+});
+test("insufficient stock does not confirm an unpaid order or admit it to KDS", async () => {
+  const payload = {
+    ...orderBody(),
+    expected_total_satang: 8000 * 99,
+    items: [{ product_id: product, qty: 99, option_ids: [option] }],
+  };
+  await guest(payload).expect(201);
+  const id = (
+    await fixture.db.query("SELECT id FROM orders WHERE request_key=$1", [
+      payload.request_key,
+    ])
+  ).rows[0]!.id;
+  await admin("/orders/" + id + "/confirm", {}).expect(409, {
+    error: "INSUFFICIENT_STOCK",
+  });
+  expect(
+    (await request(app).get("/api/guest/orders/" + payload.tracking_token)).body
+      .order.confirmed_at,
+  ).toBeNull();
+  expect(
+    (
+      await fixture.db.query(
+        "SELECT id FROM stock_movements WHERE ref_order_id=$1",
+        [id],
+      )
+    ).rows,
+  ).toHaveLength(0);
+  await admin("/orders/" + id + "/status", {
+    status: "cancelled",
+    reason: "out of stock",
+  }).expect(200);
 });
 test("disabling/rotating a QR blocks new orders while keeping existing customer tracking", async () => {
   await request(app)

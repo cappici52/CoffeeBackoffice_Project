@@ -204,7 +204,7 @@ function MenuPage({ token }: { token: string }) {
       !(await confirm({
         title: "ยืนยันสั่งอาหาร " + money(total) + "?",
         description:
-          "ออเดอร์จะส่งถึงพนักงาน กรุณาชำระเงินที่เคาน์เตอร์ก่อนเริ่มทำ",
+          "ออเดอร์จะส่งให้พนักงานยืนยันและเริ่มทำ ทานเสร็จแล้วค่อยชำระที่เคาน์เตอร์",
         label: "ยืนยันสั่งอาหาร",
       }))
     )
@@ -274,7 +274,7 @@ function MenuPage({ token }: { token: string }) {
       <div className="customer-intro">
         <h1>เลือกเมนูที่ชอบ</h1>
         <p className="muted">
-          เลือกเมนูและตัวเลือก แล้วส่งออเดอร์ให้พนักงาน · ชำระเงินที่เคาน์เตอร์
+          เลือกเมนูและตัวเลือก แล้วส่งออเดอร์ให้พนักงาน · ทานเสร็จแล้วค่อยจ่าย
         </p>
       </div>
       {resource.error && (
@@ -348,7 +348,7 @@ function MenuPage({ token }: { token: string }) {
               <strong>{money(total)}</strong>
             </div>
             <p className="caption muted">
-              ยังไม่มีการเรียกเก็บเงินออนไลน์ พนักงานจะรับชำระและส่งเข้าคิวทำ
+              พนักงานจะยืนยันและส่งเข้าคิวทำ ชำระที่เคาน์เตอร์หลังทานเสร็จ
             </p>
             <div className="cart-actions">
               <Submit>
@@ -410,10 +410,10 @@ function MenuPage({ token }: { token: string }) {
 }
 const stages = [
   {
-    title: "รอยืนยัน / ชำระเงิน",
-    description: "กรุณาชำระเงินที่เคาน์เตอร์ พนักงานจะยืนยันก่อนเริ่มทำ",
+    title: "รอร้านยืนยัน",
+    description: "พนักงานจะตรวจสอบออเดอร์และส่งเข้าคิวทำ ชำระหลังทานเสร็จ",
   },
-  { title: "รอทำ", description: "รับชำระแล้ว ออเดอร์ของคุณอยู่ในคิว" },
+  { title: "รอทำ", description: "ร้านยืนยันแล้ว ออเดอร์ของคุณอยู่ในคิว" },
   { title: "กำลังทำ", description: "พนักงานกำลังเตรียมเมนูของคุณ" },
   { title: "รอเสิร์ฟ", description: "เตรียมเสร็จแล้ว กำลังรอพนักงานส่งมอบ" },
   { title: "เสิร์ฟแล้ว", description: "ส่งมอบครบแล้ว ขอบคุณที่ใช้บริการ" },
@@ -428,7 +428,8 @@ function TrackingPage({ token }: { token: string }) {
   const order = resource.data?.order;
   const tableToken = read<string | null>("guest-table:" + token, null);
   const terminal =
-    order?.status === "completed" || order?.status === "cancelled";
+    order?.status === "cancelled" ||
+    (order?.status === "completed" && !!order.payment_status);
   useEffect(() => {
     document.title =
       (order ? orderNo(order.order_no) + " · " : "") +
@@ -448,7 +449,7 @@ function TrackingPage({ token }: { token: string }) {
       window.removeEventListener("online", refresh);
     };
   }, [terminal, resource.reload]);
-  const index = !order?.payment_status
+  const index = !order?.confirmed_at
     ? 0
     : order?.status === "completed"
       ? 4
@@ -559,7 +560,9 @@ function TrackingPage({ token }: { token: string }) {
                   ? "รับชำระแล้ว"
                   : order.payment_status === "refunded"
                     ? "พนักงานบันทึกคืนเงินแล้ว"
-                    : "ยังไม่รับชำระ · กรุณาชำระที่เคาน์เตอร์"}
+                    : order.status === "cancelled"
+                      ? "ยกเลิก · ไม่มียอดชำระ"
+                      : "ยังไม่รับชำระ · ทานเสร็จแล้วชำระที่เคาน์เตอร์"}
               </p>
               <p className="caption muted">
                 สถานะล่าสุด {dateText(order.server_time, true)}

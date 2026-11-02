@@ -66,7 +66,7 @@ export default function Kds() {
   return (
     <>
       <div className="toolbar">
-        <p className="muted">ออเดอร์ที่รับชำระแล้ว · เรียงเก่าสุดก่อน</p>
+        <p className="muted">ออเดอร์ที่ยืนยันแล้ว · เรียงเก่าสุดก่อน</p>
         <div className="row">
           <Select
             label="สถานี"

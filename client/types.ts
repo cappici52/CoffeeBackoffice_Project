@@ -79,6 +79,7 @@ export interface DiningTable {
   version: number;
 }
 export interface GuestOrder {
+  confirmed_at: string | null;
   order_no: Decimal;
   table_no: string;
   status: OrderStatus;
@@ -153,6 +154,7 @@ export interface OrderItem {
   completed_at: string | null;
 }
 export interface Order {
+  confirmed_at: string | null;
   source?: "pos" | "qr";
   id: string;
   order_no: Decimal;

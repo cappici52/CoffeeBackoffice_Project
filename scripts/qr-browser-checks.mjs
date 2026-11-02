@@ -121,7 +121,7 @@ export async function qrBrowserChecks({ browser, page, base, output, checks }) {
     await expect(customer).toHaveURL(/\/track\/[a-f0-9]{64}$/);
     await expect(
       customer.getByRole("heading", {
-        name: "รอยืนยัน / ชำระเงิน",
+        name: "รอร้านยืนยัน",
         exact: true,
       }),
     ).toBeVisible();
@@ -148,7 +148,7 @@ export async function qrBrowserChecks({ browser, page, base, output, checks }) {
       (await (await page.context().request.get(base + "/api/kds")).json())
         .orders.length,
       0,
-      "Unpaid guest order entered KDS",
+      "Unconfirmed guest order entered KDS",
     );
     await page.goto(base + "/orders");
     const qrRows = page.getByRole("row").filter({ hasText: "สั่งผ่าน QR" });
@@ -156,10 +156,13 @@ export async function qrBrowserChecks({ browser, page, base, output, checks }) {
     await qrRows
       .getByRole("button", { name: "เปิดออเดอร์", exact: true })
       .click();
-    await page.getByRole("button", { name: "รับชำระ", exact: true }).click();
-    await page.getByRole("checkbox", { name: /ตรวจสอบว่าได้รับเงิน/ }).check();
     await page
-      .getByRole("button", { name: "ยืนยันรับชำระ", exact: true })
+      .getByRole("button", { name: "ยืนยันและส่งเข้าบาร์", exact: true })
+      .click();
+    await page
+      .getByRole("dialog")
+      .last()
+      .getByRole("button", { name: "ยืนยันและส่งเข้าบาร์", exact: true })
       .click();
     await expect(
       customer.getByRole("heading", { name: "รอทำ", exact: true }),
@@ -194,8 +197,30 @@ export async function qrBrowserChecks({ browser, page, base, output, checks }) {
     await expect(
       customer.getByRole("heading", { name: "เสิร์ฟแล้ว", exact: true }),
     ).toBeVisible({ timeout: 15000 });
+    await expect(
+      customer.getByText("ยังไม่รับชำระ · ทานเสร็จแล้วชำระที่เคาน์เตอร์", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(page.locator(".nav-count")).toHaveText("1");
+    await customer.screenshot({
+      path: join(output, "customer-served-unpaid-mobile.png"),
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "รับชำระ", exact: true }).click();
+    await page.getByRole("checkbox", { name: /ตรวจสอบว่าได้รับเงิน/ }).check();
+    await page
+      .getByRole("button", { name: "ยืนยันรับชำระ", exact: true })
+      .click();
+    await expect(
+      customer.getByText("รับชำระแล้ว", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      customer.getByRole("heading", { name: "เสิร์ฟแล้ว", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".nav-count")).toHaveCount(0);
     checks.push(
-      "Guest progress auto-updates through staff payment → KDS → ready → served",
+      "Guest progress auto-updates through staff acceptance → unpaid KDS → served → payment after dining",
     );
     await page.getByRole("link", { name: "ใบเสร็จ", exact: true }).click();
     await expect(page.locator(".receipt")).toContainText(

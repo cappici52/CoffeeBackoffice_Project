@@ -12,7 +12,7 @@ const token = z.string().regex(/^[a-f0-9]{64}$/);
 export async function guestOrder(sql: Sql, trackingHash: string) {
   const order = (
     await sql.query(
-      "SELECT o.order_no,o.table_no,o.status,o.note,o.total_satang,o.created_at,o.completed_at,o.cancel_reason,p.status AS payment_status FROM orders o LEFT JOIN payments p ON p.order_id=o.id WHERE o.source='qr' AND o.guest_tracking_hash=$1",
+      "SELECT o.order_no,o.table_no,o.status,o.note,o.total_satang,o.created_at,o.confirmed_at,o.completed_at,o.cancel_reason,p.status AS payment_status FROM orders o LEFT JOIN payments p ON p.order_id=o.id WHERE o.source='qr' AND o.guest_tracking_hash=$1",
       [trackingHash],
     )
   ).rows[0];
