@@ -21,9 +21,13 @@ export const pagination = z.object({
 });
 export const imageUrl = z.union([
   z.literal(""),
+  z.string().regex(/^\/menu\/[a-z0-9-]+\.jpg$/),
   z
     .url()
-    .refine((u) => new URL(u).protocol === "https:", "Use an HTTPS image URL"),
+    .refine(
+      (u) => URL.canParse(u) && new URL(u).protocol === "https:",
+      "Use an HTTPS image URL",
+    ),
 ]);
 export function fail(
   condition: unknown,

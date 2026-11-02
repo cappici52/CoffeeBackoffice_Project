@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { MenuCatalog, MenuProduct } from "../types";
 import { money } from "../lib";
 import { QueryState, SearchBox } from "../ui";
+import { MenuPhoto } from "./MenuPhoto";
 
 export function ProductBrowser({
   catalog,
@@ -73,9 +74,9 @@ export function ProductBrowser({
             disabled={!p.is_available || locked}
             onClick={() => onChoose(p)}
           >
-            {p.image_url && <img src={p.image_url} alt="" loading="lazy" />}
+            <MenuPhoto src={p.image_url} />
             <strong>{p.name}</strong>
-            <span>
+            <span className="product-price">
               {p.is_available ? money(p.price_satang) : "ปิดขายชั่วคราว"}
             </span>
           </button>

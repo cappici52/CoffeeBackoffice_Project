@@ -18,6 +18,7 @@ import {
   useToast,
 } from "../ui";
 import type { Catalog, Category, Ingredient, Product } from "../types";
+import { MenuPhoto } from "../components/MenuPhoto";
 type GroupDraft = {
   name: string;
   is_required: boolean;
@@ -126,7 +127,12 @@ export default function Menu() {
                   <tbody>
                     {resource.data.products.map((p) => (
                       <tr key={p.id}>
-                        <th scope="row">{p.name}</th>
+                        <th scope="row">
+                          <span className="product-name-cell">
+                            <MenuPhoto src={p.image_url} compact />
+                            <span>{p.name}</span>
+                          </span>
+                        </th>
                         <td>
                           {
                             catalog.data?.categories.find(
@@ -347,6 +353,8 @@ function ProductEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const [image, setImage] = useState(product?.image_url ?? "");
+  const previewImage = useDebounced(image);
   const [groups, setGroups] = useState<GroupDraft[]>(
     product?.option_groups.map((g) => ({
       name: g.name,
@@ -466,11 +474,15 @@ function ProductEditor({
             defaultValue={product?.target_prep_seconds ?? 180}
           />
           <Input
-            label="ลิงก์รูปภาพ HTTPS (ไม่จำเป็น)"
+            label="รูปภาพ (ลิงก์ HTTPS หรือ /menu/... .jpg)"
             name="image_url"
-            type="url"
-            defaultValue={product?.image_url ?? ""}
+            inputMode="url"
+            value={image}
+            onChange={(event) => setImage(event.target.value)}
           />
+        </div>
+        <div className="menu-photo-preview">
+          <MenuPhoto src={previewImage} />
         </div>
         <Textarea
           className="resize-none"

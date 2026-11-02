@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readConfig } from "./config.js";
 import { connectDatabase } from "./db.js";
 import { businessDate, moveStock, record } from "./shop/shared.js";
+import { menuPhotos } from "./shop/menu-photos.js";
 
 const config = readConfig();
 if (config.NODE_ENV === "production")
@@ -155,7 +156,7 @@ try {
       const id = randomUUID();
       const bakery = p.category === "เบเกอรี";
       await sql.query(
-        "INSERT INTO products (id,category_id,name,description,price_satang,station,target_prep_seconds) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+        "INSERT INTO products (id,category_id,name,description,price_satang,station,target_prep_seconds,image_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
         [
           id,
           categories.get(p.category),
@@ -164,6 +165,7 @@ try {
           p.price,
           bakery ? "kitchen" : "bar",
           bakery ? 240 : 180,
+          menuPhotos[p.name] ?? "",
         ],
       );
       await sql.query("INSERT INTO recipes (product_id) VALUES ($1)", [id]);

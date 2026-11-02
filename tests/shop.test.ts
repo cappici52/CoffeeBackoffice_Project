@@ -137,3 +137,29 @@ test("stale product edits are rejected and price updates are audited", async () 
     ).rows,
   ).toHaveLength(1);
 });
+test("menu images accept bundled paths and HTTPS while rejecting traversal and unsafe sources", async () => {
+  await write("patch", `/api/products/${product}`)
+    .send({ image_url: "/menu/latte.jpg", expected_version: 2 })
+    .expect(200);
+  for (const image_url of [
+    "http://example.com/image.jpg",
+    "//example.com/image.jpg",
+    "/menu/../api/users",
+    "javascript:alert(1)",
+    "data:image/svg+xml,test",
+  ])
+    await write("patch", `/api/products/${product}`)
+      .send({ image_url, expected_version: 3 })
+      .expect(400);
+  const stored = (
+    await fixture.db.query(
+      "SELECT image_url,version FROM products WHERE id=$1",
+      [product],
+    )
+  ).rows[0]!;
+  expect(stored.image_url).toBe("/menu/latte.jpg");
+  expect(stored.version).toBe(3);
+  await write("patch", `/api/products/${product}`)
+    .send({ image_url: "https://example.com/latte.jpg", expected_version: 3 })
+    .expect(200);
+});

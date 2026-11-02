@@ -110,6 +110,40 @@ try {
   await expect(page.locator("vite-error-overlay")).toHaveCount(0);
   await expect(page.locator(".product-tile")).toHaveCount(8);
   await page.evaluate(() => document.fonts.ready);
+  await expect(page.locator(".product-tile img")).toHaveCount(8);
+  await page
+    .locator(".product-tile img")
+    .evaluateAll((images) => Promise.all(images.map((img) => img.decode())));
+  assert(
+    await page
+      .locator(".product-tile img")
+      .evaluateAll((images) =>
+        images.every(
+          (img) =>
+            img.naturalWidth > 0 && new URL(img.src).origin === location.origin,
+        ),
+      ),
+    "Bundled menu photographs did not load locally",
+  );
+  await expect(
+    page.getByRole("link", { name: /เครดิตภาพ|CC BY|ภาพต้นฉบับ/ }),
+  ).toHaveCount(0);
+  await page.route("**/menu/latte.jpg", (route) => route.abort("failed"));
+  await page.reload();
+  await expect(
+    page
+      .locator(".product-tile")
+      .filter({ hasText: "ลาเต้" })
+      .getByText("โหลดรูปไม่ได้", { exact: true }),
+  ).toBeVisible();
+  await page.unroute("**/menu/latte.jpg");
+  await page.reload();
+  await page
+    .locator(".product-tile img")
+    .evaluateAll((images) => Promise.all(images.map((img) => img.decode())));
+  checks.push(
+    "Eight real local menu photographs, no credit UI and stable failed-image fallback",
+  );
   checks.push("Login and desktop POS");
   await page.locator(".product-tile").filter({ hasText: "ลาเต้" }).click();
   await page.keyboard.press("Escape");
@@ -296,6 +330,18 @@ try {
   await expect(
     page.getByRole("rowheader", { name: "เมนู QA", exact: true }),
   ).toBeVisible();
+  const photoRow = page
+    .getByRole("row")
+    .filter({
+      has: page.getByRole("rowheader", { name: "ลาเต้", exact: true }),
+    });
+  await photoRow.getByRole("button", { name: "แก้ไข", exact: true }).click();
+  await expect(page.locator(".menu-photo-preview img")).toHaveAttribute(
+    "src",
+    "/menu/latte.jpg",
+  );
+  await page.getByRole("button", { name: "บันทึกเมนู", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   checks.push("Category and product CRUD forms");
   await go("/inventory?tab=recipes");
   await page

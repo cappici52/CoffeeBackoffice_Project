@@ -63,6 +63,15 @@ export async function qrBrowserChecks({ browser, page, base, output, checks }) {
       customer.getByRole("heading", { name: "เลือกเมนูที่ชอบ", exact: true }),
     ).toBeVisible();
     await expect(customer.locator(".product-tile").first()).toBeVisible();
+    await expect(customer.locator(".product-tile img")).toHaveCount(8);
+    await expect(
+      customer.getByRole("link", { name: /เครดิตภาพ|CC BY|ภาพต้นฉบับ/ }),
+    ).toHaveCount(0);
+    await customer
+      .locator(".product-tile")
+      .filter({ hasText: "อเมริกาโน่" })
+      .locator("img")
+      .evaluate((img) => img.decode());
     await expect(customer.locator(".sidebar")).toHaveCount(0);
     await expect(
       customer.getByRole("link", { name: "รายงาน", exact: true }),

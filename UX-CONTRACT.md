@@ -29,6 +29,7 @@ DESIGN.md explains intent. `client/styles.css :root` is the canonical runtime to
 | CRUD | feature routes + client/lib.ts | Domain decisions | modal save returns to owning list | scripts/browser-test.mjs |
 | Menu browser | client/components/ProductBrowser.tsx | DESIGN.md | POS / anonymous customer | browser ordering checks |
 | Menu item editor | client/components/ItemEditor.tsx | Shared form contract | staff / customer action labels | browser options + keyboard |
+| Menu photograph | client/components/MenuPhoto.tsx | DESIGN.md | catalog / item preview / compact admin | local image loading, failed-image fallback and mobile browser checks |
 | Cart rows | client/components/CartLines.tsx | docs/table-ordering.md | staff / customer | quantity, notes and recovery checks |
 
 Native select/calendar popup geometry and platform language are intentionally accepted. Labels and app-owned messages remain Thai; no authored calendar/listbox is required. There is no bulk table selection in this release.

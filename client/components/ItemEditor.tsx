@@ -2,6 +2,7 @@ import { useState } from "react";
 import { money } from "../lib";
 import { Form, Input, Modal, Submit, Textarea } from "../ui";
 import type { CartLine as Line } from "../types";
+import { MenuPhoto } from "./MenuPhoto";
 
 export function ItemEditor({
   line,
@@ -35,6 +36,9 @@ export function ItemEditor({
           });
         }}
       >
+        <div className="menu-photo-preview">
+          <MenuPhoto src={line.product.image_url} />
+        </div>
         {line.product.description && (
           <p className="muted">{line.product.description}</p>
         )}

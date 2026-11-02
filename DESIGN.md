@@ -63,6 +63,8 @@ Use a quiet navigation rail on desktop and a compact menu on narrow screens. Pre
 
 Customer routes `/table/:token` and `/track/:token` have their own compact shell without backoffice navigation. On mobile, menu tiles use two columns, the cart follows the menu, and a cart shortcut appears while the cart is outside the viewport. The shared menu browser, item dialog and cart rows are used by both POS and customer ordering. Tracking uses a five-step process and a persistent status heading; no decorative metrics or staff controls are shown.
 
+Menu photography uses real photographs only, as requested by the user. The eight supplied menu pictures are locally hosted CC0/public-domain photos; source records live in `docs/menu-photo-sources.json`. There are no on-screen source/license/credit links. `client/components/MenuPhoto.tsx` owns 4:3 reserved framing, the compact admin thumbnail and an image-error/empty placeholder. Catalog photos are decorative alongside visible product names; product/item previews retain the full photograph inside the frame. No AI-generated menu assets are bundled.
+
 ## Elevation & Depth
 
 Convey hierarchy with tonal surfaces and borders. Static panels have no shadows. Reserve a subtle shadow for overlays. Do not use glass or background blur to decorate operational screens.

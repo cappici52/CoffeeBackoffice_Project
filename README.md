@@ -98,9 +98,9 @@ npm run build
 npm run test:e2e
 ```
 
-- 50 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย และ LAN/production security headers
+- 51 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย และ LAN/production security headers
 - Python model/selection tests 22 กรณี รวมตรวจผลตรงกับโมเดล ProjectA กันข้อมูลอนาคตรั่ว และทำซ้ำผลเทรน Coffee Sales จริง
-- Browser test ครอบคลุม 21 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
+- Browser test ครอบคลุม 22 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
 - Tests บน PostgreSQL และ browser ใช้ schema สุ่มแล้วลบ ไม่เขียน test orders ลงตารางร้านจริง ต้องใช้ development database ที่อนุญาตสร้าง schema
 - Browser plugin ไม่พร้อมใน session นี้ จึงใช้ Playwright/Edge; CI ใช้ Chromium ภาพ QA อยู่ใน OS temp หรือ `QA_OUTPUT_DIR` ไม่ commit รูปทดสอบ
 - CI ตรวจ typecheck, PGlite, PostgreSQL 18, Python, browser, production build และเปิด Docker stack เพื่อ smoke test
@@ -119,3 +119,5 @@ Migration มี checksum ห้ามแก้ไฟล์ที่ใช้แ
 API หลัก: `/api/auth/*`, `/api/users`, `/api/catalog`, `/api/categories`, `/api/products`, `/api/ingredients`, `/api/stock-movements`, `/api/recipes/:productId`, `/api/orders`, `/api/kds`, `/api/events`, `/api/reports`, `/api/reports/close`, `/api/forecasts`, `/api/forecasts/generate`, `/api/audit-logs`
 
 เชื่อมโมเดลจริงแล้ว ดู [การเชื่อมโมเดลและวิธีเลือกพยากรณ์](docs/forecast-integration.md) ต้องมีประวัติรายเมนูอย่างน้อย 28 วันติดต่อกัน; เมื่อครบ 84 วัน ระบบจะเทรนโมเดลจากประวัติร้านและเทียบย้อนหลัง 28 วันก่อนเลือกใช้ วันที่ไม่มีข้อมูลไม่ถูกเติมศูนย์อัตโนมัติ ผลจากข้อมูลตัวอย่างไม่ใช่หลักฐานความแม่นยำของร้านจริง เก็บโมเดลที่เทรนใหม่ใน `forecast-service/runtime/` หรือ Docker volume `coffee_forecast_models`
+
+ภาพถ่ายจริงประกอบครบ 8 เมนู แสดงใน POS/QR และพรีวิวตอนแก้ไข โดยไม่มีลิงก์เครดิตหรือข้อความ license บนหน้าจอ ดู [รายละเอียดภาพเมนู](docs/menu-photographs.md)
