@@ -6,7 +6,7 @@ Source requirements: [project specification](coffee-shop-backoffice-spec.md). Op
 
 - [x] TypeScript API, PostgreSQL migrations, development Docker Compose
 - [x] Login/logout, password change, server-side roles and user administration
-- [ ] Integration tests, CI and setup documentation
+- [x] Integration tests, CI and setup documentation
 
 Each completed task is checked, committed and pushed separately.
 
@@ -26,5 +26,6 @@ Each completed task is checked, committed and pushed separately.
 - Server-side sessions in HttpOnly cookies.
 - Owners control all roles. Managers manage cashier/kitchen staff only.
 - Single branch, Thai UI and Asia/Bangkok business dates in subsequent milestones.
+- Minimal dark-only UI per user request; see [DESIGN.md](../DESIGN.md). The frontend is the next milestone, not part of the current API delivery.
 - Manual PromptPay confirmation and browser printing initially.
 - Forecast remains a mock until the actual model, dependencies and input/output examples are supplied.

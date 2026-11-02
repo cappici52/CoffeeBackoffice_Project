@@ -33,6 +33,20 @@ npm run build
 
 Integration tests ใช้ PGlite (PostgreSQL บน WASM) จึงไม่ต้องเปิด Docker แต่ไม่ได้ทดแทนการตรวจ container และ concurrent requests บน PostgreSQL จริง
 
+CI รัน tests ชุดเดียวกันเพิ่มบน PostgreSQL 18 และ build Docker image ด้วย หากต้องการรันเอง ให้ตั้ง `TEST_DATABASE_URL` เป็นฐานข้อมูลสำหรับทดสอบที่ให้สิทธิ์สร้าง schema ได้ แต่ละ test file ใช้ schema สุ่มและลบเมื่อจบ ไม่ใช้ฐานข้อมูล production
+
+## UI direction
+
+UI จะเป็น minimal โทนเข้มตามที่ผู้ใช้ระบุ ดู [DESIGN.md](DESIGN.md) สำหรับแนวทางสี ตัวอักษร และหน้าจอสัมผัส เอกสารนี้เป็นแนวทางสำหรับเฟส frontend ถัดไป ยังไม่มีหน้าจอที่รันใช้งานได้ในเฟส Foundation นี้
+
+สำหรับ Docker seed owner หลังจากเริ่มระบบแล้ว (กำหนด environment variables ใน shell ก่อน):
+
+```powershell
+docker compose exec -e SEED_OWNER_EMAIL -e SEED_OWNER_PASSWORD api node dist/seed.js
+```
+
+Compose ใช้ HTTP cookie สำหรับพัฒนาเท่านั้น Production ต้องตั้ง `NODE_ENV=production`, `APP_ORIGIN=https://...` และ TLS reverse proxy อย่าใช้ค่ารหัสผ่านเริ่มต้นของ Compose
+
 ไฟล์ migration ที่ใช้แล้วห้ามแก้ย้อนหลัง ให้เพิ่มไฟล์ใหม่ ระบบตรวจ checksum ก่อนรันซ้ำ
 
 ## Authentication
