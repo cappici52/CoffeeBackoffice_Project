@@ -10,7 +10,7 @@ beforeAll(async () => { fixture = await testDatabase(); await migrate(fixture.db
 afterAll(async () => fixture?.close());
 test('migrations are repeatable and health checks the database', async () => {
   await migrate(fixture.db);
-  expect((await fixture.db.query('SELECT name FROM schema_migrations')).rows).toHaveLength(1);
+  expect((await fixture.db.query('SELECT name FROM schema_migrations')).rows.length).toBeGreaterThanOrEqual(2);
   const app = createApp(fixture.db, readConfig({ DATABASE_URL: 'postgresql://test:test@localhost/test' }));
   await request(app).get('/api/health').expect(200, { status: 'ok' });
 });

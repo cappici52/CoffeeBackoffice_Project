@@ -6,6 +6,8 @@ import type { Config } from './config.js';
 import { authentication } from './auth.js';
 import { usersRouter } from './users.js';
 import { ApiError } from './security.js';
+import { catalogRouter } from './shop/catalog.js';
+import { inventoryRouter } from './shop/inventory.js';
 
 export function createApp(db: Database, config: Config) {
   const app = express();
@@ -19,6 +21,8 @@ export function createApp(db: Database, config: Config) {
   const auth = authentication(db, config);
   app.use('/api', auth.router);
   app.use('/api/users', usersRouter(db, auth.authenticate, auth.requireRoles('owner', 'manager')));
+  app.use('/api', catalogRouter(db,auth.authenticate,auth.requireRoles('owner','manager'),auth.requireRoles('owner','manager','cashier')));
+  app.use('/api', inventoryRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
   app.use((_req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
   const handleError: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
     if (error instanceof ApiError) { res.status(error.status).json({ error: error.code }); return; }
@@ -28,6 +32,8 @@ export function createApp(db: Database, config: Config) {
     }
     if (typeof error === 'object' && error !== null) {
       if ('code' in error && error.code === '23505') { res.status(409).json({ error: 'ALREADY_EXISTS' }); return; }
+      if ('code' in error && error.code === '23503') { res.status(409).json({ error: 'REFERENCE_IN_USE_OR_MISSING' }); return; }
+      if ('code' in error && error.code === '23514') { res.status(400).json({ error: 'INVALID_VALUE' }); return; }
       if ('type' in error && error.type === 'entity.too.large') { res.status(413).json({ error: 'BODY_TOO_LARGE' }); return; }
       if ('type' in error && error.type === 'entity.parse.failed') { res.status(400).json({ error: 'INVALID_JSON' }); return; }
     }
