@@ -8,6 +8,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
     APP_ORIGIN: z.url().default('http://localhost:3001'),
     DATABASE_URL: z.string().startsWith('postgres').min(15),
     SESSION_HOURS: z.coerce.number().int().min(1).max(168).default(12),
+    FORECAST_SERVICE_URL: z.url().default('http://127.0.0.1:8001'),
   }).parse(env);
   const origin = new URL(config.APP_ORIGIN);
   if (origin.origin !== config.APP_ORIGIN || !['http:', 'https:'].includes(origin.protocol)) {

@@ -9,11 +9,15 @@ import { ApiError } from './security.js';
 import { catalogRouter } from './shop/catalog.js';
 import { inventoryRouter } from './shop/inventory.js';
 import { ordersRouter } from './shop/orders.js';
+import {reportsRouter} from './shop/reports.js';
+import {forecastsRouter} from './shop/forecasts.js';
+import {resolve} from 'node:path';
+import {existsSync} from 'node:fs';
 
 export function createApp(db: Database, config: Config) {
   const app = express();
   app.disable('x-powered-by');
-  app.use(helmet());
+  app.use(helmet({contentSecurityPolicy:{directives:{imgSrc:["'self'",'data:','https:']}}}));
   app.use(express.json({ limit: '32kb' }));
   app.get('/api/health', async (_req, res) => {
     try { await db.query('SELECT 1'); res.json({ status: 'ok' }); }
@@ -25,6 +29,13 @@ export function createApp(db: Database, config: Config) {
   app.use('/api', catalogRouter(db,auth.authenticate,auth.requireRoles('owner','manager'),auth.requireRoles('owner','manager','cashier')));
   app.use('/api', inventoryRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
   app.use('/api', ordersRouter(db,auth.authenticate,auth.requireRoles('owner','manager','cashier')));
+  app.use('/api',reportsRouter(db,auth.authenticate,auth.requireRoles('owner','manager'),auth.requireRoles('owner')));
+  app.use('/api',forecastsRouter(db,config,auth.authenticate,auth.requireRoles('owner','manager')));
+  const frontend=resolve('dist/client');
+  if(existsSync(frontend)){
+    app.use(express.static(frontend));
+    app.get('/{*path}',(req,res,next)=>{if(req.path.startsWith('/api/')){next();return;}res.set('Cache-Control','no-store').sendFile(resolve(frontend,'index.html'));});
+  }
   app.use((_req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
   const handleError: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
     if (error instanceof ApiError) { res.status(error.status).json({ error: error.code }); return; }
