@@ -72,10 +72,11 @@ def forecast(booster, histories, origin, days):
     return results
 
 
-def load_bundle(directory=BUNDLE):
+def load_bundle(directory=BUNDLE, evaluated=False):
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
-    data = (directory / "model.json").read_bytes()
-    if manifest["features"] != FEATURES or hashlib.sha256(data).hexdigest() != manifest["model_sha256"]:
+    data = (directory / ("holdout-model.json" if evaluated else "model.json")).read_bytes()
+    checksum = manifest["holdout_model_sha256"] if evaluated else manifest["model_sha256"]
+    if manifest["features"] != FEATURES or hashlib.sha256(data).hexdigest() != checksum:
         raise RuntimeError("External coffee model checksum/schema mismatch")
     booster = Booster()
     booster.load_model(bytearray(data))

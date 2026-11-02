@@ -1,6 +1,7 @@
 {
   "model_version": "external-coffee-xgb-9e5b9618c125",
   "model_sha256": "9e5b9618c125fe3fb9437898f8e926ed982783b61217691d6902b01d72724855",
+  "holdout_model_sha256": "49a00d4b1cfb70a00f75a2ddd9528d8d325f8a52b8885200c0fb393f20811265",
   "features": [
     "relative_lag_1",
     "relative_lag_7",
@@ -12,6 +13,12 @@
   ],
   "representation": "prior-28-day-relative-demand",
   "xgboost_version": "3.0.0",
+  "training_environment": {
+    "system": "Windows",
+    "machine": "AMD64",
+    "python": "3.12.10",
+    "numpy": "2.2.5"
+  },
   "training_through": "2025-03-23",
   "provenance": {
     "source_url": "https://www.kaggle.com/datasets/ihelon/coffee-sales",

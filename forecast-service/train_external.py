@@ -10,6 +10,7 @@ import hashlib
 import io
 import json
 import math
+import platform
 from pathlib import Path
 from urllib.request import urlopen
 import zipfile
@@ -168,7 +169,7 @@ def evaluate(series):
               "beats_selected_baseline_on_holdout": holdout[chosen_model]["mae"] < holdout[chosen_baseline]["mae"],
               "per_product_holdout": {name: metrics([real], [pred]) for name, real, pred in zip(series, actual, predictions)},
               "evaluation_note": "Model and baseline chosen on validation only; final holdout evaluated once without tuning. External-machine results do not measure this shop's accuracy."}
-    return fit(series, end, objectives[chosen_model]), report
+    return fit(series, end, objectives[chosen_model]), report, estimator
 
 
 def main():
@@ -199,7 +200,7 @@ def main():
                 args.archive.write_bytes(response.read(10_000_001))
         series, provenance = prepare(args.archive)
         provenance.update(license=metadata["licenseName"], publisher_last_updated=metadata["lastUpdated"], license_metadata_url=metadata_url)
-    estimator, report = evaluate(series)
+    estimator, report, evaluated_estimator = evaluate(series)
     args.output.mkdir(parents=True, exist_ok=True)
     with (args.output / "daily.csv").open("w", newline="", encoding="utf-8") as output:
         writer = csv.writer(output, lineterminator="\n")
@@ -210,8 +211,13 @@ def main():
     provenance["prepared_csv_sha256"] = sha((args.output / "daily.csv").read_bytes())
     model_data = estimator.save_raw(raw_format="json")
     (args.output / "model.json").write_bytes(model_data)
+    holdout_model_data = evaluated_estimator.save_raw(raw_format="json")
+    (args.output / "holdout-model.json").write_bytes(holdout_model_data)
     manifest = {"model_version": "external-coffee-xgb-" + sha(model_data)[:12], "model_sha256": sha(model_data),
+                "holdout_model_sha256": sha(holdout_model_data),
                 "features": FEATURES, "representation": "prior-28-day-relative-demand", "xgboost_version": xgboost.__version__,
+                "training_environment": {"system": platform.system(), "machine": platform.machine(),
+                                         "python": platform.python_version(), "numpy": np.__version__},
                 "training_through": provenance["last_date"], "provenance": provenance, "evaluation": report,
                 "deployment_approved": False,
                 "deployment_policy": "Offline evaluation only. Not loaded by the app. No promotion after losing to the validation-selected baseline on holdout.",

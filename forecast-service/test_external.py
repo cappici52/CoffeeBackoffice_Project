@@ -10,7 +10,7 @@ import zipfile
 import numpy as np
 
 from coffee_demand import BUNDLE, features, forecast, load_bundle, training_rows
-from train_external import evaluate, prepare, read_prepared, splits
+from train_external import evaluate, metrics, prepare, read_prepared, splits, window
 
 
 class ExternalCoffeeTests(unittest.TestCase):
@@ -91,13 +91,20 @@ class ExternalCoffeeTests(unittest.TestCase):
         validation_origin, test_origin, end = splits(series)
         self.assertLess(validation_origin + timedelta(days=28), test_origin)
         self.assertEqual(end, date(2025, 3, 23))
-        _, replay = evaluate(series)
+        _, replay, _ = evaluate(series)
         saved = manifest["evaluation"]
         self.assertEqual(replay["chosen_model_from_validation"], saved["chosen_model_from_validation"])
         self.assertEqual(replay["chosen_baseline_from_validation"], saved["chosen_baseline_from_validation"])
         self.assertEqual(replay["holdout"]["relative-absolute"]["pairs"], 224)
-        self.assertAlmostEqual(replay["holdout"]["relative-absolute"]["wape_percent"], saved["holdout"]["relative-absolute"]["wape_percent"], places=3)
+        # Retraining is not bit-identical across OS/compiler builds. Verify the
+        # published score using the exact estimator fitted BEFORE holdout;
+        # distinguish this from an independent new training run above.
+        evaluated, _ = load_bundle(evaluated=True)
+        histories, actual = window(series, test_origin)
+        score = metrics(actual, forecast(evaluated, histories, test_origin, 28))
+        self.assertAlmostEqual(score["wape_percent"], saved["holdout"]["relative-absolute"]["wape_percent"], places=3)
         self.assertFalse(saved["beats_selected_baseline_on_holdout"])
+        self.assertFalse(replay["beats_selected_baseline_on_holdout"])
         self.assertFalse(manifest["deployment_approved"])
 
     def test_modified_model_or_prepared_counts_fail_checksum_verification(self):
