@@ -13,6 +13,8 @@ import {reportsRouter} from './shop/reports.js';
 import {forecastsRouter} from './shop/forecasts.js';
 import {resolve} from 'node:path';
 import {existsSync} from 'node:fs';
+import {guestRouter} from './shop/guest.js';
+import {tablesRouter} from './shop/tables.js';
 
 export function createApp(db: Database, config: Config) {
   const app = express();
@@ -24,7 +26,9 @@ export function createApp(db: Database, config: Config) {
     catch { res.status(503).json({ error: 'DATABASE_UNAVAILABLE' }); }
   });
   const auth = authentication(db, config);
+  app.use('/api/guest',guestRouter(db,config));
   app.use('/api', auth.router);
+  app.use('/api',tablesRouter(db,config,auth.authenticate,auth.requireRoles('owner','manager')));
   app.use('/api/users', usersRouter(db, auth.authenticate, auth.requireRoles('owner', 'manager')));
   app.use('/api', catalogRouter(db,auth.authenticate,auth.requireRoles('owner','manager'),auth.requireRoles('owner','manager','cashier')));
   app.use('/api', inventoryRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));

@@ -20,7 +20,7 @@ interface IngredientSnapshot {
   unit: string;
   qty: number;
 }
-const createInput = z
+export const createInput = z
   .object({
     request_key: idSchema,
     type: z.enum(["dine-in", "takeaway"]),
@@ -51,7 +51,7 @@ const itemColumns =
 async function orderDetail(sql: Sql, id: string) {
   const order = (
     await sql.query(
-      "SELECT o.*,p.method AS payment_method,p.status AS payment_status,p.paid_at,p.refunded_at,u.name AS created_by_name FROM orders o LEFT JOIN payments p ON p.order_id=o.id JOIN users u ON u.id=o.created_by WHERE o.id=$1",
+      "SELECT o.*,p.method AS payment_method,p.status AS payment_status,p.paid_at,p.refunded_at,coalesce(u.name,'ลูกค้าสแกน QR') AS created_by_name FROM orders o LEFT JOIN payments p ON p.order_id=o.id LEFT JOIN users u ON u.id=o.created_by WHERE o.id=$1",
       [id],
     )
   ).rows[0];
@@ -71,11 +71,11 @@ async function logStatus(
   id: string,
   from: string | null,
   to: string,
-  actor: User,
+  actor: User | null,
 ) {
   await sql.query(
     "INSERT INTO order_status_logs (order_id,from_status,to_status,changed_by) VALUES ($1,$2,$3,$4)",
-    [id, from, to, actor.id],
+    [id, from, to, actor?.id ?? null],
   );
 }
 async function openBusinessDate(sql: Sql, date = businessDate()) {
@@ -144,6 +144,210 @@ async function payment(sql: Sql, id: string, method: string, actor: User) {
     total_satang: order.total_satang,
   });
 }
+export async function createOrder(db: Database, input: z.infer<typeof createInput>, actor: User | null, guest?: {table_id:string;tracking_hash:string;table_token:string}) {
+fail(actor || guest,403,'FORBIDDEN');
+if(guest)fail(!actor&&!input.payment_method&&input.type==='dine-in',400,'INVALID_GUEST_ORDER');
+const hash = createHash("sha256")
+  .update(JSON.stringify(guest?{request_key:input.request_key,items:input.items,note:input.note,table_id:guest.table_id,tracking_hash:guest.tracking_hash}:input))
+  .digest("hex");
+const id = await db.transaction(async (sql) => {
+  // One logical order per key, even across simultaneous retries and API processes.
+  await sql.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+    input.request_key,
+  ]);
+  const previous = (
+    await sql.query(
+      "SELECT id,request_hash FROM orders WHERE request_key=$1",
+      [input.request_key],
+    )
+  ).rows[0];
+  if (previous) {
+    fail(previous.request_hash === hash, 409, "IDEMPOTENCY_CONFLICT");
+    return previous.id as string;
+  }
+  let tableNo=input.table_no;
+  if(guest){
+    await sql.query('SELECT pg_advisory_xact_lock(7301003)');
+    await openBusinessDate(sql);
+    const table=(await sql.query('SELECT name FROM dining_tables WHERE id=$1 AND qr_token=$2 AND is_active FOR UPDATE',[guest.table_id,guest.table_token])).rows[0];
+    fail(table,404,'TABLE_UNAVAILABLE');tableNo=table.name;
+    const pending=(await sql.query("SELECT count(*)::int AS count FROM orders o LEFT JOIN payments p ON p.order_id=o.id WHERE o.dining_table_id=$1 AND o.status='pending' AND p.order_id IS NULL",[guest.table_id])).rows[0]?.count;
+    fail(pending<10,429,'TABLE_ORDER_LIMIT');
+  }
+  const orderId = randomUUID();
+  let total = 0;
+  const snapshots = [];
+  for (const line of input.items) {
+    const p = (
+      await sql.query(
+        "SELECT * FROM products WHERE id=$1 AND is_available AND NOT is_archived FOR SHARE",
+        [line.product_id],
+      )
+    ).rows[0];
+    fail(p, 409, "PRODUCT_UNAVAILABLE");
+    fail(
+      (
+        await sql.query(
+          "SELECT product_id FROM recipes WHERE product_id=$1",
+          [p.id],
+        )
+      ).rows[0],
+      409,
+      "RECIPE_REQUIRED",
+    );
+    const groups = (
+      await sql.query(
+        "SELECT * FROM product_option_groups WHERE product_id=$1",
+        [p.id],
+      )
+    ).rows;
+    const options = (
+      await sql.query(
+        "SELECT o.*,g.name AS group_name FROM product_options o JOIN product_option_groups g ON g.id=o.group_id WHERE g.product_id=$1",
+        [p.id],
+      )
+    ).rows;
+    fail(
+      new Set(line.option_ids).size === line.option_ids.length,
+      400,
+      "INVALID_OPTIONS",
+    );
+    const selected = line.option_ids.map((id) => {
+      const o = options.find((o) => o.id === id);
+      fail(o, 400, "INVALID_OPTIONS");
+      return o;
+    });
+    for (const group of groups) {
+      const count = selected.filter((o) => o.group_id === group.id).length;
+      fail(
+        (!group.is_required || count > 0) &&
+          (group.multi_select || count <= 1),
+        400,
+        "INVALID_OPTIONS",
+      );
+    }
+    const recipe = (
+      await sql.query(
+        "SELECT ri.ingredient_id,ri.qty,i.name,i.unit,i.cost_satang,i.is_active FROM recipe_ingredients ri JOIN ingredients i ON i.id=ri.ingredient_id WHERE ri.product_id=$1",
+        [p.id],
+      )
+    ).rows;
+    const quantities = new Map<string, number>(
+      recipe.map((i) => [i.ingredient_id, Number(i.qty)]),
+    );
+    const replaced = new Set<string>();
+    for (const o of selected) {
+      if (o.replaces_ingredient_id) {
+        fail(
+          quantities.has(o.replaces_ingredient_id) &&
+            !replaced.has(o.replaces_ingredient_id),
+          400,
+          "INVALID_SUBSTITUTION",
+        );
+        quantities.delete(o.replaces_ingredient_id);
+        replaced.add(o.replaces_ingredient_id);
+      }
+      if (o.ingredient_id && Number(o.ingredient_qty) > 0)
+        quantities.set(
+          o.ingredient_id,
+          roundQty(
+            (quantities.get(o.ingredient_id) ?? 0) +
+              Number(o.ingredient_qty),
+          ),
+        );
+    }
+    const ingredients: IngredientSnapshot[] = [];
+    let cost = 0;
+    for (const [ingredientId, qty] of quantities) {
+      const i = (
+        await sql.query(
+          "SELECT * FROM ingredients WHERE id=$1 AND is_active",
+          [ingredientId],
+        )
+      ).rows[0];
+      fail(i, 409, "INVALID_INGREDIENT");
+      ingredients.push({
+        ingredient_id: ingredientId,
+        name: i.name,
+        unit: i.unit,
+        qty,
+      });
+      cost += Number(i.cost_satang) * qty;
+    }
+    const price =
+      p.price_satang +
+      selected.reduce((sum, o) => sum + o.extra_price_satang, 0);
+    total += price * line.qty;
+    fail(
+      Number.isSafeInteger(total) && total <= 2_000_000_000,
+      400,
+      "ORDER_TOO_LARGE",
+    );
+    const steps = (
+      await sql.query(
+        "SELECT step_no,instruction,image_url,timer_seconds FROM recipe_steps WHERE product_id=$1 ORDER BY step_no",
+        [p.id],
+      )
+    ).rows;
+    snapshots.push({
+      id: randomUUID(),
+      product: p,
+      line,
+      price,
+      cost,
+      ingredients,
+      steps,
+      options: selected.map((o) => ({
+        id: o.id,
+        name: o.name,
+        group_name: o.group_name,
+        extra_price_satang: o.extra_price_satang,
+      })),
+    });
+  }
+  await sql.query(
+    "INSERT INTO orders (id,request_key,request_hash,type,table_no,note,total_satang,created_by,source,dining_table_id,guest_tracking_hash) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+    [
+      orderId,
+      input.request_key,
+      hash,
+      input.type,
+      input.type === "dine-in" ? tableNo : "",
+      input.note,
+      total,
+      actor?.id ?? null,
+      guest?'qr':'pos',
+      guest?.table_id??null,
+      guest?.tracking_hash??null,
+    ],
+  );
+  for (const s of snapshots)
+    await sql.query(
+      "INSERT INTO order_items (id,order_id,product_id,product_name,qty,unit_price_satang,unit_cost_satang,station,note,options,ingredients,steps,target_prep_seconds) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
+      [
+        s.id,
+        orderId,
+        s.product.id,
+        s.product.name,
+        s.line.qty,
+        s.price,
+        s.cost,
+        s.product.station,
+        s.line.note,
+        JSON.stringify(s.options),
+        JSON.stringify(s.ingredients),
+        JSON.stringify(s.steps),
+        s.product.target_prep_seconds,
+      ],
+    );
+  await logStatus(sql, orderId, null, "pending", actor);
+  if (input.payment_method && actor)
+    await payment(sql, orderId, input.payment_method, actor);
+  return orderId;
+});
+  return id;
+}
+
 export function ordersRouter(
   db: Database,
   auth: RequestHandler,
@@ -151,196 +355,9 @@ export function ordersRouter(
 ) {
   const r = Router();
   r.use(["/orders", "/kds", "/events"], auth);
-  r.post("/orders", front, async (req, res) => {
-    const input = createInput.parse(req.body);
-    const hash = createHash("sha256")
-      .update(JSON.stringify(input))
-      .digest("hex");
-    const actor = res.locals.user as User;
-    const id = await db.transaction(async (sql) => {
-      // One logical order per key, even across simultaneous retries and API processes.
-      await sql.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
-        input.request_key,
-      ]);
-      const previous = (
-        await sql.query(
-          "SELECT id,request_hash FROM orders WHERE request_key=$1",
-          [input.request_key],
-        )
-      ).rows[0];
-      if (previous) {
-        fail(previous.request_hash === hash, 409, "IDEMPOTENCY_CONFLICT");
-        return previous.id as string;
-      }
-      const orderId = randomUUID();
-      let total = 0;
-      const snapshots = [];
-      for (const line of input.items) {
-        const p = (
-          await sql.query(
-            "SELECT * FROM products WHERE id=$1 AND is_available AND NOT is_archived FOR SHARE",
-            [line.product_id],
-          )
-        ).rows[0];
-        fail(p, 409, "PRODUCT_UNAVAILABLE");
-        fail(
-          (
-            await sql.query(
-              "SELECT product_id FROM recipes WHERE product_id=$1",
-              [p.id],
-            )
-          ).rows[0],
-          409,
-          "RECIPE_REQUIRED",
-        );
-        const groups = (
-          await sql.query(
-            "SELECT * FROM product_option_groups WHERE product_id=$1",
-            [p.id],
-          )
-        ).rows;
-        const options = (
-          await sql.query(
-            "SELECT o.*,g.name AS group_name FROM product_options o JOIN product_option_groups g ON g.id=o.group_id WHERE g.product_id=$1",
-            [p.id],
-          )
-        ).rows;
-        fail(
-          new Set(line.option_ids).size === line.option_ids.length,
-          400,
-          "INVALID_OPTIONS",
-        );
-        const selected = line.option_ids.map((id) => {
-          const o = options.find((o) => o.id === id);
-          fail(o, 400, "INVALID_OPTIONS");
-          return o;
-        });
-        for (const group of groups) {
-          const count = selected.filter((o) => o.group_id === group.id).length;
-          fail(
-            (!group.is_required || count > 0) &&
-              (group.multi_select || count <= 1),
-            400,
-            "INVALID_OPTIONS",
-          );
-        }
-        const recipe = (
-          await sql.query(
-            "SELECT ri.ingredient_id,ri.qty,i.name,i.unit,i.cost_satang,i.is_active FROM recipe_ingredients ri JOIN ingredients i ON i.id=ri.ingredient_id WHERE ri.product_id=$1",
-            [p.id],
-          )
-        ).rows;
-        const quantities = new Map<string, number>(
-          recipe.map((i) => [i.ingredient_id, Number(i.qty)]),
-        );
-        const replaced = new Set<string>();
-        for (const o of selected) {
-          if (o.replaces_ingredient_id) {
-            fail(
-              quantities.has(o.replaces_ingredient_id) &&
-                !replaced.has(o.replaces_ingredient_id),
-              400,
-              "INVALID_SUBSTITUTION",
-            );
-            quantities.delete(o.replaces_ingredient_id);
-            replaced.add(o.replaces_ingredient_id);
-          }
-          if (o.ingredient_id && Number(o.ingredient_qty) > 0)
-            quantities.set(
-              o.ingredient_id,
-              roundQty(
-                (quantities.get(o.ingredient_id) ?? 0) +
-                  Number(o.ingredient_qty),
-              ),
-            );
-        }
-        const ingredients: IngredientSnapshot[] = [];
-        let cost = 0;
-        for (const [ingredientId, qty] of quantities) {
-          const i = (
-            await sql.query(
-              "SELECT * FROM ingredients WHERE id=$1 AND is_active",
-              [ingredientId],
-            )
-          ).rows[0];
-          fail(i, 409, "INVALID_INGREDIENT");
-          ingredients.push({
-            ingredient_id: ingredientId,
-            name: i.name,
-            unit: i.unit,
-            qty,
-          });
-          cost += Number(i.cost_satang) * qty;
-        }
-        const price =
-          p.price_satang +
-          selected.reduce((sum, o) => sum + o.extra_price_satang, 0);
-        total += price * line.qty;
-        fail(
-          Number.isSafeInteger(total) && total <= 2_000_000_000,
-          400,
-          "ORDER_TOO_LARGE",
-        );
-        const steps = (
-          await sql.query(
-            "SELECT step_no,instruction,image_url,timer_seconds FROM recipe_steps WHERE product_id=$1 ORDER BY step_no",
-            [p.id],
-          )
-        ).rows;
-        snapshots.push({
-          id: randomUUID(),
-          product: p,
-          line,
-          price,
-          cost,
-          ingredients,
-          steps,
-          options: selected.map((o) => ({
-            id: o.id,
-            name: o.name,
-            group_name: o.group_name,
-            extra_price_satang: o.extra_price_satang,
-          })),
-        });
-      }
-      await sql.query(
-        "INSERT INTO orders (id,request_key,request_hash,type,table_no,note,total_satang,created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
-        [
-          orderId,
-          input.request_key,
-          hash,
-          input.type,
-          input.type === "dine-in" ? input.table_no : "",
-          input.note,
-          total,
-          actor.id,
-        ],
-      );
-      for (const s of snapshots)
-        await sql.query(
-          "INSERT INTO order_items (id,order_id,product_id,product_name,qty,unit_price_satang,unit_cost_satang,station,note,options,ingredients,steps,target_prep_seconds) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)",
-          [
-            s.id,
-            orderId,
-            s.product.id,
-            s.product.name,
-            s.line.qty,
-            s.price,
-            s.cost,
-            s.product.station,
-            s.line.note,
-            JSON.stringify(s.options),
-            JSON.stringify(s.ingredients),
-            JSON.stringify(s.steps),
-            s.product.target_prep_seconds,
-          ],
-        );
-      await logStatus(sql, orderId, null, "pending", actor);
-      if (input.payment_method)
-        await payment(sql, orderId, input.payment_method, actor);
-      return orderId;
-    });
-    res.status(201).json({ order: await orderDetail(db, id) });
+  r.post("/orders", front, async (req,res)=>{
+    const id=await createOrder(db,createInput.parse(req.body),res.locals.user as User);
+    res.status(201).json({order:await orderDetail(db,id)});
   });
   r.get("/orders", front, async (req, res) => {
     const p = pagination
@@ -377,6 +394,7 @@ export function ordersRouter(
       server_time: new Date().toISOString(),
     });
   });
+  r.get('/orders/summary',front,async(_req,res)=>res.json((await db.query("SELECT count(*)::int AS unpaid, count(*) FILTER(WHERE o.source='qr')::int AS qr_unpaid FROM orders o LEFT JOIN payments p ON p.order_id=o.id WHERE o.status='pending' AND p.order_id IS NULL")).rows[0]));
   r.get("/orders/:id", front, async (req, res) =>
     res.json({ order: await orderDetail(db, idSchema.parse(req.params.id)) }),
   );
