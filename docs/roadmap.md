@@ -1,31 +1,31 @@
-# Roadmap
+# Core release roadmap
 
-Source requirements: [project specification](coffee-shop-backoffice-spec.md). Operational authorization comes from the project owner.
+Requirements: [source specification](coffee-shop-backoffice-spec.md). Operational authorization comes from the user. Core phases 1–7 are implemented with the permitted mock forecast; each task is checked, committed and pushed separately.
 
-## Current milestone: Foundation
+- [x] Foundation: TypeScript API, PostgreSQL, sessions, roles and user administration
+- [x] Categories, menus, images, options, availability, station and target prep times
+- [x] POS, unpaid orders, cash/manual PromptPay, idempotent checkout and browser receipts
+- [x] KDS, timers, selected recipes, per-item progress, station filter, notifications and reconnecting SSE
+- [x] Recipes, ingredient substitutions, transactional stock deduction, receipts, waste and low stock
+- [x] Sales, menu/hourly/preparation-time reports, owner-only gross margins and day closing
+- [x] Separate FastAPI mock, persisted/versioned predictions, charts, base-recipe replenishment, metrics and nightly worker
+- [x] Thai minimal dark-only React UI; shared design/interaction contracts
+- [x] Local PostgreSQL 18 connection and a separate coffee_backoffice database
+- [x] Unit/integration/browser checks and CI including Docker runtime smoke checks
 
-- [x] TypeScript API, PostgreSQL migrations, development Docker Compose
-- [x] Login/logout, password change, server-side roles and user administration
-- [x] Integration tests, CI and setup documentation
+## External inputs still needed
 
-Each completed task is checked, committed and pushed separately.
+- Real model artifact, dependencies, sample input/output and training-data format. Loading and retraining the actual model cannot be completed before these are supplied. The mock adapter is fully runnable.
+- A payment provider, actual printer model or IoT hardware only if the user later requests those direct integrations. Initial scope records payment manually and prints via browser.
 
-## Next milestones
+## Optional later phase 8
 
-1. Menu, category and option CRUD
-2. POS, order transitions, manual cash/PromptPay confirmation and browser-printable receipts
-3. KDS, timers, recipes and reconnecting real-time updates
-4. Recipes, transactional stock deduction, movements and low-stock alerts
-5. Sales, profit, preparation-time reports and closing
-6. Mock forecasts, seed sales and replenishment suggestions
+Membership/points, shifts, suppliers/purchase orders, expenses, multiple branches, QR table ordering and IoT are optional extensions, not part of this core build.
 
-## Decisions
+## Maintained decisions
 
-- Begin with Foundation; introduce domain tables with their implemented modules.
-- PostgreSQL, parameterized SQL and versioned migrations; Express/TypeScript API.
-- Server-side sessions in HttpOnly cookies.
-- Owners control all roles. Managers manage cashier/kitchen staff only.
-- Single branch, Thai UI and Asia/Bangkok business dates in subsequent milestones.
-- Minimal dark-only UI per user request; see [DESIGN.md](../DESIGN.md). The frontend is the next milestone, not part of the current API delivery.
-- Manual PromptPay confirmation and browser printing initially.
-- Forecast remains a mock until the actual model, dependencies and input/output examples are supplied.
+- Single branch and Asia/Bangkok dates; money in integer satang.
+- Minimal dark UI as requested; see ../DESIGN.md.
+- PostgreSQL transactions, auditable writes, immutable order snapshots and request-key deduplication.
+- Manager manages cashier/kitchen only; kitchen has KDS-only domain access.
+- Forecast recommendations use base recipes and label mock/demo data explicitly.

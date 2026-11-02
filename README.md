@@ -1,72 +1,106 @@
 # Coffee Backoffice
 
-ระบบหลังบ้านร้านกาแฟตาม [สเปก](docs/coffee-shop-backoffice-spec.md) พัฒนาเป็นส่วน ๆ ตาม [roadmap](docs/roadmap.md)
+ระบบหลังบ้านร้านกาแฟภาษาไทย UI minimal โทนเข้ม สำหรับร้านเดียว เชื่อม PostgreSQL จริง รองรับ owner / manager / cashier / kitchen
 
-สถานะ: Foundation API มีระบบ session, roles และจัดการผู้ใช้แล้ว ยังไม่มีหน้าเว็บ/POS/KDS
+## สิ่งที่ใช้งานได้
 
-## Development
+- เข้าสู่ระบบ ออกจากระบบ เปลี่ยนรหัสผ่าน จัดการผู้ใช้และสิทธิ์
+- หมวดหมู่ เมนู ราคา รูปภาพ สถานี เวลาเตรียม ตัวเลือกเสริม และเปิด/ปิดขาย
+- POS ทานที่ร้าน/กลับบ้าน ตัวเลือก/หมายเหตุ พักออเดอร์ รับเงินสด/บันทึก PromptPay และใบเสร็จพิมพ์ผ่าน browser
+- KDS สามคอลัมน์ ตัวจับเวลาจากเวลา server สีเตือนเกินเป้าหมาย สูตรตามตัวเลือก กรองสถานี เสียงแจ้งเตือน และ SSE reconnect
+- สูตร/ขั้นตอน วัตถุดิบ รับเข้า ของเสีย แจ้งสต็อกต่ำ และตัดสต็อกตอนรับชำระด้วย DB transaction
+- ยอดขายรายวัน/ช่วงวันที่ เมนูและช่วงเวลาขายดี กำไรขั้นต้นเฉพาะ owner เวลาเตรียมเฉลี่ย และปิดวัน
+- FastAPI forecast แยกบริการ บันทึกผลพยากรณ์ กราฟ ช่วงจำลอง ปริมาณเตรียม แนะนำวัตถุดิบ และ MAPE/RMSE เมื่อมีข้อมูลเทียบ
+- worker พยากรณ์หลัง 02:00 Asia/Bangkok วันละหนึ่งครั้ง พร้อม catch-up/retry
+- Audit logs, version conflict checks และป้องกันออเดอร์/ตัดสต็อกซ้ำเมื่อเครือข่ายขัดข้อง
 
-ต้องใช้ Node.js 22.14+ และ PostgreSQL 18 (หรือ Docker Compose)
+**ขอบเขตเริ่มต้น:** PromptPay เป็นการตรวจเงินและยืนยันโดยพนักงาน ไม่มี gateway/ตรวจสลิปอัตโนมัติ การคืนเงินเป็นการบันทึกหลังคืนเงินจริงด้วยพนักงาน Forecast ใช้ `mock-weekday-v1` จนกว่าจะได้รับโมเดลจริง ช่วง ±20% เป็นช่วงจำลอง ไม่ใช่ statistical confidence interval ฟีเจอร์เสริมเฟส 8 เช่นสมาชิก/IoT/หลายสาขายังไม่รวมใน core release
+
+## เริ่มใช้งานกับ PostgreSQL ในเครื่อง (Windows)
+
+ต้องใช้ Node.js 22.14+, PostgreSQL 18 และ Python 3.12+
+
+1. สร้างฐานข้อมูลแยกชื่อ `coffee_backoffice` ใน pgAdmin หรือใช้ `CREATE DATABASE coffee_backoffice;` (เครื่องที่พัฒนางานนี้สร้างให้แล้ว)
+2. คัดลอก `.env.example` เป็น `.env` แล้วตั้ง `DATABASE_URL` ด้วยบัญชี PostgreSQL ของคุณ กำหนด `SEED_OWNER_EMAIL` และรหัสผ่าน `SEED_OWNER_PASSWORD` ยาวอย่างน้อย 12 ตัวอักษร ไม่เกิน 72 UTF-8 bytes
+3. รันคำสั่งต่อไปนี้ในโฟลเดอร์โปรเจกต์:
 
 ```powershell
 npm ci
-Copy-Item .env.example .env
-docker compose up -d db
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r forecast-service/requirements.txt
 npm run db:migrate
-# กำหนด SEED_OWNER_EMAIL และ SEED_OWNER_PASSWORD ใน .env ก่อน
 npm run db:seed
-npm run dev
+# ทางเลือกสำหรับเริ่มทดลอง: เมนู/สูตร/สต็อกตัวอย่าง และประวัติจำลอง 84 วัน
+npm run db:demo
+npm run build
+npm run local
 ```
 
-ตรวจสถานะ: `GET http://localhost:3001/api/health`
+เปิด [http://localhost:3001](http://localhost:3001) แล้วใช้บัญชีตาม `.env` รหัสผ่านไม่ถูก commit ขึ้น Git `npm run local` เปิด API/หน้าเว็บ, FastAPI และ worker ใน terminal เดียว กด Ctrl+C เพื่อหยุด โปรแกรมจะไม่เปิด API ซ้ำหาก port นั้นมี Coffee Backoffice ทำงานอยู่แล้ว
 
-รัน API และ DB ใน Docker: `docker compose up --build -d` (migration ทำอัตโนมัติ)
-ค่า DB ใน Compose เป็นค่าพัฒนาบนเครื่องเท่านั้น เปลี่ยนรหัสและตั้ง HTTPS ก่อนนำขึ้น production
+`db:seed` สร้าง owner เฉพาะฐานข้อมูลที่ยังไม่มีผู้ใช้ ไม่ reset รหัสผ่านเดิม `db:demo` ทำงานเฉพาะ development/test และเฉพาะเมื่อยังไม่มีสินค้า ข้อมูลตัวอย่างสร้าง manager@example.com, cashier@example.com, kitchen@example.com โดยใช้รหัสเริ่มต้นเดียวกับ owner สำหรับทดลองในเครื่อง ควรเปลี่ยนรหัส/ปิดบัญชีตัวอย่างก่อนใช้งานจริง
 
-## Validation
+ข้อมูลประวัติจำลองอยู่ใน `sales_daily` พร้อม `source=demo` ไม่สร้างออเดอร์/การชำระย้อนหลัง และไม่แสดงเป็นยอดขายจริงในรายงาน หน้าพยากรณ์แจ้งเมื่อใช้ประวัติตัวอย่าง
+
+## รันบริการแยกกัน / พัฒนา
+
+```powershell
+npm run dev
+# อีก terminal สำหรับ frontend hot reload:
+# เปลี่ยน APP_ORIGIN ใน .env เป็น http://localhost:5173 ก่อนเปิด dev API
+npm run dev:web
+# FastAPI:
+.\.venv\Scripts\python.exe -m uvicorn app:app --app-dir forecast-service --host 127.0.0.1 --port 8001
+# scheduler:
+npm run forecast:worker
+```
+
+ค่าเริ่มต้นใช้งานเว็บ build ที่ port 3001 ได้ทั้ง frontend และ API ตรวจสุขภาพที่ `/api/health` และ forecast service ที่ `http://127.0.0.1:8001/health` หากใช้ hot reload ให้เปิด URL ตรงกับ `APP_ORIGIN`
+
+ทุก POST/PATCH/PUT/DELETE ของ API ต้องมี `Origin` ตรงกับ `APP_ORIGIN` รวมถึงคำขอจาก CLI ใช้ HttpOnly/SameSite=Strict session cookie และใช้ Secure + ชื่อ `__Host-` ใน production Production ต้องตั้ง HTTPS, `NODE_ENV=production`, บัญชี DB/รหัสผ่านเฉพาะ และให้ forecast service อยู่ในเครือข่ายภายใน หาก deploy หลาย API instances ต้องเปลี่ยน rate-limit store จาก memory เป็น shared store ไม่ตั้ง trust proxy อัตโนมัติ
+
+## Docker Compose
+
+```powershell
+docker compose up --build --wait
+docker compose exec -e SEED_OWNER_EMAIL -e SEED_OWNER_PASSWORD api node dist/seed.js
+# ทางเลือกสำหรับข้อมูลตัวอย่าง:
+docker compose exec api node dist/demo.js
+```
+
+กำหนด `SEED_OWNER_EMAIL`/`SEED_OWNER_PASSWORD` ใน environment ของ shell ก่อน seed ผ่าน exec ค่าใน `.env` จะไม่ถูกส่งเข้า container โดยอัตโนมัติสำหรับคำสั่งนี้ เว็บอยู่ port 3001, forecast 8001, DB ที่ publish ออก host เป็น **5433** เพื่อไม่ชน PostgreSQL ในเครื่อง (ปรับด้วย `POSTGRES_PORT`) API/worker ใน Docker ใช้ DB/service ภายใน Compose ไม่ได้เชื่อม DB เครื่อง host โดยอัตโนมัติ
+
+Compose เป็นค่าพัฒนา ใช้ `POSTGRES_PASSWORD` เปลี่ยนรหัสเริ่มต้นได้ ห้ามใช้ค่าเริ่มต้นเป็น production
+
+## ตรวจงาน
 
 ```powershell
 npm run typecheck
 npm test
+npm run test:postgres
+python -m unittest discover -s forecast-service
 npm run build
+# เปิด FastAPI ที่ port 8001 ก่อน; Windows ใช้ Edge ที่ติดตั้งอยู่
+npm run test:e2e
 ```
 
-Integration tests ใช้ PGlite (PostgreSQL บน WASM) จึงไม่ต้องเปิด Docker แต่ไม่ได้ทดแทนการตรวจ container และ concurrent requests บน PostgreSQL จริง
+- 34 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน และตรวจผล forecast
+- Python mock-model tests 3 กรณี
+- Browser test ครอบคลุม 16 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, สิทธิ์, เปลี่ยนรหัสผ่าน, 1536px/390px และ automated WCAG checks บน POS
+- Tests บน PostgreSQL และ browser ใช้ schema สุ่มแล้วลบ ไม่เขียน test orders ลงตารางร้านจริง ต้องใช้ development database ที่อนุญาตสร้าง schema
+- Browser plugin ไม่พร้อมใน session นี้ จึงใช้ Playwright/Edge; CI ใช้ Chromium ภาพ QA อยู่ใน OS temp หรือ `QA_OUTPUT_DIR` ไม่ commit รูปทดสอบ
+- CI ตรวจ typecheck, PGlite, PostgreSQL 18, Python, browser, production build และเปิด Docker stack เพื่อ smoke test
 
-CI รัน tests ชุดเดียวกันเพิ่มบน PostgreSQL 18 และ build Docker image ด้วย หากต้องการรันเอง ให้ตั้ง `TEST_DATABASE_URL` เป็นฐานข้อมูลสำหรับทดสอบที่ให้สิทธิ์สร้าง schema ได้ แต่ละ test file ใช้ schema สุ่มและลบเมื่อจบ ไม่ใช้ฐานข้อมูล production
+Migration มี checksum ห้ามแก้ไฟล์ที่ใช้แล้ว ให้เพิ่ม migration ใหม่
 
-## UI direction
+## เอกสารและจุดเชื่อมต่อ
 
-UI จะเป็น minimal โทนเข้มตามที่ผู้ใช้ระบุ ดู [DESIGN.md](DESIGN.md) สำหรับแนวทางสี ตัวอักษร และหน้าจอสัมผัส เอกสารนี้เป็นแนวทางสำหรับเฟส frontend ถัดไป ยังไม่มีหน้าจอที่รันใช้งานได้ในเฟส Foundation นี้
+- [สเปกต้นฉบับ](docs/coffee-shop-backoffice-spec.md)
+- [สถานะงานและขอบเขต](docs/roadmap.md)
+- [กติกา domain / การรับเงินและปิดวัน](docs/domain-decisions.md)
+- [แนวทาง UI และ token](DESIGN.md) / [พฤติกรรมร่วม](UX-CONTRACT.md)
+- [ภาพแนวทางและ brief จาก ImageGen](docs/design/concept.md)
 
-สำหรับ Docker seed owner หลังจากเริ่มระบบแล้ว (กำหนด environment variables ใน shell ก่อน):
+API หลัก: `/api/auth/*`, `/api/users`, `/api/catalog`, `/api/categories`, `/api/products`, `/api/ingredients`, `/api/stock-movements`, `/api/recipes/:productId`, `/api/orders`, `/api/kds`, `/api/events`, `/api/reports`, `/api/reports/close`, `/api/forecasts`, `/api/forecasts/generate`, `/api/audit-logs`
 
-```powershell
-docker compose exec -e SEED_OWNER_EMAIL -e SEED_OWNER_PASSWORD api node dist/seed.js
-```
-
-Compose ใช้ HTTP cookie สำหรับพัฒนาเท่านั้น Production ต้องตั้ง `NODE_ENV=production`, `APP_ORIGIN=https://...` และ TLS reverse proxy อย่าใช้ค่ารหัสผ่านเริ่มต้นของ Compose
-
-ไฟล์ migration ที่ใช้แล้วห้ามแก้ย้อนหลัง ให้เพิ่มไฟล์ใหม่ ระบบตรวจ checksum ก่อนรันซ้ำ
-
-## Authentication
-
-Seed สร้าง owner เฉพาะเมื่อยังไม่มีผู้ใช้ ไม่เปลี่ยนรหัสบัญชีเดิม รหัสผ่านใหม่ต้องยาวอย่างน้อย 12 ตัวอักษร และไม่เกิน 72 UTF-8 bytes
-
-ทุก POST/PATCH ต้องส่ง `Origin` ตรงกับ `APP_ORIGIN` รวมถึงคำขอจาก CLI เพื่อป้องกัน CSRF ใช้ cookie session แบบ HttpOnly/SameSite=Strict (Secure และชื่อ `__Host-` ใน production) ไม่เก็บ token ใน localStorage
-
-| Endpoint | สิทธิ์ |
-|---|---|
-| `POST /api/auth/login` | สาธารณะ (email, password) |
-| `POST /api/auth/logout` | ผู้ใช้ที่ล็อกอิน |
-| `GET /api/auth/me` | ผู้ใช้ที่ล็อกอิน |
-| `POST /api/auth/change-password` | ผู้ใช้ที่ล็อกอิน (current_password, new_password) |
-| `GET /api/users?page=1&page_size=25` | owner/manager |
-| `POST /api/users` | owner/manager (name, email, password, role) |
-| `PATCH /api/users/:id` | owner/manager (name, role, is_active) |
-
-Owner จัดการได้ทุก role; manager เห็นและจัดการเฉพาะ cashier/kitchen ไม่มี public signup และไม่อนุญาตลดสิทธิ์หรือปิดบัญชีตัวเอง การเปลี่ยน role/ปิดบัญชีจะยกเลิก sessions ของบัญชีนั้น การเปลี่ยนรหัสผ่านยกเลิกทุก session และต้องล็อกอินใหม่
-
-Login จำกัด 15 ครั้ง/15 นาทีต่อ IP ในแต่ละ process ต้องเพิ่ม shared rate-limit store หาก deploy หลาย instances; ยังไม่ได้ตั้ง trust proxy อัตโนมัติ ควรกำหนดเฉพาะ proxy ที่เชื่อถือได้เมื่อนำขึ้นระบบจริง
-
-API ใช้ error codes เช่น `VALIDATION_ERROR`, `UNAUTHENTICATED`, `FORBIDDEN`, `ORIGIN_FORBIDDEN` โดยไม่ส่ง SQL error หรือรหัสผ่านกลับ มี audit logs สำหรับสร้าง/แก้ไขผู้ใช้ เปลี่ยนรหัสผ่านและล็อกอิน โดยไม่บันทึกรหัสผ่านหรือ session token
+เชื่อมโมเดลจริงโดยเปลี่ยน adapter ใน `forecast-service/model.py` และ `MODEL_VERSION` รักษา input/output ตาม FastAPI contract แล้วทดสอบก่อนแทน mock ต้องได้รับไฟล์โมเดล dependencies ตัวอย่าง input/output และรูปแบบ training data ก่อนพัฒนา loading/retraining จริง

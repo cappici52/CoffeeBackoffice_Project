@@ -37,13 +37,13 @@ components:
 
 ## Overview
 
-User requirement (2026-11-02): minimal UI; any palette is acceptable except a light theme. Dark is the only planned theme. This seed records intent for the upcoming frontend milestone; no UI or runtime theme exists yet.
+User requirement (2026-11-02): minimal UI; any palette is acceptable except a light theme. Dark is the only application theme. React/Vite implements the primary POS concept in [docs/design/pos-concept.png](docs/design/pos-concept.png), with the same visual system across the remaining workflows.
 
 The reference is a quiet charcoal coffee bar: matte work surfaces, legible order tickets, little decoration. This is an operational product for shop owners, managers, cashiers and kitchen/bar staff. POS is used on a tablet and KDS on a touch display; administrative screens prioritize readable lists. Thai is the primary UI language, THB the currency and Asia/Bangkok the business timezone, based on the supplied brief and conversation.
 
 The signature is a restrained sage selection marker and large tabular order numbers. Familiar controls and task clarity take priority. Avoid marketing heroes, bright surfaces, gradients, glow, decorative charts and ornamental card grids.
 
-Token ownership: the values above are the initial design source. The first frontend task must map them to one shared theme stylesheet and document that path here; components must consume semantic variables. No runtime mapping or visual verification is claimed in this backend milestone.
+Token ownership: `client/styles.css :root` is the canonical runtime source; this document mirrors the accepted values. `colors.<name>` maps directly to `--<name>`; components in `client/ui.tsx` and feature pages consume those semantic variables. `rounded.DEFAULT` maps to `--radius`; 44px controls and 56px KDS actions implement the spacing roles. Typography maps to the self-hosted Noto Sans Thai and IBM Plex Mono imports in `client/main.tsx`. There is no separate Tailwind/theme adapter. Browser QA compares the concept and desktop screenshot, and checks a 390px viewport. See UX-CONTRACT.md for interaction ownership.
 
 ## Colors
 

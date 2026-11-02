@@ -35,5 +35,28 @@ jobs:
         env:
           TEST_DATABASE_URL: postgresql://coffee:test_only_password@localhost:5432/coffee_test
       - run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r forecast-service/requirements.txt
+      - run: python -m unittest discover -s forecast-service
+      - run: npx playwright install --with-deps chromium
+      - name: Browser workflow and accessibility
+        env:
+          DATABASE_URL: postgresql://coffee:test_only_password@localhost:5432/coffee_test
+        run: |
+          python -m uvicorn app:app --app-dir forecast-service --host 127.0.0.1 --port 8001 > /tmp/coffee-forecast.log 2>&1 &
+          FORECAST_PID=$!
+          trap 'kill "$FORECAST_PID"' EXIT
+          npm run test:e2e
       - run: docker compose config --quiet
-      - run: docker build -t coffee-backoffice:ci .
+      - name: Build and start the complete Docker stack
+        run: docker compose up --build --wait --wait-timeout 180
+      - name: Bootstrap and smoke-test container
+        run: |
+          docker compose exec -e SEED_OWNER_EMAIL=owner@example.com -e SEED_OWNER_PASSWORD=CI-container-password-123 api node dist/seed.js
+          docker compose exec api node dist/demo.js
+          node -e "fetch('http://localhost:3001').then(async r=>{if(!r.ok||!(await r.text()).includes('Coffee Backoffice'))process.exit(1)})"
+      - name: Stop Docker stack
+        if: always()
+        run: docker compose down

@@ -5,3 +5,9 @@ node_modules
 dist
 tests
 coverage
+.venv
+.local
+test-results
+playwright-report
+docs/design
+premium-audit.json

@@ -1,5 +1,7 @@
 # Foundation validation
 
+Historical record of the initial Foundation delivery. The core application and frontend have since been implemented; see README.md and docs/roadmap.md for current scope and verification commands.
+
 Local validation on 2026-11-02:
 
 - TypeScript strict typecheck and production build passed.
