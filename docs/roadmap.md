@@ -4,8 +4,8 @@ Source requirements: [project specification](coffee-shop-backoffice-spec.md). Op
 
 ## Current milestone: Foundation
 
-- [ ] TypeScript API, PostgreSQL migrations, development Docker Compose
-- [ ] Login/logout, password change, server-side roles and user administration
+- [x] TypeScript API, PostgreSQL migrations, development Docker Compose
+- [x] Login/logout, password change, server-side roles and user administration
 - [ ] Integration tests, CI and setup documentation
 
 Each completed task is checked, committed and pushed separately.
