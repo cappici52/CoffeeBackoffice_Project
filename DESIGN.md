@@ -14,6 +14,8 @@ colors:
   warning: "#E2BD7A"
   danger: "#F09D97"
   focus: "#CAE4D7"
+  qr-paper: "#FFFFFF"
+  qr-ink: "#171A1C"
 typography:
   sans:
     fontFamily: "'Noto Sans Thai', Tahoma, system-ui, sans-serif"
@@ -49,6 +51,8 @@ Token ownership: `client/styles.css :root` is the canonical runtime source; this
 
 Use background for the application canvas, surface for working panels and raised for active/hover layers. Primary is a muted sage accent for the main action and selection, with dark text on filled primary buttons. Text/muted colors carry hierarchy; muted text must remain readable. Border separates controls without boxing every section. Success/warning/danger keep operational meaning and always include a text label or icon. Focus uses a visible outline. Do not interpret the dark-only preference as permission for low contrast. Forced-color modes should retain native system colors.
 
+QR signs use `qr-paper` and `qr-ink` for a standard high-contrast code and quiet zone, including the print preview. This functional scan/print surface is the only new white panel; customer menus and tracking remain dark. `client/table-ordering.css` consumes the root tokens from `client/styles.css`.
+
 ## Typography
 
 Use sans for headings, controls and Thai content. Self-host the selected fonts when the frontend is built, with Thai-capable fallbacks. Use mono sparingly for order numbers and numeric data. Default body 16px/1.6, section headings 20–24px, KDS content 20px or larger. Keep Thai line height generous; do not apply uppercase transforms or letter spacing to Thai. Prices and counts use tabular numerals.
@@ -56,6 +60,8 @@ Use sans for headings, controls and Thai content. Self-host the selected fonts w
 ## Layout
 
 Use a quiet navigation rail on desktop and a compact menu on narrow screens. Prefer aligned rows and section dividers to nested cards. POS separates menu browsing and order summary; stack them on narrow viewports. KDS uses three clearly titled status columns with large touch actions. Administrative tables own horizontal overflow. Start with a 4px spacing rhythm and 24px page padding, reducing to 16px on mobile. Reserve space for status/loading messages.
+
+Customer routes `/table/:token` and `/track/:token` have their own compact shell without backoffice navigation. On mobile, menu tiles use two columns, the cart follows the menu, and a cart shortcut appears while the cart is outside the viewport. The shared menu browser, item dialog and cart rows are used by both POS and customer ordering. Tracking uses a five-step process and a persistent status heading; no decorative metrics or staff controls are shown.
 
 ## Elevation & Depth
 

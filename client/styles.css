@@ -1,4 +1,6 @@
 :root {
+  --qr-paper: #ffffff;
+  --qr-ink: #171a1c;
   color-scheme: dark;
   --background: #171a1c;
   --surface: #212628;

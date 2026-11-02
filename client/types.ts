@@ -44,6 +44,63 @@ export interface Catalog {
   products: Product[];
   categories: Category[];
 }
+export type MenuProduct = Pick<
+  Product,
+  | "id"
+  | "category_id"
+  | "name"
+  | "description"
+  | "price_satang"
+  | "image_url"
+  | "is_available"
+> & {
+  option_groups: (Pick<
+    OptionGroup,
+    "id" | "name" | "is_required" | "multi_select"
+  > & { options: Pick<Option, "id" | "name" | "extra_price_satang">[] })[];
+};
+export interface MenuCatalog {
+  products: MenuProduct[];
+  categories: Category[];
+}
+export interface CartLine {
+  key: string;
+  product: MenuProduct;
+  qty: number;
+  option_ids: string[];
+  note: string;
+}
+export interface DiningTable {
+  id: string;
+  name: string;
+  qr_token: string;
+  menu_url: string;
+  is_active: boolean;
+  version: number;
+}
+export interface GuestOrder {
+  order_no: Decimal;
+  table_no: string;
+  status: OrderStatus;
+  note: string;
+  total_satang: number;
+  created_at: string;
+  completed_at: string | null;
+  cancel_reason: string | null;
+  payment_status: "paid" | "refunded" | null;
+  server_time: string;
+  items: {
+    id: string;
+    product_name: string;
+    qty: number;
+    unit_price_satang: number;
+    status: OrderStatus;
+    note: string;
+    options: { name: string; group_name: string; extra_price_satang: number }[];
+    started_at: string | null;
+    completed_at: string | null;
+  }[];
+}
 export interface Ingredient {
   id: string;
   name: string;
@@ -96,6 +153,7 @@ export interface OrderItem {
   completed_at: string | null;
 }
 export interface Order {
+  source?: "pos" | "qr";
   id: string;
   order_no: Decimal;
   type: "dine-in" | "takeaway";

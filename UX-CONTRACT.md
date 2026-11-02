@@ -11,6 +11,7 @@ Thai operational product for a single coffee shop: owner/manager desktops, cashi
 | Dark-only minimal appearance | User request; DESIGN.md | 2026-11-02 |
 | Manual PromptPay and browser receipts | Initial development recommendation; docs/roadmap.md | 2026-11-02 |
 | Account authorization | src/security.ts, src/users.ts; tests/auth.test.ts | 2026-11-02 |
+| Table QR / customer ordering | User request; docs/table-ordering.md | 2026-11-02 |
 
 ## Visual contract
 
@@ -26,6 +27,9 @@ DESIGN.md explains intent. `client/styles.css :root` is the canonical runtime to
 | Scrollbar | client/styles.css global rules | DESIGN.md | geometry exceptions | computed style + responsive QA |
 | Toast | client/ui.tsx ToastProvider, Notice | This contract | status/error/warning | browser live-region checks |
 | CRUD | feature routes + client/lib.ts | Domain decisions | modal save returns to owning list | scripts/browser-test.mjs |
+| Menu browser | client/components/ProductBrowser.tsx | DESIGN.md | POS / anonymous customer | browser ordering checks |
+| Menu item editor | client/components/ItemEditor.tsx | Shared form contract | staff / customer action labels | browser options + keyboard |
+| Cart rows | client/components/CartLines.tsx | docs/table-ordering.md | staff / customer | quantity, notes and recovery checks |
 
 Native select/calendar popup geometry and platform language are intentionally accepted. Labels and app-owned messages remain Thai; no authored calendar/listbox is required. There is no bulk table selection in this release.
 
@@ -57,9 +61,13 @@ Native select/calendar popup geometry and platform language are intentionally ac
 - EventSource reconnects automatically, with a visible disconnected state. KDS actions are disabled while disconnected. Server-synchronized timers update locally once a second; they do not request each second. New-order sound is user-enabled because browsers require a gesture.
 - Product, recipe and ingredient edits use versions; conflicts require reloading rather than overwriting another person's changes. Stock and order transitions are serialized in PostgreSQL transactions.
 - Permissions are checked by the server; hiding navigation is only a UI convenience. Direct forbidden routes show an access message. Kitchen receives no money/cost fields.
+- Customer routes never mount staff session/navigation. They expose public menu data and a separate per-order tracking capability only. Table managers use the existing modal/version/confirmation patterns. Customer submissions create unpaid orders and retain the exact request key/body on uncertain completion; a tracking read precedes an identical retry. A changed price quote is rejected for customer review.
+- Customer tracking refreshes active orders every five seconds and when visible/online again, and stops periodic requests after served/cancelled. Failed reads leave the last known state visible with a retry message. Same-table draft and own tracking links are retained in sessionStorage, with a maximum 20-entry history. Tracking links are capabilities and must not be shared or logged to analytics. Closed/rotated QR codes block new orders, not existing tracking.
 
 ## Verification
 
 `npm run typecheck`, `npm test`, `npm run build`, `python -m unittest discover -s forecast-service` and `npm run test:e2e`.
 
 `scripts/browser-test.mjs` covers the order-to-report workflow, lost payment responses, menu/category/recipe/stock/user forms, password/session lifecycle, permissions, screenshots, runtime errors, keyboard focus and automated desktop/mobile POS accessibility checks. It uses a disposable PostgreSQL schema. The app's shop tables are not used for test writes. Browser plugin is absent; local validation uses Playwright with installed Edge, CI uses Chromium. Screenshots are stored outside source control.
+
+`scripts/qr-browser-checks.mjs` additionally decodes the generated PNG, verifies QR printing, tests anonymous 390px customer pages, lost-submit-response recovery, cashier/KDS status propagation, separate-device privacy and customer accessibility. `E2E_PUBLIC_HOST` can test an actual LAN HTTP origin; development headers do not force HTTPS asset upgrades while production headers retain them.

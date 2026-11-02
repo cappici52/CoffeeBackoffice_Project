@@ -11,6 +11,7 @@ Requirements: [source specification](coffee-shop-backoffice-spec.md). Operationa
 - [x] Separate FastAPI mock, persisted/versioned predictions, charts, base-recipe replenishment, metrics and nightly worker
 - [x] Thai minimal dark-only React UI; shared design/interaction contracts
 - [x] Local PostgreSQL 18 connection and a separate coffee_backoffice database
+- [x] Table QR extension requested by user: printable/manageable QR, public menu, unpaid guest orders, private order tracking and staff queue badge
 - [x] Unit/integration/browser checks and CI including Docker runtime smoke checks
 
 ## External inputs still needed
@@ -20,7 +21,7 @@ Requirements: [source specification](coffee-shop-backoffice-spec.md). Operationa
 
 ## Optional later phase 8
 
-Membership/points, shifts, suppliers/purchase orders, expenses, multiple branches, QR table ordering and IoT are optional extensions, not part of this core build.
+Membership/points, shifts, suppliers/purchase orders, expenses, multiple branches and IoT remain optional extensions. Table QR ordering has now been implemented as explicitly requested.
 
 ## Maintained decisions
 

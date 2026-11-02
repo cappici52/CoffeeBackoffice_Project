@@ -1,0 +1,459 @@
+.nav-count {
+  margin-left: auto;
+  background: var(--primary);
+  color: var(--background);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  border-radius: 4px;
+  padding: 1px 6px;
+  min-width: 22px;
+  text-align: center;
+}
+.source-badge {
+  display: block;
+  font-family: "Noto Sans Thai", Tahoma, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--primary);
+  margin-top: 4px;
+}
+.load-more {
+  display: flex;
+  margin: 24px auto;
+}
+.qr-sheet {
+  color: var(--qr-ink);
+  background: var(--qr-paper);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+}
+.qr-sheet .qr-brand {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.qr-sheet h2 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+.qr-sheet p {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.qr-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 12px;
+  width: 280px;
+  aspect-ratio: 1;
+}
+.qr-sheet small {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.qr-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+}
+.customer-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.customer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 84px;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--background);
+}
+.customer-brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.customer-brand > svg,
+.customer-brand strong {
+  color: var(--primary);
+}
+.customer-brand strong {
+  font-weight: 400;
+}
+.table-marker {
+  font-size: 14px;
+  white-space: nowrap;
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+}
+.customer-main {
+  padding: 32px 28px 48px;
+  max-width: 1320px;
+  width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+  flex: 1;
+}
+.customer-intro {
+  margin-bottom: 28px;
+}
+.customer-intro h1 {
+  font-size: 30px;
+  margin-bottom: 8px;
+}
+.customer-intro p {
+  font-size: 14px;
+  max-width: 700px;
+}
+.customer-order-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 28px;
+  align-items: start;
+}
+.customer-cart {
+  position: static;
+  scroll-margin-top: 110px;
+  min-width: 0;
+}
+.customer-shell .product-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.customer-history {
+  margin-top: 36px;
+  max-width: 800px;
+}
+.customer-history ul {
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+}
+.customer-history a {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 18px 4px;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+  font-family: "IBM Plex Mono", monospace;
+  flex-wrap: wrap;
+  min-height: 44px;
+}
+.customer-history a:hover {
+  background: var(--surface);
+}
+.customer-history a span,
+.customer-history a strong {
+  font-family: "Noto Sans Thai", Tahoma, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.customer-history a strong {
+  margin-left: auto;
+  color: var(--primary);
+}
+.customer-cart-jump {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 5;
+  max-width: 420px;
+  min-width: 280px;
+  min-height: 56px;
+  box-shadow: 0 8px 32px #0005;
+}
+.customer-cart-jump > span {
+  margin-left: auto;
+  padding-left: 20px;
+  font-family: "IBM Plex Mono", monospace;
+}
+.customer-footer {
+  padding: 22px 24px 100px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+.customer-tracking {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.customer-tracking > .toolbar h1 {
+  margin-bottom: 8px;
+}
+.customer-tracking > .toolbar p {
+  font-size: 13px;
+  margin-bottom: 0;
+}
+.guest-status-panel,
+.guest-order-detail {
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 24px 0;
+  background: var(--surface);
+}
+.guest-status-panel > .row {
+  margin-bottom: 26px;
+}
+.guest-status-panel .order-number {
+  font-size: 28px;
+}
+.guest-current-status {
+  font-size: 27px;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+.guest-status-panel > p {
+  font-size: 14px;
+}
+.guest-progress {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  padding: 22px 0 0;
+  margin: 24px 0 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+}
+.guest-progress li {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--muted);
+  font-size: 11px;
+  min-width: 0;
+}
+.progress-dot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.guest-progress .done {
+  color: var(--success);
+}
+.guest-progress .done .progress-dot {
+  background: var(--success);
+  border-color: var(--success);
+  color: var(--background);
+}
+.guest-progress .current {
+  color: var(--text);
+  font-weight: 600;
+}
+.guest-progress .current .progress-dot {
+  color: var(--background);
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.guest-order-detail h2 {
+  font-size: 19px;
+}
+.guest-order-detail .detail-lines > li > small {
+  color: var(--primary);
+}
+.customer-tracking > a.button {
+  margin: 8px 0 20px;
+}
+.customer-tracking > .caption {
+  margin-top: 16px;
+}
+@media (max-width: 1100px) {
+  .customer-shell .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .customer-order-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 20px;
+  }
+  .customer-shell .product-tile {
+    padding: 20px;
+  }
+}
+@media (max-width: 760px) {
+  .customer-order-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .customer-main {
+    padding: 24px 20px 40px;
+  }
+  .customer-header {
+    padding: 16px 20px;
+    min-height: 76px;
+  }
+  .customer-intro h1 {
+    font-size: 26px;
+  }
+  .customer-intro p {
+    font-size: 13px;
+  }
+  .customer-cart {
+    margin-top: 12px;
+  }
+  .customer-header .table-marker {
+    font-size: 13px;
+    padding-left: 10px;
+  }
+  .customer-cart-jump {
+    left: 20px;
+    right: 20px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    max-width: none;
+    min-width: 0;
+  }
+  .guest-progress {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .guest-progress li {
+    flex-direction: row;
+    align-items: center;
+    min-height: 44px;
+    gap: 16px;
+    font-size: 13px;
+  }
+  .guest-status-panel,
+  .guest-order-detail {
+    padding: 22px;
+  }
+  .customer-history a {
+    gap: 10px;
+  }
+  .customer-history a span {
+    font-size: 11px;
+  }
+  .customer-shell .product-tile strong {
+    font-size: 18px;
+  }
+  .qr-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 430px) {
+  .customer-header {
+    gap: 8px;
+    padding: 14px 16px;
+  }
+  .customer-brand {
+    font-size: 15px;
+    gap: 7px;
+  }
+  .customer-brand > svg {
+    width: 20px;
+  }
+  .customer-header > .row {
+    gap: 8px;
+  }
+  .customer-header button {
+    min-width: 44px;
+    padding: 8px;
+  }
+  .customer-main {
+    padding: 22px 16px 36px;
+  }
+  .customer-header .table-marker {
+    font-size: 12px;
+    padding-left: 8px;
+  }
+  .customer-shell .product-tile {
+    padding: 16px;
+    min-height: 135px;
+  }
+  .customer-shell .product-grid {
+    gap: 12px;
+  }
+  .guest-status-panel,
+  .guest-order-detail {
+    padding: 20px 16px;
+  }
+  .guest-status-panel > .row {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .qr-sheet {
+    padding: 20px;
+  }
+  .qr-actions {
+    gap: 8px;
+  }
+  .qr-actions button,
+  .qr-actions a {
+    font-size: 12px;
+    padding: 10px;
+  }
+  .customer-tracking > .toolbar {
+    margin-bottom: 18px;
+  }
+}
+@media print {
+  body:has(.qr-sheet) .page > :not(dialog) {
+    display: none !important;
+  }
+  body:has(.qr-sheet) dialog[open] {
+    display: block !important;
+    position: static !important;
+    max-width: none;
+    max-height: none;
+    width: 100%;
+    border: 0;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: #000;
+  }
+  body:has(.qr-sheet) .modal-head {
+    display: none !important;
+  }
+  body:has(.qr-sheet) .modal-body {
+    padding: 0;
+    overflow: visible;
+  }
+  body:has(.qr-sheet) dialog::backdrop {
+    background: none;
+  }
+  .qr-sheet {
+    break-inside: avoid;
+    border-radius: 0;
+    max-width: 90mm;
+    margin: 0 auto;
+    padding: 8mm 4mm;
+  }
+  .qr-sheet .qr-image {
+    width: 65mm;
+    max-width: 100%;
+    height: auto;
+  }
+  .qr-sheet h2 {
+    font-size: 28pt;
+  }
+  .qr-sheet p {
+    font-size: 12pt;
+  }
+  .qr-sheet small {
+    font-size: 9pt;
+  }
+}

@@ -81,6 +81,9 @@ export default function Orders() {
                   <tr key={o.id}>
                     <th scope="row" className="numeric">
                       {orderNo(o.order_no)}
+                      {o.source === "qr" && (
+                        <span className="source-badge">สั่งผ่าน QR</span>
+                      )}
                     </th>
                     <td>{dateText(o.created_at, true)}</td>
                     <td>
@@ -189,7 +192,10 @@ function OrderDetail({
             {o.type === "takeaway"
               ? "กลับบ้าน"
               : "ทานที่ร้าน · โต๊ะ " + o.table_no}{" "}
-            · ผู้รับออเดอร์ {o.created_by_name}
+            ·{" "}
+            {o.source === "qr"
+              ? "ลูกค้าสั่งผ่าน QR"
+              : "ผู้รับออเดอร์ " + o.created_by_name}
           </p>
           {o.note && <p className="customer-note">{o.note}</p>}
           <ul className="detail-lines">
@@ -301,6 +307,11 @@ function OrderDetail({
                     required
                     maxLength={1000}
                   />
+                  {o.source === "qr" && (
+                    <p className="caption muted">
+                      เหตุผลนี้จะแสดงให้ลูกค้าเห็นในหน้าติดตามออเดอร์
+                    </p>
+                  )}
                   {o.payment_status === "paid" && (
                     <>
                       <Notice tone="warning">

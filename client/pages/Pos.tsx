@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Minus, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Trash2 } from "lucide-react";
 import { useAuth } from "../App";
 import { HttpError, money, mutate, orderNo, useResource } from "../lib";
 import {
@@ -9,20 +9,15 @@ import {
   Input,
   Modal,
   Notice,
-  QueryState,
-  SearchBox,
   Submit,
   Textarea,
   useConfirm,
 } from "../ui";
-import type { Catalog, Order, Product } from "../types";
-interface Line {
-  key: string;
-  product: Product;
-  qty: number;
-  option_ids: string[];
-  note: string;
-}
+import type { Catalog, Order, CartLine as Line } from "../types";
+import { CartLines } from "../components/CartLines";
+import { ItemEditor } from "../components/ItemEditor";
+import { ProductBrowser } from "../components/ProductBrowser";
+import { linePrice as price, randomId, makeCartLine } from "../menu";
 interface Draft {
   lines: Line[];
   type: "dine-in" | "takeaway";
@@ -38,14 +33,8 @@ const empty = (): Draft => ({
   table: "",
   note: "",
   method: "cash",
-  request_key: crypto.randomUUID(),
+  request_key: randomId(),
 });
-const price = (line: Line) =>
-  line.product.price_satang +
-  line.product.option_groups
-    .flatMap((g) => g.options)
-    .filter((o) => line.option_ids.includes(o.id))
-    .reduce((s, o) => s + o.extra_price_satang, 0);
 export default function Pos() {
   const { user } = useAuth();
   const storage = "coffee-cart:" + user.id;
@@ -60,8 +49,6 @@ export default function Pos() {
     }
   });
   const resource = useResource<Catalog>("/catalog");
-  const [q, setQ] = useState("");
-  const [category, setCategory] = useState("all");
   const [editor, setEditor] = useState<Line | null>(null);
   const [result, setResult] = useState<Order | null>(null);
   const [sending, setSending] = useState(false);
@@ -130,70 +117,14 @@ export default function Pos() {
   }
   return (
     <div className="pos-layout">
-      <section className="catalog-panel">
-        <div className="toolbar">
-          <SearchBox value={q} onChange={setQ} />
-          <button className="ghost" onClick={resource.reload}>
-            โหลดเมนูใหม่
-          </button>
-        </div>
-        <div className="tabs" aria-label="หมวดเมนู">
-          <button
-            className={category === "all" ? "selected" : ""}
-            onClick={() => setCategory("all")}
-          >
-            ทั้งหมด
-          </button>
-          {resource.data?.categories.map((c) => (
-            <button
-              key={c.id}
-              className={category === c.id ? "selected" : ""}
-              onClick={() => setCategory(c.id)}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
-        <QueryState {...resource} retry={resource.reload} />
-        <div className="product-grid">
-          {resource.data?.products
-            .filter(
-              (p) =>
-                (category === "all" || p.category_id === category) &&
-                p.name.toLocaleLowerCase().includes(q.toLocaleLowerCase()),
-            )
-            .map((p) => (
-              <button
-                className="product-tile"
-                key={p.id}
-                disabled={!p.is_available || locked}
-                onClick={() =>
-                  setEditor({
-                    key: crypto.randomUUID(),
-                    product: p,
-                    qty: 1,
-                    option_ids: p.option_groups
-                      .filter((g) => g.is_required)
-                      .map((g) => g.options[0]!.id),
-                    note: "",
-                  })
-                }
-              >
-                {p.image_url && <img src={p.image_url} alt="" loading="lazy" />}
-                <strong>{p.name}</strong>
-                <span>
-                  {p.is_available ? money(p.price_satang) : "ปิดขายชั่วคราว"}
-                </span>
-              </button>
-            ))}
-        </div>
-        {resource.data &&
-          !resource.data.products.some(
-            (p) =>
-              (category === "all" || p.category_id === category) &&
-              p.name.includes(q),
-          ) && <div className="empty">ไม่พบเมนูที่ค้นหา</div>}
-      </section>
+      <ProductBrowser
+        catalog={resource.data}
+        loading={resource.loading}
+        error={resource.error}
+        reload={resource.reload}
+        locked={locked}
+        onChoose={(product) => setEditor(makeCartLine(product))}
+      />
       <aside className="cart-panel">
         <div className="section-head">
           <h2>ออเดอร์ใหม่</h2>
@@ -258,80 +189,12 @@ export default function Pos() {
               onChange={(e) => change({ table: e.target.value })}
             />
           )}
-          <div className="cart-lines">
-            {!draft.lines.length && (
-              <div className="empty">
-                <p>ยังไม่มีเมนูในออเดอร์</p>
-                <span className="caption">เลือกเมนูทางซ้ายเพื่อเริ่มขาย</span>
-              </div>
-            )}
-            {draft.lines.map((l) => (
-              <div key={l.key} className="cart-line">
-                <div className="row between">
-                  <strong>{l.product.name}</strong>
-                  <span className="numeric">{money(price(l) * l.qty)}</span>
-                </div>
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={locked}
-                  onClick={() => setEditor(l)}
-                >
-                  {l.product.option_groups
-                    .flatMap((g) => g.options)
-                    .filter((o) => l.option_ids.includes(o.id))
-                    .map((o) => o.name)
-                    .join(" / ") || "เพิ่มหมายเหตุ"}
-                  {l.note && " · " + l.note}
-                </button>
-                <div className="row between">
-                  <button
-                    className="ghost danger-text"
-                    type="button"
-                    disabled={locked}
-                    onClick={() =>
-                      change({
-                        lines: draft.lines.filter((i) => i.key !== l.key),
-                      })
-                    }
-                  >
-                    นำออก
-                  </button>
-                  <div className="quantity">
-                    <button
-                      type="button"
-                      aria-label={"ลดจำนวน " + l.product.name}
-                      disabled={locked || l.qty <= 1}
-                      onClick={() =>
-                        change({
-                          lines: draft.lines.map((i) =>
-                            i.key === l.key ? { ...i, qty: i.qty - 1 } : i,
-                          ),
-                        })
-                      }
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <span>{l.qty}</span>
-                    <button
-                      type="button"
-                      aria-label={"เพิ่มจำนวน " + l.product.name}
-                      disabled={locked || l.qty >= 99}
-                      onClick={() =>
-                        change({
-                          lines: draft.lines.map((i) =>
-                            i.key === l.key ? { ...i, qty: i.qty + 1 } : i,
-                          ),
-                        })
-                      }
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <CartLines
+            lines={draft.lines}
+            locked={locked}
+            onChange={(lines) => change({ lines })}
+            onEdit={setEditor}
+          />
           <Textarea
             className="resize-none"
             label="หมายเหตุออเดอร์"
@@ -428,102 +291,5 @@ export default function Pos() {
         </Modal>
       )}
     </div>
-  );
-}
-function ItemEditor({
-  line,
-  onSave,
-  onClose,
-}: {
-  line: Line;
-  onSave: (line: Line) => void;
-  onClose: () => void;
-}) {
-  const [selected, setSelected] = useState(line.option_ids);
-  return (
-    <Modal title={line.product.name} onClose={onClose}>
-      <Form
-        noValidate
-        guard={false}
-        onSave={async (data) => {
-          for (const g of line.product.option_groups)
-            if (
-              g.is_required &&
-              !g.options.some((o) => selected.includes(o.id))
-            )
-              throw new Error("กรุณาเลือก " + g.name);
-          onSave({
-            ...line,
-            qty: Number(data.get("qty")),
-            note: String(data.get("note")),
-            option_ids: selected,
-          });
-        }}
-      >
-        {line.product.description && (
-          <p className="muted">{line.product.description}</p>
-        )}
-        {line.product.option_groups.map((g) => (
-          <fieldset key={g.id} className="option-group">
-            <legend>
-              {g.name}
-              {g.is_required ? " · จำเป็น" : ""}
-            </legend>
-            {g.options.map((o) => (
-              <label className="option-row" key={o.id}>
-                <input
-                  name={"group-" + g.id}
-                  type={g.multi_select ? "checkbox" : "radio"}
-                  checked={selected.includes(o.id)}
-                  onChange={(e) =>
-                    setSelected((ids) =>
-                      g.multi_select
-                        ? e.target.checked
-                          ? [...ids, o.id]
-                          : ids.filter((id) => id !== o.id)
-                        : [
-                            ...ids.filter(
-                              (id) => !g.options.some((item) => item.id === id),
-                            ),
-                            o.id,
-                          ],
-                    )
-                  }
-                />
-                <span>{o.name}</span>
-                <span className="muted">
-                  {o.extra_price_satang > 0
-                    ? "+" + money(o.extra_price_satang)
-                    : "ไม่เพิ่มราคา"}
-                </span>
-              </label>
-            ))}
-          </fieldset>
-        ))}
-        <Input
-          label="จำนวน"
-          name="qty"
-          type="number"
-          min={1}
-          max={99}
-          required
-          defaultValue={line.qty}
-        />
-        <Textarea
-          className="resize-none"
-          label="หมายเหตุสำหรับเมนูนี้"
-          name="note"
-          maxLength={1000}
-          defaultValue={line.note}
-          rows={2}
-        />
-        <div className="actions">
-          <button type="button" onClick={onClose}>
-            ย้อนกลับ
-          </button>
-          <Submit>เพิ่ม / บันทึกเมนู</Submit>
-        </div>
-      </Form>
-    </Modal>
   );
 }

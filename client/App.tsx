@@ -29,8 +29,9 @@ import {
   Users,
   Wifi,
   WifiOff,
+  QrCode,
 } from "lucide-react";
-import { api, dateText, mutate, roleLabels } from "./lib";
+import { api, dateText, mutate, roleLabels, useResource } from "./lib";
 import {
   ConfirmProvider,
   Form,
@@ -53,6 +54,8 @@ const Forecast = lazy(() => import("./pages/Forecast"));
 const UserAdmin = lazy(() => import("./pages/Users"));
 const Account = lazy(() => import("./pages/Account"));
 const Receipt = lazy(() => import("./pages/Receipt"));
+const Tables = lazy(() => import("./pages/Tables"));
+const Customer = lazy(() => import("./pages/Customer"));
 const AuthContext = createContext<{ user: User; refresh: () => Promise<void> }>(
   { user: null as unknown as User, refresh: async () => {} },
 );
@@ -134,6 +137,12 @@ function Login({ onLogin }: { onLogin: (user: User) => void }) {
 }
 const navigation = [
   {
+    to: "/tables",
+    label: "โต๊ะ / QR",
+    icon: QrCode,
+    roles: ["owner", "manager"],
+  },
+  {
     to: "/pos",
     label: "ขายหน้าร้าน",
     icon: ShoppingBag,
@@ -192,6 +201,10 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
   const [failure, setFailure] = useState("");
   const { user } = useAuth();
   const live = useLive();
+  const queue = useResource<{ unpaid: number; qr_unpaid: number }>(
+    user.role === "kitchen" ? null : "/orders/summary",
+  );
+  useEffect(queue.reload, [queue.reload, live.revision]);
   const location = useLocation();
   const confirm = useConfirm();
   const heading =
@@ -216,6 +229,14 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
               <NavLink key={n.to} to={n.to}>
                 <n.icon size={20} />
                 <span>{n.label}</span>
+                {n.to === "/orders" && !!queue.data?.unpaid && (
+                  <span
+                    className="nav-count"
+                    aria-label={"รอรับชำระ " + queue.data.unpaid + " ออเดอร์"}
+                  >
+                    {queue.data.unpaid}
+                  </span>
+                )}
               </NavLink>
             ))}
         </nav>
@@ -281,6 +302,14 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
             }
           >
             <Routes>
+              <Route
+                path="/tables"
+                element={
+                  <Only roles={["owner", "manager"]}>
+                    <Tables />
+                  </Only>
+                }
+              />
               <Route
                 path="/"
                 element={
@@ -429,10 +458,24 @@ function Session() {
   );
 }
 export function App() {
+  const location = useLocation();
+  const customer = /^\/(table|track)(\/|$)/.test(location.pathname);
   return (
     <ConfirmProvider>
       <ToastProvider>
-        <Session />
+        {customer ? (
+          <Suspense
+            fallback={
+              <div className="startup loading">
+                <Spinner /> กำลังเปิดเมนู…
+              </div>
+            }
+          >
+            <Customer />
+          </Suspense>
+        ) : (
+          <Session />
+        )}
       </ToastProvider>
     </ConfirmProvider>
   );

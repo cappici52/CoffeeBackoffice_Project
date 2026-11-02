@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import pg from "pg";
 import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { qrBrowserChecks } from "./qr-browser-checks.mjs";
 
 // Browser plugin not available. Use installed Edge on Windows, Chromium in CI.
 // All writes occur in a disposable PostgreSQL schema, never the shop's live tables.
@@ -26,6 +27,9 @@ const env = {
   ...process.env,
   DATABASE_URL: url.toString(),
   APP_ORIGIN: base,
+  PUBLIC_ORIGIN: process.env.E2E_PUBLIC_HOST
+    ? `http://${process.env.E2E_PUBLIC_HOST}:${port}`
+    : base,
   PORT: String(port),
   NODE_ENV: "test",
   SEED_OWNER_EMAIL: "owner@example.com",
@@ -342,6 +346,7 @@ try {
   assert(!/price_satang|cost_satang|total_satang/.test(JSON.stringify(data)));
   await kitchenContext.close();
   checks.push("Kitchen-only navigation and financial-data isolation");
+  await qrBrowserChecks({ browser, page, base, output, checks });
   await go("/pos");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({

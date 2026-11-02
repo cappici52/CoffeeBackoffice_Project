@@ -20,6 +20,7 @@ services:
       NODE_ENV: development
       PORT: 3001
       APP_ORIGIN: http://localhost:3001
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:3001}
       DATABASE_URL: postgresql://coffee:${POSTGRES_PASSWORD:-coffee_dev_only}@db:5432/coffee
       FORECAST_SERVICE_URL: http://forecast:8001
     ports:

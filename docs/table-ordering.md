@@ -7,6 +7,7 @@ Requested by the user on 2026-11-02: independent QR for every table; customers b
 - Owner/manager creates, renames, enables/disables tables and rotates a table's QR. A table has an opaque random 256-bit QR token. Disabling a table or rotating the token blocks new orders from that QR; changing tokens requires reprinting the QR.
 - A customer opens `/table/<qr-token>` without login. The public menu includes available, unarchived products with configured recipes, menu options and retail prices. No recipe, stock, ingredient costs, staff identity, user list or business reports are returned.
 - New orders are dine-in and bound to the table found by the server, never a table number/price/payment/actor supplied by the customer. Server pricing, option validation, recipe snapshots and request-key deduplication are shared with POS.
+- The customer supplies `expected_total_satang` as a quote check, not a price override. If the server's current menu/option total differs, no order is committed and the customer must review the updated menu.
 - Guest orders have a nullable staff actor, `source=qr` and an explicit dining-table reference. They enter the cashier's order list unpaid, with no stock deduction and no KDS entry until staff confirms actual payment. Existing cash/manual PromptPay and cancellation policies apply.
 - Each order has a separate random tracking capability, supplied by the client before submitting and stored as a SHA-256 hash. Knowing a table QR does not allow listing or retrieving other customers' orders. `/track/<tracking-token>` and its API return only that order's retail items, notes, payment state and preparation/handoff status.
 - The browser retains the current request key, tracking capability and same-table draft for recovery in sessionStorage. These grant access to the customer's own order, not staff login. A lost response is resolved by the same tracking capability or an identical idempotent retry. Tokens/links must not be included in analytics or third-party QR services. API responses are no-store and no-referrer.
@@ -22,6 +23,8 @@ Requested by the user on 2026-11-02: independent QR for every table; customers b
 ## Networking
 
 `PUBLIC_ORIGIN` is the printed QR base URL and an allowed public submit origin. It falls back to `APP_ORIGIN`. A localhost QR works on the server computer only; phones need a reachable LAN address on the same Wi-Fi or an HTTPS deployment. Production public origin must be HTTPS. The Windows firewall/router and Wi-Fi client isolation must permit the connection; URL generation cannot bypass those network settings. Keep this setting in ignored `.env`, not hardcoded in QR source. IP changes require updating PUBLIC_ORIGIN and reprinting links. Existing printed QR capability tokens remain unchanged when only the host setting changes.
+
+In development/test, Helmet's HTTPS-upgrade and secure-origin-only headers are omitted so LAN HTTP assets load correctly. Production retains HTTPS upgrading/COOP and rejects an HTTP PUBLIC_ORIGIN. Browser random IDs use `crypto.getRandomValues`, which also works on LAN HTTP. The app does not weaken production HTTPS requirements to support local testing.
 
 ## UI ownership
 

@@ -67,7 +67,11 @@ export default function Receipt() {
                   ? "คืนเงินแล้ว"
                   : "ยังไม่ชำระ")}
           </p>
-          <p>พนักงาน: {o.created_by_name}</p>
+          <p>
+            {o.source === "qr"
+              ? "ลูกค้าสั่งผ่าน QR ประจำโต๊ะ"
+              : "พนักงาน: " + o.created_by_name}
+          </p>
           {o.note && <p>หมายเหตุ: {o.note}</p>}
           <p className="muted">ขอบคุณที่ใช้บริการ</p>
           <small>ใบเสร็จรับเงินทั่วไป · ไม่ใช่ใบกำกับภาษี</small>
