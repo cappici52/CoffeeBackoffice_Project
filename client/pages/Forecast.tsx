@@ -22,6 +22,12 @@ import {
   usePagedRows,
 } from "../ui";
 import type { Catalog, Forecasts } from "../types";
+function methodLabel(version: string) {
+  if (version.startsWith("coffee-xgb-")) return "XGBoost ประวัติร้าน";
+  if (version.startsWith("projecta-xgb-")) return "XGBoost ProjectA";
+  if (version === "weekly-naive-v1") return "ยอดสัปดาห์ก่อน";
+  return version.startsWith("mock-") ? "โมเดลจำลองเดิม" : "ไม่ทราบวิธี";
+}
 export default function Forecast() {
   const [params, setParams] = useSearchParams();
   const from = params.get("from") ?? addDays(today(), -7);
@@ -34,6 +40,7 @@ export default function Forecast() {
   );
   const toast = useToast();
   const data = resource.data;
+  const hasLegacy = data?.model_mode === "mock" || data?.model_mode === "mixed";
   const recommendations = usePagedRows(
     data?.recommendations ?? [],
     from + to + product,
@@ -48,13 +55,18 @@ export default function Forecast() {
       lower: number;
       upper: number;
       interval?: [number, number];
+      hasInterval?: boolean;
     }
   >();
   for (const f of data?.forecasts ?? []) {
     const row = chartMap.get(f.date) ?? { date: f.date, lower: 0, upper: 0 };
     row.forecast = (row.forecast ?? 0) + Number(f.predicted_qty);
-    row.lower += Number(f.lower_qty);
-    row.upper += Number(f.upper_qty);
+    row.hasInterval =
+      (row.hasInterval ?? true) && f.lower_qty !== null && f.upper_qty !== null;
+    if (f.lower_qty !== null && f.upper_qty !== null) {
+      row.lower += Number(f.lower_qty);
+      row.upper += Number(f.upper_qty);
+    }
     chartMap.set(f.date, row);
   }
   for (const a of data?.actual ?? []) {
@@ -66,16 +78,25 @@ export default function Forecast() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((row) => ({
       ...row,
-      ...(row.forecast !== undefined
+      ...(row.forecast !== undefined && row.hasInterval
         ? { interval: [row.lower, row.upper] as [number, number] }
         : {}),
     }));
   return (
     <>
-      <Notice tone="warning">
-        ใช้โมเดลจำลอง mock-weekday-v1 สำหรับทดสอบการเชื่อมต่อ
-        ช่วงค่าที่แสดงเป็นช่วงจำลอง ±20% ยังไม่ใช่ช่วงความเชื่อมั่นของโมเดลจริง
+      <Notice>
+        ใช้ XGBoost จาก ProjectA
+        เทียบกับโมเดลที่เทรนจากประวัติร้านและวิธียอดสัปดาห์ก่อน
+        เลือกวิธีรายเมนูจากผลย้อนหลัง 28 วันเมื่อมีข้อมูลครบ 84 วัน
+        หากประวัติสั้นจะใช้ยอดสัปดาห์ก่อน ต้องมีข้อมูลอย่างน้อย 28 วันติดต่อกัน
+        ผลนี้ยังไม่ผ่านการยืนยันความแม่นยำกับร้านกาแฟ และไม่มีช่วงความเชื่อมั่น
       </Notice>
+      {hasLegacy && (
+        <Notice tone="warning">
+          ช่วงวันที่นี้ยังมีผลจากโมเดลจำลองเดิม
+          กดสร้างพยากรณ์ใหม่เพื่ออัปเดตวันข้างหน้า
+        </Notice>
+      )}
       {data?.contains_demo_history && (
         <Notice>
           ประวัติที่ใช้พยากรณ์มีข้อมูลตัวอย่าง แยกจากยอดขายจริงในหน้ารายงาน
@@ -100,6 +121,7 @@ export default function Forecast() {
             onChange={(e) => setDays(e.target.value)}
           >
             <option value="7">7 วัน</option>
+            <option value="28">28 วัน</option>
             <option value="30">30 วัน</option>
           </Select>
           <Submit>สร้างพยากรณ์ใหม่</Submit>
@@ -185,8 +207,8 @@ export default function Forecast() {
                         name === "actual"
                           ? "ประวัติยอดขาย"
                           : name === "forecast"
-                            ? "พยากรณ์จำลอง"
-                            : "ช่วงจำลอง",
+                            ? "พยากรณ์"
+                            : "ช่วงค่าของผลเดิม",
                       ]}
                     />
                     <Area
@@ -224,8 +246,10 @@ export default function Forecast() {
                 ━ ประวัติยอดขาย
                 {data.contains_demo_history ? " (มีข้อมูลตัวอย่าง)" : ""}
               </span>
-              <span className="accent">┄ พยากรณ์จำลอง</span>
-              <span>ช่วงแรเงา ±20%</span>
+              <span className="accent">┄ พยากรณ์</span>
+              {hasLegacy && (
+                <span>ช่วงแรเงาจากผลจำลองเดิม ไม่ใช่ช่วงความเชื่อมั่น</span>
+              )}
             </div>
           </section>
           <div className="metrics">
@@ -266,7 +290,12 @@ export default function Forecast() {
             ต้องตรวจสต็อกและตัวเลือกจริงก่อนสั่งซื้อ
           </p>
           <div className="table-panel">
-            <div className="table-scroll">
+            <div
+              className="table-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="เลื่อนตารางวัตถุดิบที่ควรสั่งเพิ่ม"
+            >
               <table>
                 <caption className="sr-only">แนะนำวัตถุดิบตามพยากรณ์</caption>
                 <thead>
@@ -308,7 +337,12 @@ export default function Forecast() {
           </div>
           <details className="section-details">
             <summary>จำนวนเตรียมรายเมนูและเวอร์ชันโมเดล</summary>
-            <div className="table-scroll">
+            <div
+              className="table-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="เลื่อนตารางผลพยากรณ์รายเมนู"
+            >
               <table>
                 <caption>ผลพยากรณ์ที่บันทึกไว้</caption>
                 <thead>
@@ -316,7 +350,9 @@ export default function Forecast() {
                     <th scope="col">วัน</th>
                     <th scope="col">เมนู</th>
                     <th scope="col">จำนวน</th>
-                    <th scope="col">ช่วงจำลอง</th>
+                    <th scope="col">ช่วงค่า</th>
+                    <th scope="col">วิธีพยากรณ์</th>
+                    <th scope="col">ประวัติที่ใช้</th>
                     <th scope="col">โมเดล</th>
                   </tr>
                 </thead>
@@ -327,7 +363,19 @@ export default function Forecast() {
                       <th scope="row">{f.product_name}</th>
                       <td>{number(f.predicted_qty)}</td>
                       <td>
-                        {number(f.lower_qty)}–{number(f.upper_qty)}
+                        {f.lower_qty === null || f.upper_qty === null
+                          ? "ไม่มีช่วงค่า"
+                          : `${number(f.lower_qty)}–${number(f.upper_qty)}`}
+                      </td>
+                      <td>{methodLabel(f.model_version)}</td>
+                      <td>
+                        {f.history_source === "actual"
+                          ? "ยอดขายจริง"
+                          : f.history_source === "demo"
+                            ? "ข้อมูลตัวอย่าง"
+                            : f.history_source === "mixed"
+                              ? "มีข้อมูลตัวอย่างร่วมด้วย"
+                              : "ไม่ได้บันทึกที่มา"}
                       </td>
                       <td>{f.model_version}</td>
                     </tr>

@@ -213,9 +213,10 @@ export interface Forecasts {
     product_id: string;
     product_name: string;
     predicted_qty: Decimal;
-    lower_qty: Decimal;
-    upper_qty: Decimal;
+    lower_qty: Decimal | null;
+    upper_qty: Decimal | null;
     model_version: string;
+    history_source: "actual" | "demo" | "mixed" | "unknown";
     generated_at: string;
   }[];
   actual: { date: string; product_id: string; qty: Decimal }[];
@@ -229,4 +230,5 @@ export interface Forecasts {
   }[];
   accuracy: { samples: number; mape: number | null; rmse: number | null };
   contains_demo_history: boolean;
+  model_mode: "adaptive" | "mock" | "mixed" | "empty";
 }

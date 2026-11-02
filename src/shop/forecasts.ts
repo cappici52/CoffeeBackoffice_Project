@@ -3,6 +3,7 @@ import { Router, type RequestHandler } from "express";
 import { z } from "zod";
 import type { Config } from "../config.js";
 import type { Database, Sql } from "../db.js";
+import { ApiError } from "../security.js";
 import {
   businessDate,
   dateRange,
@@ -18,16 +19,44 @@ const forecastRow = z
     date: dateSchema,
     product_id: idSchema,
     predicted_qty: z.number().min(0).max(1e6),
-    lower: z.number().min(0).max(1e6),
-    upper: z.number().min(0).max(1e6),
+    lower: z.number().min(0).max(1e6).nullable(),
+    upper: z.number().min(0).max(1e6).nullable(),
     model_version: z.string().min(1).max(100),
+    history_source: z
+      .enum(["actual", "demo", "mixed", "unknown"])
+      .default("unknown"),
   })
   .strict()
-  .refine((v) => v.lower <= v.predicted_qty && v.predicted_qty <= v.upper);
+  .refine(
+    (v) =>
+      (v.lower === null && v.upper === null) ||
+      (v.lower !== null &&
+        v.upper !== null &&
+        v.lower <= v.predicted_qty &&
+        v.predicted_qty <= v.upper),
+  );
 export async function history(sql: Sql) {
   return (
     await sql.query(
-      `SELECT date::text,product_id,coalesce(sum(qty) FILTER(WHERE source='actual'),sum(qty) FILTER(WHERE source='demo')) AS qty FROM sales_daily WHERE date >= (now() AT TIME ZONE 'Asia/Bangkok')::date - 120 GROUP BY date,product_id ORDER BY date`,
+      `WITH observations AS (
+        SELECT date,product_id,qty,revenue_satang,source FROM sales_daily
+        WHERE date >= (now() AT TIME ZONE 'Asia/Bangkok')::date - 120
+          AND date < (now() AT TIME ZONE 'Asia/Bangkok')::date
+        UNION ALL
+        SELECT c.date,p.id,0,0,'actual' FROM day_closings c CROSS JOIN products p
+        WHERE c.date >= (now() AT TIME ZONE 'Asia/Bangkok')::date - 120
+          AND c.date < (now() AT TIME ZONE 'Asia/Bangkok')::date
+          AND p.forecast_since <= c.date
+          AND NOT EXISTS (SELECT 1 FROM sales_daily s WHERE s.date=c.date AND s.product_id=p.id AND s.source='actual')
+      ), daily AS (
+        SELECT date,product_id,
+          coalesce(sum(qty) FILTER(WHERE source='actual'),sum(qty) FILTER(WHERE source='demo')) AS qty,
+          coalesce(sum(revenue_satang) FILTER(WHERE source='actual'),sum(revenue_satang) FILTER(WHERE source='demo')) AS revenue,
+          CASE WHEN bool_or(source='actual') THEN 'actual' ELSE 'demo' END AS source
+        FROM observations GROUP BY date,product_id
+      ) SELECT d.date::text,d.product_id,d.qty,d.source,
+        CASE WHEN d.qty>0 THEN d.revenue/d.qty/100.0 ELSE p.price_satang/100.0 END AS unit_price
+        FROM daily d JOIN products p ON p.id=d.product_id ORDER BY d.date,d.product_id`,
     )
   ).rows;
 }
@@ -65,18 +94,27 @@ export async function generateForecasts(
         ...range,
         product_id: null,
         product_ids: products,
-        history: (await history(db)).map((h) => ({ ...h, qty: Number(h.qty) })),
+        history: (await history(db)).map((h) => ({
+          date: h.date,
+          product_id: h.product_id,
+          qty: Number(h.qty),
+          unit_price: Number(h.unit_price),
+          source: h.source,
+        })),
       }),
       signal: AbortSignal.timeout(15_000),
     });
+    if (response.status === 422) {
+      const error = (await response.json().catch(() => null)) as {
+        detail?: { code?: string };
+      } | null;
+      if (error?.detail?.code === "FORECAST_INSUFFICIENT_HISTORY")
+        throw new ApiError(409, "FORECAST_INSUFFICIENT_HISTORY");
+    }
     fail(response.ok, 502, "FORECAST_SERVICE_UNAVAILABLE");
     result = await response.json();
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message === "FORECAST_SERVICE_UNAVAILABLE"
-    )
-      throw error;
+    if (error instanceof ApiError) throw error;
     fail(false, 502, "FORECAST_SERVICE_UNAVAILABLE");
   }
   const parsed = z.array(forecastRow).max(30000).safeParse(result);
@@ -85,6 +123,7 @@ export async function generateForecasts(
   const expected =
     products.length * ((Date.parse(to) - Date.parse(from)) / 86400000 + 1);
   const keys = new Set(rows.map((r) => `${r.date}:${r.product_id}`));
+  const versions = [...new Set(rows.map((r) => r.model_version))].sort();
   fail(
     rows.length === expected &&
       keys.size === expected &&
@@ -99,7 +138,7 @@ export async function generateForecasts(
     await sql.query("SELECT pg_advisory_xact_lock(7301004)");
     for (const row of rows)
       await sql.query(
-        "INSERT INTO forecasts (id,forecast_date,product_id,predicted_qty,lower_qty,upper_qty,model_version) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (forecast_date,product_id) DO UPDATE SET predicted_qty=excluded.predicted_qty,lower_qty=excluded.lower_qty,upper_qty=excluded.upper_qty,model_version=excluded.model_version,generated_at=now()",
+        "INSERT INTO forecasts (id,forecast_date,product_id,predicted_qty,lower_qty,upper_qty,model_version,history_source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (forecast_date,product_id) DO UPDATE SET predicted_qty=excluded.predicted_qty,lower_qty=excluded.lower_qty,upper_qty=excluded.upper_qty,model_version=excluded.model_version,history_source=excluded.history_source,generated_at=now()",
         [
           randomUUID(),
           row.date,
@@ -108,6 +147,7 @@ export async function generateForecasts(
           row.lower,
           row.upper,
           row.model_version,
+          row.history_source,
         ],
       );
     if (actor)
@@ -115,12 +155,14 @@ export async function generateForecasts(
         from,
         to,
         rows: rows.length,
-        model_version: rows[0]?.model_version,
+        model_versions: versions,
       });
   });
   return {
     count: rows.length,
-    model_version: rows[0]?.model_version ?? "unknown",
+    model_version:
+      versions.length === 1 ? versions[0] : "coffee-selection-v1-mixed",
+    model_versions: versions,
   };
 }
 export function forecastsRouter(
@@ -169,12 +211,16 @@ export function forecastsRouter(
     ).rows;
     const sales = await history(db);
     const lookup = new Map(
-      sales.map((a) => [`${a.date}:${a.product_id}`, Number(a.qty)]),
+      sales
+        .filter((a) => a.source === "actual")
+        .map((a) => [`${a.date}:${a.product_id}`, Number(a.qty)]),
     );
     const comparisons = points
       .filter(
         (p) =>
-          p.date < businessDate() && lookup.has(`${p.date}:${p.product_id}`),
+          p.date < businessDate() &&
+          businessDate(new Date(p.generated_at)) < p.date &&
+          lookup.has(`${p.date}:${p.product_id}`),
       )
       .map((p) => ({
         actual: lookup.get(`${p.date}:${p.product_id}`)!,
@@ -206,9 +252,21 @@ export function forecastsRouter(
       actual,
       recommendations,
       accuracy,
-      contains_demo_history: demo,
+      contains_demo_history:
+        demo ||
+        points.some((p) => ["demo", "mixed"].includes(p.history_source)),
       recommendation_basis: "base_recipe",
-      model_mode: "mock_until_real_model_connected",
+      model_mode: points.length
+        ? points.every((p) =>
+            /^(projecta-xgb-|coffee-xgb-|weekly-naive-v1$)/.test(
+              p.model_version,
+            ),
+          )
+          ? "adaptive"
+          : points.every((p) => p.model_version.startsWith("mock-"))
+            ? "mock"
+            : "mixed"
+        : "empty",
     });
   });
   return r;

@@ -11,11 +11,11 @@
 - KDS สามคอลัมน์ ตัวจับเวลาจากเวลา server สีเตือนเกินเป้าหมาย สูตรตามตัวเลือก กรองสถานี เสียงแจ้งเตือน และ SSE reconnect
 - สูตร/ขั้นตอน วัตถุดิบ รับเข้า ของเสีย แจ้งสต็อกต่ำ และตัดสต็อกครั้งเดียวตอนยืนยันออเดอร์หรือรับชำระล่วงหน้าด้วย DB transaction
 - ยอดขายรายวัน/ช่วงวันที่ เมนูและช่วงเวลาขายดี กำไรขั้นต้นเฉพาะ owner เวลาเตรียมเฉลี่ย และปิดวัน
-- FastAPI forecast แยกบริการ บันทึกผลพยากรณ์ กราฟ ช่วงจำลอง ปริมาณเตรียม แนะนำวัตถุดิบ และ MAPE/RMSE เมื่อมีข้อมูลเทียบ
+- FastAPI forecast แยกบริการ บันทึกผลพยากรณ์ กราฟ ปริมาณเตรียม แนะนำวัตถุดิบ และ MAPE/RMSE เมื่อมีข้อมูลเทียบ
 - worker พยากรณ์หลัง 02:00 Asia/Bangkok วันละหนึ่งครั้ง พร้อม catch-up/retry
 - Audit logs, version conflict checks และป้องกันออเดอร์/ตัดสต็อกซ้ำเมื่อเครือข่ายขัดข้อง
 
-**ขอบเขตเริ่มต้น:** PromptPay เป็นการตรวจเงินและยืนยันโดยพนักงาน ไม่มี gateway/ตรวจสลิปอัตโนมัติ การคืนเงินเป็นการบันทึกหลังคืนเงินจริงด้วยพนักงาน Forecast ใช้ `mock-weekday-v1` จนกว่าจะได้รับโมเดลจริง ช่วง ±20% เป็นช่วงจำลอง ไม่ใช่ statistical confidence interval ฟีเจอร์เสริมเฟส 8 เช่นสมาชิก/IoT/หลายสาขายังไม่รวมใน core release
+**ขอบเขตเริ่มต้น:** PromptPay เป็นการตรวจเงินและยืนยันโดยพนักงาน ไม่มี gateway/ตรวจสลิปอัตโนมัติ การคืนเงินเป็นการบันทึกหลังคืนเงินจริงด้วยพนักงาน Forecast เชื่อม XGBoost จาก ProjectA แล้ว พร้อมเทรน XGBoost จากประวัติร้านและเลือกเทียบกับยอดสัปดาห์ก่อน ผลใหม่ไม่มีช่วงความเชื่อมั่น และยังต้องประเมินความแม่นยำกับยอดจริงของร้าน ฟีเจอร์เสริมเฟส 8 เช่นสมาชิก/IoT/หลายสาขายังไม่รวมใน core release
 
 ## เริ่มใช้งานกับ PostgreSQL ในเครื่อง (Windows)
 
@@ -98,9 +98,9 @@ npm run build
 npm run test:e2e
 ```
 
-- 45 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย และ LAN/production security headers
-- Python mock-model tests 3 กรณี
-- Browser test ครอบคลุม 20 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
+- 50 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย และ LAN/production security headers
+- Python model/selection tests 14 กรณี รวมตรวจผลตรงกับโมเดล ProjectA และกันข้อมูลอนาคตรั่ว
+- Browser test ครอบคลุม 21 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
 - Tests บน PostgreSQL และ browser ใช้ schema สุ่มแล้วลบ ไม่เขียน test orders ลงตารางร้านจริง ต้องใช้ development database ที่อนุญาตสร้าง schema
 - Browser plugin ไม่พร้อมใน session นี้ จึงใช้ Playwright/Edge; CI ใช้ Chromium ภาพ QA อยู่ใน OS temp หรือ `QA_OUTPUT_DIR` ไม่ commit รูปทดสอบ
 - CI ตรวจ typecheck, PGlite, PostgreSQL 18, Python, browser, production build และเปิด Docker stack เพื่อ smoke test
@@ -117,4 +117,4 @@ Migration มี checksum ห้ามแก้ไฟล์ที่ใช้แ
 
 API หลัก: `/api/auth/*`, `/api/users`, `/api/catalog`, `/api/categories`, `/api/products`, `/api/ingredients`, `/api/stock-movements`, `/api/recipes/:productId`, `/api/orders`, `/api/kds`, `/api/events`, `/api/reports`, `/api/reports/close`, `/api/forecasts`, `/api/forecasts/generate`, `/api/audit-logs`
 
-เชื่อมโมเดลจริงโดยเปลี่ยน adapter ใน `forecast-service/model.py` และ `MODEL_VERSION` รักษา input/output ตาม FastAPI contract แล้วทดสอบก่อนแทน mock ต้องได้รับไฟล์โมเดล dependencies ตัวอย่าง input/output และรูปแบบ training data ก่อนพัฒนา loading/retraining จริง
+เชื่อมโมเดลจริงแล้ว ดู [การเชื่อมโมเดลและวิธีเลือกพยากรณ์](docs/forecast-integration.md) ต้องมีประวัติรายเมนูอย่างน้อย 28 วันติดต่อกัน; เมื่อครบ 84 วัน ระบบจะเทรนโมเดลจากประวัติร้านและเทียบย้อนหลัง 28 วันก่อนเลือกใช้ วันที่ไม่มีข้อมูลไม่ถูกเติมศูนย์อัตโนมัติ ผลจากข้อมูลตัวอย่างไม่ใช่หลักฐานความแม่นยำของร้านจริง เก็บโมเดลที่เทรนใหม่ใน `forecast-service/runtime/` หรือ Docker volume `coffee_forecast_models`

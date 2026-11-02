@@ -72,6 +72,8 @@ const errors: Record<string, string> = {
   FORECAST_SERVICE_UNAVAILABLE:
     "บริการพยากรณ์ยังไม่พร้อม กรุณาเปิดบริการแล้วลองอีกครั้ง",
   FORECAST_INVALID_RESPONSE: "ข้อมูลจากบริการพยากรณ์ไม่ครบหรือไม่ถูกต้อง",
+  FORECAST_INSUFFICIENT_HISTORY:
+    "ข้อมูลบางเมนูยังไม่ครบ 28 วันติดต่อกัน หรือประวัติเก่าเกิน 7 วัน กรุณาตรวจประวัติยอดขายและการปิดวันก่อนสร้างพยากรณ์",
   NO_FORECAST_PRODUCTS: "ยังไม่มีเมนูสำหรับพยากรณ์",
   TOO_MANY_ATTEMPTS: "ลองเข้าสู่ระบบหลายครั้งเกินไป กรุณารอ 15 นาที",
   TABLE_UNAVAILABLE:

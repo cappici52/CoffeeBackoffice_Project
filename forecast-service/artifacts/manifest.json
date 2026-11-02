@@ -1,0 +1,31 @@
+{
+  "model_version": "projecta-xgb-a780e80aab1a",
+  "model_sha256": "a780e80aab1a17f570c876c094f5f9cede8534f28885a92ab8030a998a91cc4a",
+  "source_artifact": "model-105ab9c5d0938b78025ed128b35938f2.joblib",
+  "source_sha256": "165a251862001c75021d07c264cb015ff92edf1bb77b531b9881872a2c79a12e",
+  "source_format_version": 4,
+  "xgboost_version": "3.0.0",
+  "features": [
+    "lag_1",
+    "lag_7",
+    "lag_14",
+    "lag_28",
+    "mean_7",
+    "mean_28",
+    "weekday",
+    "month",
+    "unit_price"
+  ],
+  "selected_methods": {
+    "7": "xgboost",
+    "14": "xgboost",
+    "28": "xgboost"
+  },
+  "validated_horizons": [
+    7,
+    14,
+    28
+  ],
+  "interval_kind": "unavailable",
+  "training_domain": "ProjectA retail; coffee-shop accuracy has not been validated"
+}

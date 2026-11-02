@@ -229,9 +229,51 @@ try {
     page.getByRole("status").filter({ hasText: "สร้างผลพยากรณ์แล้ว" }),
   ).toBeVisible({ timeout: 20000 });
   await expect(
-    page.getByText("mock-weekday-v1", { exact: true }).first(),
+    page.getByText(/^(weekly-naive-v1|projecta-xgb-|coffee-xgb-)/).first(),
   ).toBeAttached();
+  await expect(
+    page.getByText("ไม่มีช่วงค่า", { exact: true }).first(),
+  ).toBeAttached();
+  await expect(page.getByText("mock-weekday-v1", { exact: true })).toHaveCount(
+    0,
+  );
   checks.push("Live FastAPI forecast and replenishment UI");
+  await page
+    .getByText("จำนวนเตรียมรายเมนูและเวอร์ชันโมเดล", { exact: true })
+    .click();
+  await expect(
+    page.getByRole("columnheader", { name: "วิธีพยากรณ์", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: join(output, "forecast-desktop.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+    "Forecast mobile page overflows",
+  );
+  const forecastAxe = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+    .analyze();
+  assert.deepEqual(
+    forecastAxe.violations.map((v) => ({
+      id: v.id,
+      targets: v.nodes.map((n) => n.target),
+    })),
+    [],
+    "Forecast accessibility violations",
+  );
+  await page.screenshot({
+    path: join(output, "forecast-mobile.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1536, height: 960 });
+  checks.push(
+    "Adaptive forecast method/source disclosure, absent confidence bounds, mobile layout and accessibility",
+  );
   await go("/menu?tab=categories");
   await page
     .getByRole("button", { name: "เพิ่มหมวดหมู่", exact: true })

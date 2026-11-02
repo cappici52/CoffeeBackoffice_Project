@@ -36,6 +36,8 @@ services:
       retries: 20
   forecast:
     build: ./forecast-service
+    volumes:
+      - coffee_forecast_models:/app/runtime
     ports:
       - "127.0.0.1:8001:8001"
     healthcheck:
@@ -57,3 +59,4 @@ services:
     command: ["node", "dist/forecast-worker.js"]
 volumes:
   coffee_pg:
+  coffee_forecast_models:
