@@ -1,0 +1,138 @@
+{
+  "validation_origin": "2024-10-29",
+  "validation_from": "2024-10-30",
+  "validation_to": "2024-11-26",
+  "holdout_origin": "2025-02-23",
+  "holdout_from": "2025-02-24",
+  "holdout_to": "2025-03-23",
+  "chosen_model_from_validation": "relative-absolute",
+  "chosen_baseline_from_validation": "rolling-mean-28",
+  "validation": {
+    "weekly-naive": {
+      "mae": 1.3169642857142858,
+      "rmse": 1.7990572928223112,
+      "wape_percent": 113.02681992337165,
+      "actual_total": 261.0,
+      "predicted_total": 400.0,
+      "pairs": 224
+    },
+    "rolling-mean-28": {
+      "mae": 1.1358818247435536,
+      "rmse": 1.36493459508976,
+      "wape_percent": 97.48564319638162,
+      "actual_total": 261.0,
+      "predicted_total": 403.6996803461237,
+      "pairs": 224
+    },
+    "relative-poisson": {
+      "mae": 1.6074127153899356,
+      "rmse": 1.929574927191799,
+      "wape_percent": 137.95419473078374,
+      "actual_total": 261.0,
+      "predicted_total": 569.5366414807934,
+      "pairs": 224
+    },
+    "relative-absolute": {
+      "mae": 1.197136553851315,
+      "rmse": 1.4760236376316558,
+      "wape_percent": 102.74275404700941,
+      "actual_total": 261.0,
+      "predicted_total": 418.8016426045931,
+      "pairs": 224
+    }
+  },
+  "holdout": {
+    "weekly-naive": {
+      "mae": 1.2455357142857142,
+      "rmse": 1.7990572928223112,
+      "wape_percent": 68.55036855036855,
+      "actual_total": 407.0,
+      "predicted_total": 444.0,
+      "pairs": 224
+    },
+    "rolling-mean-28": {
+      "mae": 1.111179045184665,
+      "rmse": 1.5126646345133596,
+      "wape_percent": 61.155800029819396,
+      "actual_total": 407.0,
+      "predicted_total": 400.53151201357446,
+      "pairs": 224
+    },
+    "relative-absolute": {
+      "mae": 1.1623836503714513,
+      "rmse": 1.792202598527651,
+      "wape_percent": 63.97394046270396,
+      "actual_total": 407.0,
+      "predicted_total": 214.41905110167787,
+      "pairs": 224
+    }
+  },
+  "beats_selected_baseline_on_holdout": false,
+  "per_product_holdout": {
+    "Americano": {
+      "mae": 2.3196213129772287,
+      "rmse": 3.0929785261071454,
+      "wape_percent": 51.14125729398614,
+      "actual_total": 127.0,
+      "predicted_total": 69.15006393814097,
+      "pairs": 28
+    },
+    "Americano with Milk": {
+      "mae": 1.265024576889448,
+      "rmse": 1.7080130163506544,
+      "wape_percent": 51.334330656383386,
+      "actual_total": 69.0,
+      "predicted_total": 43.111135720251916,
+      "pairs": 28
+    },
+    "Cappuccino": {
+      "mae": 1.1930497165324245,
+      "rmse": 1.5642737873472718,
+      "wape_percent": 63.02904162812809,
+      "actual_total": 53.0,
+      "predicted_total": 26.77142879313249,
+      "pairs": 28
+    },
+    "Cocoa": {
+      "mae": 0.9594137768952059,
+      "rmse": 1.3480024901951813,
+      "wape_percent": 63.96091845968039,
+      "actual_total": 42.0,
+      "predicted_total": 26.65043107870952,
+      "pairs": 28
+    },
+    "Cortado": {
+      "mae": 0.10821639701976046,
+      "rmse": 0.3273361682692304,
+      "wape_percent": 101.00197055177642,
+      "actual_total": 3.0,
+      "predicted_total": 0.030339574669614667,
+      "pairs": 28
+    },
+    "Espresso": {
+      "mae": 0.5055707670417817,
+      "rmse": 0.6115675672344442,
+      "wape_percent": 108.89216520899913,
+      "actual_total": 13.0,
+      "predicted_total": 7.320673836834634,
+      "pairs": 28
+    },
+    "Hot Chocolate": {
+      "mae": 0.8881548645640877,
+      "rmse": 1.2084261199932853,
+      "wape_percent": 92.10494891775724,
+      "actual_total": 27.0,
+      "predicted_total": 20.60327275006188,
+      "pairs": 28
+    },
+    "Latte": {
+      "mae": 2.060017791051674,
+      "rmse": 2.646993741432813,
+      "wape_percent": 79.01438102663955,
+      "actual_total": 73.0,
+      "predicted_total": 20.781705409876825,
+      "pairs": 28
+    }
+  },
+  "evaluation_note": "Model and baseline chosen on validation only; final holdout evaluated once without tuning. External-machine results do not measure this shop's accuracy."
+}

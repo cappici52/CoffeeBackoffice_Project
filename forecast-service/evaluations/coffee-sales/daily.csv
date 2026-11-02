@@ -1,0 +1,3039 @@
+date,product,transactions
+2024-03-01,Americano,1
+2024-03-02,Americano,3
+2024-03-03,Americano,1
+2024-03-04,Americano,0
+2024-03-05,Americano,0
+2024-03-06,Americano,1
+2024-03-07,Americano,1
+2024-03-08,Americano,3
+2024-03-09,Americano,3
+2024-03-10,Americano,1
+2024-03-11,Americano,2
+2024-03-12,Americano,3
+2024-03-13,Americano,3
+2024-03-14,Americano,1
+2024-03-15,Americano,1
+2024-03-16,Americano,1
+2024-03-17,Americano,0
+2024-03-18,Americano,3
+2024-03-19,Americano,0
+2024-03-20,Americano,0
+2024-03-21,Americano,1
+2024-03-22,Americano,2
+2024-03-23,Americano,0
+2024-03-24,Americano,0
+2024-03-25,Americano,0
+2024-03-26,Americano,2
+2024-03-27,Americano,1
+2024-03-28,Americano,1
+2024-03-29,Americano,0
+2024-03-30,Americano,0
+2024-03-31,Americano,1
+2024-04-01,Americano,1
+2024-04-02,Americano,1
+2024-04-03,Americano,1
+2024-04-04,Americano,0
+2024-04-05,Americano,3
+2024-04-06,Americano,1
+2024-04-07,Americano,0
+2024-04-08,Americano,2
+2024-04-09,Americano,1
+2024-04-10,Americano,0
+2024-04-11,Americano,2
+2024-04-12,Americano,0
+2024-04-13,Americano,1
+2024-04-14,Americano,3
+2024-04-15,Americano,2
+2024-04-16,Americano,1
+2024-04-17,Americano,1
+2024-04-18,Americano,2
+2024-04-19,Americano,0
+2024-04-20,Americano,1
+2024-04-21,Americano,1
+2024-04-22,Americano,1
+2024-04-23,Americano,0
+2024-04-24,Americano,0
+2024-04-25,Americano,3
+2024-04-26,Americano,3
+2024-04-27,Americano,0
+2024-04-28,Americano,2
+2024-04-29,Americano,1
+2024-04-30,Americano,1
+2024-05-02,Americano,1
+2024-05-03,Americano,0
+2024-05-06,Americano,4
+2024-05-07,Americano,1
+2024-05-08,Americano,0
+2024-05-09,Americano,4
+2024-05-10,Americano,0
+2024-05-11,Americano,0
+2024-05-12,Americano,1
+2024-05-13,Americano,2
+2024-05-14,Americano,4
+2024-05-15,Americano,5
+2024-05-16,Americano,0
+2024-05-17,Americano,2
+2024-05-18,Americano,0
+2024-05-19,Americano,3
+2024-05-20,Americano,5
+2024-05-21,Americano,1
+2024-05-22,Americano,2
+2024-05-23,Americano,0
+2024-05-24,Americano,2
+2024-05-25,Americano,3
+2024-05-26,Americano,1
+2024-05-27,Americano,4
+2024-05-28,Americano,2
+2024-05-29,Americano,1
+2024-05-30,Americano,0
+2024-05-31,Americano,0
+2024-06-01,Americano,0
+2024-06-02,Americano,0
+2024-06-03,Americano,0
+2024-06-04,Americano,0
+2024-06-05,Americano,1
+2024-06-06,Americano,1
+2024-06-07,Americano,0
+2024-06-08,Americano,0
+2024-06-09,Americano,1
+2024-06-10,Americano,0
+2024-06-11,Americano,0
+2024-06-12,Americano,0
+2024-06-13,Americano,1
+2024-06-14,Americano,1
+2024-06-15,Americano,1
+2024-06-16,Americano,0
+2024-06-17,Americano,3
+2024-06-18,Americano,1
+2024-06-19,Americano,1
+2024-06-20,Americano,0
+2024-06-21,Americano,2
+2024-06-22,Americano,0
+2024-06-23,Americano,0
+2024-06-24,Americano,0
+2024-06-25,Americano,0
+2024-06-26,Americano,1
+2024-06-27,Americano,0
+2024-06-28,Americano,0
+2024-06-29,Americano,0
+2024-06-30,Americano,0
+2024-07-01,Americano,0
+2024-07-02,Americano,2
+2024-07-03,Americano,0
+2024-07-04,Americano,1
+2024-07-05,Americano,3
+2024-07-06,Americano,0
+2024-07-07,Americano,0
+2024-07-08,Americano,2
+2024-07-09,Americano,0
+2024-07-10,Americano,1
+2024-07-11,Americano,1
+2024-07-12,Americano,0
+2024-07-13,Americano,0
+2024-07-14,Americano,2
+2024-07-15,Americano,0
+2024-07-16,Americano,0
+2024-07-17,Americano,0
+2024-07-18,Americano,2
+2024-07-19,Americano,1
+2024-07-20,Americano,3
+2024-07-21,Americano,0
+2024-07-22,Americano,2
+2024-07-23,Americano,4
+2024-07-24,Americano,2
+2024-07-25,Americano,2
+2024-07-26,Americano,1
+2024-07-27,Americano,0
+2024-07-28,Americano,0
+2024-07-29,Americano,3
+2024-07-30,Americano,2
+2024-07-31,Americano,2
+2024-08-01,Americano,2
+2024-08-02,Americano,0
+2024-08-03,Americano,0
+2024-08-04,Americano,0
+2024-08-05,Americano,0
+2024-08-06,Americano,0
+2024-08-07,Americano,3
+2024-08-08,Americano,0
+2024-08-09,Americano,3
+2024-08-10,Americano,1
+2024-08-11,Americano,0
+2024-08-12,Americano,1
+2024-08-13,Americano,0
+2024-08-14,Americano,3
+2024-08-15,Americano,2
+2024-08-16,Americano,1
+2024-08-17,Americano,0
+2024-08-18,Americano,2
+2024-08-19,Americano,0
+2024-08-20,Americano,3
+2024-08-21,Americano,1
+2024-08-22,Americano,1
+2024-08-23,Americano,5
+2024-08-24,Americano,1
+2024-08-25,Americano,2
+2024-08-26,Americano,4
+2024-08-27,Americano,0
+2024-08-28,Americano,1
+2024-08-29,Americano,1
+2024-08-30,Americano,0
+2024-08-31,Americano,0
+2024-09-01,Americano,1
+2024-09-02,Americano,2
+2024-09-03,Americano,0
+2024-09-04,Americano,1
+2024-09-05,Americano,3
+2024-09-06,Americano,1
+2024-09-07,Americano,3
+2024-09-08,Americano,1
+2024-09-09,Americano,1
+2024-09-10,Americano,1
+2024-09-11,Americano,0
+2024-09-12,Americano,1
+2024-09-13,Americano,0
+2024-09-14,Americano,0
+2024-09-15,Americano,1
+2024-09-16,Americano,0
+2024-09-17,Americano,0
+2024-09-18,Americano,0
+2024-09-19,Americano,1
+2024-09-20,Americano,1
+2024-09-21,Americano,4
+2024-09-22,Americano,3
+2024-09-23,Americano,2
+2024-09-24,Americano,2
+2024-09-25,Americano,1
+2024-09-26,Americano,0
+2024-09-27,Americano,1
+2024-09-28,Americano,0
+2024-09-29,Americano,1
+2024-09-30,Americano,0
+2024-10-01,Americano,2
+2024-10-02,Americano,0
+2024-10-03,Americano,0
+2024-10-04,Americano,3
+2024-10-05,Americano,2
+2024-10-06,Americano,1
+2024-10-07,Americano,2
+2024-10-08,Americano,4
+2024-10-09,Americano,2
+2024-10-10,Americano,2
+2024-10-11,Americano,5
+2024-10-12,Americano,0
+2024-10-13,Americano,0
+2024-10-14,Americano,3
+2024-10-15,Americano,2
+2024-10-16,Americano,2
+2024-10-17,Americano,1
+2024-10-18,Americano,1
+2024-10-19,Americano,0
+2024-10-20,Americano,0
+2024-10-21,Americano,1
+2024-10-22,Americano,1
+2024-10-23,Americano,0
+2024-10-24,Americano,4
+2024-10-25,Americano,2
+2024-10-26,Americano,1
+2024-10-27,Americano,0
+2024-10-28,Americano,1
+2024-10-29,Americano,0
+2024-10-30,Americano,2
+2024-10-31,Americano,0
+2024-11-01,Americano,1
+2024-11-02,Americano,1
+2024-11-03,Americano,3
+2024-11-04,Americano,1
+2024-11-05,Americano,0
+2024-11-06,Americano,1
+2024-11-07,Americano,2
+2024-11-08,Americano,2
+2024-11-09,Americano,4
+2024-11-10,Americano,1
+2024-11-11,Americano,0
+2024-11-12,Americano,0
+2024-11-13,Americano,0
+2024-11-14,Americano,1
+2024-11-15,Americano,1
+2024-11-16,Americano,1
+2024-11-17,Americano,1
+2024-11-18,Americano,0
+2024-11-19,Americano,0
+2024-11-20,Americano,0
+2024-11-21,Americano,0
+2024-11-22,Americano,0
+2024-11-23,Americano,2
+2024-11-24,Americano,0
+2024-11-25,Americano,0
+2024-11-26,Americano,2
+2024-11-28,Americano,0
+2024-11-29,Americano,0
+2024-11-30,Americano,1
+2024-12-01,Americano,0
+2024-12-02,Americano,2
+2024-12-03,Americano,1
+2024-12-04,Americano,1
+2024-12-05,Americano,2
+2024-12-06,Americano,0
+2024-12-07,Americano,2
+2024-12-08,Americano,0
+2024-12-09,Americano,1
+2024-12-10,Americano,0
+2024-12-11,Americano,0
+2024-12-12,Americano,2
+2024-12-13,Americano,2
+2024-12-14,Americano,5
+2024-12-15,Americano,0
+2024-12-16,Americano,0
+2024-12-17,Americano,1
+2024-12-18,Americano,0
+2024-12-19,Americano,0
+2024-12-20,Americano,0
+2024-12-21,Americano,1
+2024-12-22,Americano,0
+2024-12-23,Americano,0
+2024-12-24,Americano,0
+2024-12-25,Americano,2
+2024-12-26,Americano,0
+2024-12-27,Americano,2
+2024-12-28,Americano,0
+2024-12-29,Americano,1
+2024-12-30,Americano,1
+2024-12-31,Americano,1
+2025-01-02,Americano,1
+2025-01-03,Americano,2
+2025-01-04,Americano,2
+2025-01-05,Americano,0
+2025-01-06,Americano,1
+2025-01-07,Americano,0
+2025-01-08,Americano,0
+2025-01-09,Americano,1
+2025-01-10,Americano,0
+2025-01-11,Americano,1
+2025-01-12,Americano,1
+2025-01-13,Americano,0
+2025-01-14,Americano,0
+2025-01-15,Americano,1
+2025-01-16,Americano,0
+2025-01-17,Americano,0
+2025-01-18,Americano,0
+2025-01-20,Americano,1
+2025-01-21,Americano,2
+2025-01-22,Americano,0
+2025-01-24,Americano,1
+2025-01-25,Americano,1
+2025-01-26,Americano,1
+2025-01-27,Americano,1
+2025-01-28,Americano,3
+2025-01-29,Americano,2
+2025-01-30,Americano,1
+2025-01-31,Americano,2
+2025-02-01,Americano,0
+2025-02-02,Americano,0
+2025-02-03,Americano,5
+2025-02-04,Americano,3
+2025-02-05,Americano,5
+2025-02-06,Americano,1
+2025-02-07,Americano,2
+2025-02-08,Americano,6
+2025-02-09,Americano,1
+2025-02-10,Americano,7
+2025-02-11,Americano,3
+2025-02-12,Americano,7
+2025-02-13,Americano,3
+2025-02-14,Americano,4
+2025-02-15,Americano,2
+2025-02-16,Americano,3
+2025-02-17,Americano,7
+2025-02-18,Americano,5
+2025-02-19,Americano,6
+2025-02-20,Americano,8
+2025-02-21,Americano,11
+2025-02-22,Americano,2
+2025-02-23,Americano,1
+2025-02-24,Americano,3
+2025-02-25,Americano,5
+2025-02-26,Americano,5
+2025-02-27,Americano,5
+2025-02-28,Americano,7
+2025-03-01,Americano,4
+2025-03-02,Americano,2
+2025-03-03,Americano,4
+2025-03-04,Americano,9
+2025-03-05,Americano,6
+2025-03-06,Americano,3
+2025-03-07,Americano,4
+2025-03-08,Americano,4
+2025-03-09,Americano,2
+2025-03-10,Americano,4
+2025-03-11,Americano,4
+2025-03-12,Americano,6
+2025-03-13,Americano,3
+2025-03-14,Americano,10
+2025-03-15,Americano,1
+2025-03-16,Americano,1
+2025-03-17,Americano,6
+2025-03-18,Americano,3
+2025-03-19,Americano,8
+2025-03-20,Americano,8
+2025-03-21,Americano,7
+2025-03-22,Americano,2
+2025-03-23,Americano,1
+2024-03-01,Americano with Milk,4
+2024-03-02,Americano with Milk,3
+2024-03-03,Americano with Milk,2
+2024-03-04,Americano with Milk,1
+2024-03-05,Americano with Milk,0
+2024-03-06,Americano with Milk,1
+2024-03-07,Americano with Milk,1
+2024-03-08,Americano with Milk,1
+2024-03-09,Americano with Milk,2
+2024-03-10,Americano with Milk,2
+2024-03-11,Americano with Milk,0
+2024-03-12,Americano with Milk,1
+2024-03-13,Americano with Milk,1
+2024-03-14,Americano with Milk,2
+2024-03-15,Americano with Milk,0
+2024-03-16,Americano with Milk,2
+2024-03-17,Americano with Milk,0
+2024-03-18,Americano with Milk,0
+2024-03-19,Americano with Milk,1
+2024-03-20,Americano with Milk,0
+2024-03-21,Americano with Milk,0
+2024-03-22,Americano with Milk,2
+2024-03-23,Americano with Milk,3
+2024-03-24,Americano with Milk,0
+2024-03-25,Americano with Milk,2
+2024-03-26,Americano with Milk,0
+2024-03-27,Americano with Milk,2
+2024-03-28,Americano with Milk,0
+2024-03-29,Americano with Milk,0
+2024-03-30,Americano with Milk,1
+2024-03-31,Americano with Milk,0
+2024-04-01,Americano with Milk,4
+2024-04-02,Americano with Milk,0
+2024-04-03,Americano with Milk,0
+2024-04-04,Americano with Milk,0
+2024-04-05,Americano with Milk,1
+2024-04-06,Americano with Milk,1
+2024-04-07,Americano with Milk,1
+2024-04-08,Americano with Milk,3
+2024-04-09,Americano with Milk,0
+2024-04-10,Americano with Milk,0
+2024-04-11,Americano with Milk,1
+2024-04-12,Americano with Milk,0
+2024-04-13,Americano with Milk,0
+2024-04-14,Americano with Milk,1
+2024-04-15,Americano with Milk,2
+2024-04-16,Americano with Milk,3
+2024-04-17,Americano with Milk,0
+2024-04-18,Americano with Milk,1
+2024-04-19,Americano with Milk,2
+2024-04-20,Americano with Milk,7
+2024-04-21,Americano with Milk,0
+2024-04-22,Americano with Milk,1
+2024-04-23,Americano with Milk,3
+2024-04-24,Americano with Milk,6
+2024-04-25,Americano with Milk,0
+2024-04-26,Americano with Milk,0
+2024-04-27,Americano with Milk,0
+2024-04-28,Americano with Milk,0
+2024-04-29,Americano with Milk,1
+2024-04-30,Americano with Milk,4
+2024-05-02,Americano with Milk,2
+2024-05-03,Americano with Milk,0
+2024-05-06,Americano with Milk,1
+2024-05-07,Americano with Milk,1
+2024-05-08,Americano with Milk,0
+2024-05-09,Americano with Milk,1
+2024-05-10,Americano with Milk,1
+2024-05-11,Americano with Milk,2
+2024-05-12,Americano with Milk,4
+2024-05-13,Americano with Milk,1
+2024-05-14,Americano with Milk,2
+2024-05-15,Americano with Milk,1
+2024-05-16,Americano with Milk,3
+2024-05-17,Americano with Milk,3
+2024-05-18,Americano with Milk,4
+2024-05-19,Americano with Milk,3
+2024-05-20,Americano with Milk,5
+2024-05-21,Americano with Milk,1
+2024-05-22,Americano with Milk,3
+2024-05-23,Americano with Milk,1
+2024-05-24,Americano with Milk,1
+2024-05-25,Americano with Milk,4
+2024-05-26,Americano with Milk,2
+2024-05-27,Americano with Milk,2
+2024-05-28,Americano with Milk,3
+2024-05-29,Americano with Milk,0
+2024-05-30,Americano with Milk,3
+2024-05-31,Americano with Milk,4
+2024-06-01,Americano with Milk,4
+2024-06-02,Americano with Milk,3
+2024-06-03,Americano with Milk,3
+2024-06-04,Americano with Milk,5
+2024-06-05,Americano with Milk,2
+2024-06-06,Americano with Milk,4
+2024-06-07,Americano with Milk,1
+2024-06-08,Americano with Milk,1
+2024-06-09,Americano with Milk,2
+2024-06-10,Americano with Milk,0
+2024-06-11,Americano with Milk,3
+2024-06-12,Americano with Milk,1
+2024-06-13,Americano with Milk,5
+2024-06-14,Americano with Milk,1
+2024-06-15,Americano with Milk,3
+2024-06-16,Americano with Milk,6
+2024-06-17,Americano with Milk,1
+2024-06-18,Americano with Milk,2
+2024-06-19,Americano with Milk,3
+2024-06-20,Americano with Milk,1
+2024-06-21,Americano with Milk,3
+2024-06-22,Americano with Milk,2
+2024-06-23,Americano with Milk,2
+2024-06-24,Americano with Milk,1
+2024-06-25,Americano with Milk,2
+2024-06-26,Americano with Milk,1
+2024-06-27,Americano with Milk,2
+2024-06-28,Americano with Milk,1
+2024-06-29,Americano with Milk,3
+2024-06-30,Americano with Milk,1
+2024-07-01,Americano with Milk,0
+2024-07-02,Americano with Milk,3
+2024-07-03,Americano with Milk,3
+2024-07-04,Americano with Milk,1
+2024-07-05,Americano with Milk,3
+2024-07-06,Americano with Milk,1
+2024-07-07,Americano with Milk,3
+2024-07-08,Americano with Milk,1
+2024-07-09,Americano with Milk,4
+2024-07-10,Americano with Milk,1
+2024-07-11,Americano with Milk,1
+2024-07-12,Americano with Milk,0
+2024-07-13,Americano with Milk,0
+2024-07-14,Americano with Milk,1
+2024-07-15,Americano with Milk,0
+2024-07-16,Americano with Milk,1
+2024-07-17,Americano with Milk,1
+2024-07-18,Americano with Milk,1
+2024-07-19,Americano with Milk,2
+2024-07-20,Americano with Milk,0
+2024-07-21,Americano with Milk,0
+2024-07-22,Americano with Milk,1
+2024-07-23,Americano with Milk,3
+2024-07-24,Americano with Milk,3
+2024-07-25,Americano with Milk,1
+2024-07-26,Americano with Milk,4
+2024-07-27,Americano with Milk,5
+2024-07-28,Americano with Milk,1
+2024-07-29,Americano with Milk,2
+2024-07-30,Americano with Milk,12
+2024-07-31,Americano with Milk,6
+2024-08-01,Americano with Milk,6
+2024-08-02,Americano with Milk,3
+2024-08-03,Americano with Milk,7
+2024-08-04,Americano with Milk,2
+2024-08-05,Americano with Milk,3
+2024-08-06,Americano with Milk,1
+2024-08-07,Americano with Milk,1
+2024-08-08,Americano with Milk,2
+2024-08-09,Americano with Milk,1
+2024-08-10,Americano with Milk,2
+2024-08-11,Americano with Milk,3
+2024-08-12,Americano with Milk,5
+2024-08-13,Americano with Milk,5
+2024-08-14,Americano with Milk,1
+2024-08-15,Americano with Milk,4
+2024-08-16,Americano with Milk,1
+2024-08-17,Americano with Milk,4
+2024-08-18,Americano with Milk,4
+2024-08-19,Americano with Milk,2
+2024-08-20,Americano with Milk,1
+2024-08-21,Americano with Milk,2
+2024-08-22,Americano with Milk,2
+2024-08-23,Americano with Milk,1
+2024-08-24,Americano with Milk,0
+2024-08-25,Americano with Milk,0
+2024-08-26,Americano with Milk,3
+2024-08-27,Americano with Milk,0
+2024-08-28,Americano with Milk,2
+2024-08-29,Americano with Milk,0
+2024-08-30,Americano with Milk,2
+2024-08-31,Americano with Milk,2
+2024-09-01,Americano with Milk,3
+2024-09-02,Americano with Milk,2
+2024-09-03,Americano with Milk,7
+2024-09-04,Americano with Milk,4
+2024-09-05,Americano with Milk,5
+2024-09-06,Americano with Milk,0
+2024-09-07,Americano with Milk,3
+2024-09-08,Americano with Milk,0
+2024-09-09,Americano with Milk,3
+2024-09-10,Americano with Milk,2
+2024-09-11,Americano with Milk,2
+2024-09-12,Americano with Milk,2
+2024-09-13,Americano with Milk,2
+2024-09-14,Americano with Milk,0
+2024-09-15,Americano with Milk,1
+2024-09-16,Americano with Milk,5
+2024-09-17,Americano with Milk,10
+2024-09-18,Americano with Milk,2
+2024-09-19,Americano with Milk,2
+2024-09-20,Americano with Milk,5
+2024-09-21,Americano with Milk,1
+2024-09-22,Americano with Milk,12
+2024-09-23,Americano with Milk,4
+2024-09-24,Americano with Milk,3
+2024-09-25,Americano with Milk,6
+2024-09-26,Americano with Milk,2
+2024-09-27,Americano with Milk,5
+2024-09-28,Americano with Milk,3
+2024-09-29,Americano with Milk,1
+2024-09-30,Americano with Milk,7
+2024-10-01,Americano with Milk,7
+2024-10-02,Americano with Milk,2
+2024-10-03,Americano with Milk,1
+2024-10-04,Americano with Milk,1
+2024-10-05,Americano with Milk,0
+2024-10-06,Americano with Milk,3
+2024-10-07,Americano with Milk,2
+2024-10-08,Americano with Milk,4
+2024-10-09,Americano with Milk,3
+2024-10-10,Americano with Milk,2
+2024-10-11,Americano with Milk,5
+2024-10-12,Americano with Milk,1
+2024-10-13,Americano with Milk,1
+2024-10-14,Americano with Milk,1
+2024-10-15,Americano with Milk,1
+2024-10-16,Americano with Milk,8
+2024-10-17,Americano with Milk,3
+2024-10-18,Americano with Milk,1
+2024-10-19,Americano with Milk,1
+2024-10-20,Americano with Milk,1
+2024-10-21,Americano with Milk,2
+2024-10-22,Americano with Milk,1
+2024-10-23,Americano with Milk,5
+2024-10-24,Americano with Milk,0
+2024-10-25,Americano with Milk,1
+2024-10-26,Americano with Milk,4
+2024-10-27,Americano with Milk,2
+2024-10-28,Americano with Milk,7
+2024-10-29,Americano with Milk,4
+2024-10-30,Americano with Milk,6
+2024-10-31,Americano with Milk,2
+2024-11-01,Americano with Milk,1
+2024-11-02,Americano with Milk,3
+2024-11-03,Americano with Milk,4
+2024-11-04,Americano with Milk,2
+2024-11-05,Americano with Milk,4
+2024-11-06,Americano with Milk,0
+2024-11-07,Americano with Milk,0
+2024-11-08,Americano with Milk,3
+2024-11-09,Americano with Milk,2
+2024-11-10,Americano with Milk,0
+2024-11-11,Americano with Milk,1
+2024-11-12,Americano with Milk,0
+2024-11-13,Americano with Milk,4
+2024-11-14,Americano with Milk,1
+2024-11-15,Americano with Milk,5
+2024-11-16,Americano with Milk,3
+2024-11-17,Americano with Milk,3
+2024-11-18,Americano with Milk,2
+2024-11-19,Americano with Milk,2
+2024-11-20,Americano with Milk,1
+2024-11-21,Americano with Milk,1
+2024-11-22,Americano with Milk,0
+2024-11-23,Americano with Milk,0
+2024-11-24,Americano with Milk,0
+2024-11-25,Americano with Milk,2
+2024-11-26,Americano with Milk,1
+2024-11-28,Americano with Milk,2
+2024-11-29,Americano with Milk,3
+2024-11-30,Americano with Milk,2
+2024-12-01,Americano with Milk,7
+2024-12-02,Americano with Milk,1
+2024-12-03,Americano with Milk,6
+2024-12-04,Americano with Milk,4
+2024-12-05,Americano with Milk,2
+2024-12-06,Americano with Milk,0
+2024-12-07,Americano with Milk,2
+2024-12-08,Americano with Milk,4
+2024-12-09,Americano with Milk,1
+2024-12-10,Americano with Milk,0
+2024-12-11,Americano with Milk,0
+2024-12-12,Americano with Milk,1
+2024-12-13,Americano with Milk,0
+2024-12-14,Americano with Milk,2
+2024-12-15,Americano with Milk,0
+2024-12-16,Americano with Milk,2
+2024-12-17,Americano with Milk,1
+2024-12-18,Americano with Milk,1
+2024-12-19,Americano with Milk,2
+2024-12-20,Americano with Milk,2
+2024-12-21,Americano with Milk,2
+2024-12-22,Americano with Milk,0
+2024-12-23,Americano with Milk,3
+2024-12-24,Americano with Milk,1
+2024-12-25,Americano with Milk,3
+2024-12-26,Americano with Milk,0
+2024-12-27,Americano with Milk,2
+2024-12-28,Americano with Milk,1
+2024-12-29,Americano with Milk,0
+2024-12-30,Americano with Milk,3
+2024-12-31,Americano with Milk,4
+2025-01-02,Americano with Milk,2
+2025-01-03,Americano with Milk,2
+2025-01-04,Americano with Milk,1
+2025-01-05,Americano with Milk,2
+2025-01-06,Americano with Milk,0
+2025-01-07,Americano with Milk,0
+2025-01-08,Americano with Milk,1
+2025-01-09,Americano with Milk,3
+2025-01-10,Americano with Milk,3
+2025-01-11,Americano with Milk,4
+2025-01-12,Americano with Milk,3
+2025-01-13,Americano with Milk,2
+2025-01-14,Americano with Milk,3
+2025-01-15,Americano with Milk,1
+2025-01-16,Americano with Milk,2
+2025-01-17,Americano with Milk,2
+2025-01-18,Americano with Milk,1
+2025-01-20,Americano with Milk,3
+2025-01-21,Americano with Milk,1
+2025-01-22,Americano with Milk,3
+2025-01-24,Americano with Milk,0
+2025-01-25,Americano with Milk,0
+2025-01-26,Americano with Milk,0
+2025-01-27,Americano with Milk,3
+2025-01-28,Americano with Milk,1
+2025-01-29,Americano with Milk,1
+2025-01-30,Americano with Milk,4
+2025-01-31,Americano with Milk,4
+2025-02-01,Americano with Milk,5
+2025-02-02,Americano with Milk,1
+2025-02-03,Americano with Milk,7
+2025-02-04,Americano with Milk,4
+2025-02-05,Americano with Milk,4
+2025-02-06,Americano with Milk,2
+2025-02-07,Americano with Milk,3
+2025-02-08,Americano with Milk,1
+2025-02-09,Americano with Milk,1
+2025-02-10,Americano with Milk,4
+2025-02-11,Americano with Milk,5
+2025-02-12,Americano with Milk,1
+2025-02-13,Americano with Milk,5
+2025-02-14,Americano with Milk,2
+2025-02-15,Americano with Milk,2
+2025-02-16,Americano with Milk,3
+2025-02-17,Americano with Milk,5
+2025-02-18,Americano with Milk,5
+2025-02-19,Americano with Milk,2
+2025-02-20,Americano with Milk,1
+2025-02-21,Americano with Milk,1
+2025-02-22,Americano with Milk,1
+2025-02-23,Americano with Milk,3
+2025-02-24,Americano with Milk,7
+2025-02-25,Americano with Milk,2
+2025-02-26,Americano with Milk,3
+2025-02-27,Americano with Milk,1
+2025-02-28,Americano with Milk,4
+2025-03-01,Americano with Milk,1
+2025-03-02,Americano with Milk,2
+2025-03-03,Americano with Milk,2
+2025-03-04,Americano with Milk,2
+2025-03-05,Americano with Milk,3
+2025-03-06,Americano with Milk,3
+2025-03-07,Americano with Milk,3
+2025-03-08,Americano with Milk,3
+2025-03-09,Americano with Milk,2
+2025-03-10,Americano with Milk,3
+2025-03-11,Americano with Milk,1
+2025-03-12,Americano with Milk,1
+2025-03-13,Americano with Milk,4
+2025-03-14,Americano with Milk,1
+2025-03-15,Americano with Milk,3
+2025-03-16,Americano with Milk,1
+2025-03-17,Americano with Milk,1
+2025-03-18,Americano with Milk,3
+2025-03-19,Americano with Milk,2
+2025-03-20,Americano with Milk,3
+2025-03-21,Americano with Milk,2
+2025-03-22,Americano with Milk,6
+2025-03-23,Americano with Milk,0
+2024-03-06,Cappuccino,2
+2024-03-07,Cappuccino,0
+2024-03-08,Cappuccino,1
+2024-03-09,Cappuccino,3
+2024-03-10,Cappuccino,0
+2024-03-11,Cappuccino,2
+2024-03-12,Cappuccino,0
+2024-03-13,Cappuccino,0
+2024-03-14,Cappuccino,0
+2024-03-15,Cappuccino,0
+2024-03-16,Cappuccino,0
+2024-03-17,Cappuccino,0
+2024-03-18,Cappuccino,0
+2024-03-19,Cappuccino,0
+2024-03-20,Cappuccino,1
+2024-03-21,Cappuccino,2
+2024-03-22,Cappuccino,1
+2024-03-23,Cappuccino,1
+2024-03-24,Cappuccino,0
+2024-03-25,Cappuccino,1
+2024-03-26,Cappuccino,0
+2024-03-27,Cappuccino,1
+2024-03-28,Cappuccino,0
+2024-03-29,Cappuccino,3
+2024-03-30,Cappuccino,1
+2024-03-31,Cappuccino,1
+2024-04-01,Cappuccino,1
+2024-04-02,Cappuccino,1
+2024-04-03,Cappuccino,1
+2024-04-04,Cappuccino,1
+2024-04-05,Cappuccino,1
+2024-04-06,Cappuccino,1
+2024-04-07,Cappuccino,2
+2024-04-08,Cappuccino,3
+2024-04-09,Cappuccino,1
+2024-04-10,Cappuccino,1
+2024-04-11,Cappuccino,1
+2024-04-12,Cappuccino,0
+2024-04-13,Cappuccino,3
+2024-04-14,Cappuccino,3
+2024-04-15,Cappuccino,0
+2024-04-16,Cappuccino,1
+2024-04-17,Cappuccino,3
+2024-04-18,Cappuccino,2
+2024-04-19,Cappuccino,2
+2024-04-20,Cappuccino,3
+2024-04-21,Cappuccino,1
+2024-04-22,Cappuccino,1
+2024-04-23,Cappuccino,2
+2024-04-24,Cappuccino,1
+2024-04-25,Cappuccino,0
+2024-04-26,Cappuccino,1
+2024-04-27,Cappuccino,1
+2024-04-28,Cappuccino,1
+2024-04-29,Cappuccino,3
+2024-04-30,Cappuccino,1
+2024-05-02,Cappuccino,2
+2024-05-03,Cappuccino,0
+2024-05-06,Cappuccino,3
+2024-05-07,Cappuccino,3
+2024-05-08,Cappuccino,0
+2024-05-09,Cappuccino,1
+2024-05-10,Cappuccino,0
+2024-05-11,Cappuccino,2
+2024-05-12,Cappuccino,0
+2024-05-13,Cappuccino,0
+2024-05-14,Cappuccino,4
+2024-05-15,Cappuccino,1
+2024-05-16,Cappuccino,1
+2024-05-17,Cappuccino,2
+2024-05-18,Cappuccino,3
+2024-05-19,Cappuccino,4
+2024-05-20,Cappuccino,1
+2024-05-21,Cappuccino,2
+2024-05-22,Cappuccino,4
+2024-05-23,Cappuccino,9
+2024-05-24,Cappuccino,0
+2024-05-25,Cappuccino,0
+2024-05-26,Cappuccino,4
+2024-05-27,Cappuccino,1
+2024-05-28,Cappuccino,3
+2024-05-29,Cappuccino,1
+2024-05-30,Cappuccino,2
+2024-05-31,Cappuccino,2
+2024-06-01,Cappuccino,2
+2024-06-02,Cappuccino,1
+2024-06-03,Cappuccino,1
+2024-06-04,Cappuccino,2
+2024-06-05,Cappuccino,2
+2024-06-06,Cappuccino,2
+2024-06-07,Cappuccino,1
+2024-06-08,Cappuccino,2
+2024-06-09,Cappuccino,3
+2024-06-10,Cappuccino,1
+2024-06-11,Cappuccino,0
+2024-06-12,Cappuccino,1
+2024-06-13,Cappuccino,0
+2024-06-14,Cappuccino,0
+2024-06-15,Cappuccino,1
+2024-06-16,Cappuccino,0
+2024-06-17,Cappuccino,4
+2024-06-18,Cappuccino,3
+2024-06-19,Cappuccino,2
+2024-06-20,Cappuccino,0
+2024-06-21,Cappuccino,4
+2024-06-22,Cappuccino,1
+2024-06-23,Cappuccino,2
+2024-06-24,Cappuccino,4
+2024-06-25,Cappuccino,1
+2024-06-26,Cappuccino,1
+2024-06-27,Cappuccino,1
+2024-06-28,Cappuccino,1
+2024-06-29,Cappuccino,3
+2024-06-30,Cappuccino,0
+2024-07-01,Cappuccino,2
+2024-07-02,Cappuccino,0
+2024-07-03,Cappuccino,3
+2024-07-04,Cappuccino,0
+2024-07-05,Cappuccino,1
+2024-07-06,Cappuccino,0
+2024-07-07,Cappuccino,4
+2024-07-08,Cappuccino,0
+2024-07-09,Cappuccino,1
+2024-07-10,Cappuccino,0
+2024-07-11,Cappuccino,0
+2024-07-12,Cappuccino,0
+2024-07-13,Cappuccino,0
+2024-07-14,Cappuccino,1
+2024-07-15,Cappuccino,1
+2024-07-16,Cappuccino,0
+2024-07-17,Cappuccino,0
+2024-07-18,Cappuccino,1
+2024-07-19,Cappuccino,0
+2024-07-20,Cappuccino,0
+2024-07-21,Cappuccino,1
+2024-07-22,Cappuccino,0
+2024-07-23,Cappuccino,0
+2024-07-24,Cappuccino,3
+2024-07-25,Cappuccino,2
+2024-07-26,Cappuccino,3
+2024-07-27,Cappuccino,4
+2024-07-28,Cappuccino,0
+2024-07-29,Cappuccino,2
+2024-07-30,Cappuccino,2
+2024-07-31,Cappuccino,1
+2024-08-01,Cappuccino,3
+2024-08-02,Cappuccino,0
+2024-08-03,Cappuccino,1
+2024-08-04,Cappuccino,4
+2024-08-05,Cappuccino,1
+2024-08-06,Cappuccino,1
+2024-08-07,Cappuccino,1
+2024-08-08,Cappuccino,2
+2024-08-09,Cappuccino,0
+2024-08-10,Cappuccino,1
+2024-08-11,Cappuccino,3
+2024-08-12,Cappuccino,2
+2024-08-13,Cappuccino,2
+2024-08-14,Cappuccino,1
+2024-08-15,Cappuccino,2
+2024-08-16,Cappuccino,0
+2024-08-17,Cappuccino,2
+2024-08-18,Cappuccino,3
+2024-08-19,Cappuccino,0
+2024-08-20,Cappuccino,0
+2024-08-21,Cappuccino,0
+2024-08-22,Cappuccino,1
+2024-08-23,Cappuccino,0
+2024-08-24,Cappuccino,0
+2024-08-25,Cappuccino,2
+2024-08-26,Cappuccino,1
+2024-08-27,Cappuccino,0
+2024-08-28,Cappuccino,1
+2024-08-29,Cappuccino,0
+2024-08-30,Cappuccino,0
+2024-08-31,Cappuccino,0
+2024-09-01,Cappuccino,1
+2024-09-02,Cappuccino,1
+2024-09-03,Cappuccino,2
+2024-09-04,Cappuccino,1
+2024-09-05,Cappuccino,4
+2024-09-06,Cappuccino,1
+2024-09-07,Cappuccino,0
+2024-09-08,Cappuccino,0
+2024-09-09,Cappuccino,2
+2024-09-10,Cappuccino,2
+2024-09-11,Cappuccino,1
+2024-09-12,Cappuccino,2
+2024-09-13,Cappuccino,0
+2024-09-14,Cappuccino,2
+2024-09-15,Cappuccino,1
+2024-09-16,Cappuccino,0
+2024-09-17,Cappuccino,2
+2024-09-18,Cappuccino,0
+2024-09-19,Cappuccino,0
+2024-09-20,Cappuccino,0
+2024-09-21,Cappuccino,1
+2024-09-22,Cappuccino,1
+2024-09-23,Cappuccino,2
+2024-09-24,Cappuccino,1
+2024-09-25,Cappuccino,1
+2024-09-26,Cappuccino,1
+2024-09-27,Cappuccino,7
+2024-09-28,Cappuccino,1
+2024-09-29,Cappuccino,4
+2024-09-30,Cappuccino,0
+2024-10-01,Cappuccino,0
+2024-10-02,Cappuccino,2
+2024-10-03,Cappuccino,1
+2024-10-04,Cappuccino,0
+2024-10-05,Cappuccino,1
+2024-10-06,Cappuccino,5
+2024-10-07,Cappuccino,0
+2024-10-08,Cappuccino,1
+2024-10-09,Cappuccino,2
+2024-10-10,Cappuccino,1
+2024-10-11,Cappuccino,1
+2024-10-12,Cappuccino,1
+2024-10-13,Cappuccino,2
+2024-10-14,Cappuccino,2
+2024-10-15,Cappuccino,0
+2024-10-16,Cappuccino,0
+2024-10-17,Cappuccino,1
+2024-10-18,Cappuccino,3
+2024-10-19,Cappuccino,2
+2024-10-20,Cappuccino,1
+2024-10-21,Cappuccino,1
+2024-10-22,Cappuccino,1
+2024-10-23,Cappuccino,2
+2024-10-24,Cappuccino,3
+2024-10-25,Cappuccino,2
+2024-10-26,Cappuccino,3
+2024-10-27,Cappuccino,1
+2024-10-28,Cappuccino,3
+2024-10-29,Cappuccino,2
+2024-10-30,Cappuccino,0
+2024-10-31,Cappuccino,0
+2024-11-01,Cappuccino,0
+2024-11-02,Cappuccino,0
+2024-11-03,Cappuccino,0
+2024-11-04,Cappuccino,0
+2024-11-05,Cappuccino,4
+2024-11-06,Cappuccino,2
+2024-11-07,Cappuccino,0
+2024-11-08,Cappuccino,1
+2024-11-09,Cappuccino,0
+2024-11-10,Cappuccino,2
+2024-11-11,Cappuccino,3
+2024-11-12,Cappuccino,1
+2024-11-13,Cappuccino,0
+2024-11-14,Cappuccino,3
+2024-11-15,Cappuccino,0
+2024-11-16,Cappuccino,1
+2024-11-17,Cappuccino,0
+2024-11-18,Cappuccino,0
+2024-11-19,Cappuccino,2
+2024-11-20,Cappuccino,1
+2024-11-21,Cappuccino,0
+2024-11-22,Cappuccino,1
+2024-11-23,Cappuccino,1
+2024-11-24,Cappuccino,0
+2024-11-25,Cappuccino,2
+2024-11-26,Cappuccino,0
+2024-11-28,Cappuccino,2
+2024-11-29,Cappuccino,0
+2024-11-30,Cappuccino,0
+2024-12-01,Cappuccino,1
+2024-12-02,Cappuccino,2
+2024-12-03,Cappuccino,2
+2024-12-04,Cappuccino,0
+2024-12-05,Cappuccino,1
+2024-12-06,Cappuccino,0
+2024-12-07,Cappuccino,1
+2024-12-08,Cappuccino,3
+2024-12-09,Cappuccino,1
+2024-12-10,Cappuccino,0
+2024-12-11,Cappuccino,0
+2024-12-12,Cappuccino,0
+2024-12-13,Cappuccino,2
+2024-12-14,Cappuccino,1
+2024-12-15,Cappuccino,0
+2024-12-16,Cappuccino,0
+2024-12-17,Cappuccino,2
+2024-12-18,Cappuccino,1
+2024-12-19,Cappuccino,3
+2024-12-20,Cappuccino,3
+2024-12-21,Cappuccino,1
+2024-12-22,Cappuccino,2
+2024-12-23,Cappuccino,1
+2024-12-24,Cappuccino,1
+2024-12-25,Cappuccino,2
+2024-12-26,Cappuccino,1
+2024-12-27,Cappuccino,0
+2024-12-28,Cappuccino,2
+2024-12-29,Cappuccino,0
+2024-12-30,Cappuccino,1
+2024-12-31,Cappuccino,4
+2025-01-02,Cappuccino,1
+2025-01-03,Cappuccino,1
+2025-01-04,Cappuccino,3
+2025-01-05,Cappuccino,0
+2025-01-06,Cappuccino,0
+2025-01-07,Cappuccino,1
+2025-01-08,Cappuccino,1
+2025-01-09,Cappuccino,0
+2025-01-10,Cappuccino,1
+2025-01-11,Cappuccino,1
+2025-01-12,Cappuccino,0
+2025-01-13,Cappuccino,1
+2025-01-14,Cappuccino,1
+2025-01-15,Cappuccino,3
+2025-01-16,Cappuccino,1
+2025-01-17,Cappuccino,1
+2025-01-18,Cappuccino,0
+2025-01-20,Cappuccino,2
+2025-01-21,Cappuccino,0
+2025-01-22,Cappuccino,1
+2025-01-24,Cappuccino,1
+2025-01-25,Cappuccino,2
+2025-01-26,Cappuccino,0
+2025-01-27,Cappuccino,1
+2025-01-28,Cappuccino,1
+2025-01-29,Cappuccino,0
+2025-01-30,Cappuccino,0
+2025-01-31,Cappuccino,3
+2025-02-01,Cappuccino,3
+2025-02-02,Cappuccino,2
+2025-02-03,Cappuccino,4
+2025-02-04,Cappuccino,0
+2025-02-05,Cappuccino,5
+2025-02-06,Cappuccino,2
+2025-02-07,Cappuccino,0
+2025-02-08,Cappuccino,0
+2025-02-09,Cappuccino,0
+2025-02-10,Cappuccino,1
+2025-02-11,Cappuccino,0
+2025-02-12,Cappuccino,3
+2025-02-13,Cappuccino,1
+2025-02-14,Cappuccino,3
+2025-02-15,Cappuccino,3
+2025-02-16,Cappuccino,0
+2025-02-17,Cappuccino,2
+2025-02-18,Cappuccino,0
+2025-02-19,Cappuccino,5
+2025-02-20,Cappuccino,4
+2025-02-21,Cappuccino,3
+2025-02-22,Cappuccino,0
+2025-02-23,Cappuccino,1
+2025-02-24,Cappuccino,1
+2025-02-25,Cappuccino,3
+2025-02-26,Cappuccino,1
+2025-02-27,Cappuccino,4
+2025-02-28,Cappuccino,1
+2025-03-01,Cappuccino,2
+2025-03-02,Cappuccino,0
+2025-03-03,Cappuccino,4
+2025-03-04,Cappuccino,1
+2025-03-05,Cappuccino,3
+2025-03-06,Cappuccino,2
+2025-03-07,Cappuccino,2
+2025-03-08,Cappuccino,1
+2025-03-09,Cappuccino,2
+2025-03-10,Cappuccino,1
+2025-03-11,Cappuccino,2
+2025-03-12,Cappuccino,3
+2025-03-13,Cappuccino,2
+2025-03-14,Cappuccino,1
+2025-03-15,Cappuccino,3
+2025-03-16,Cappuccino,1
+2025-03-17,Cappuccino,1
+2025-03-18,Cappuccino,0
+2025-03-19,Cappuccino,3
+2025-03-20,Cappuccino,4
+2025-03-21,Cappuccino,4
+2025-03-22,Cappuccino,0
+2025-03-23,Cappuccino,1
+2024-03-01,Cocoa,1
+2024-03-02,Cocoa,0
+2024-03-03,Cocoa,1
+2024-03-04,Cocoa,0
+2024-03-05,Cocoa,1
+2024-03-06,Cocoa,0
+2024-03-07,Cocoa,0
+2024-03-08,Cocoa,0
+2024-03-09,Cocoa,0
+2024-03-10,Cocoa,0
+2024-03-11,Cocoa,0
+2024-03-12,Cocoa,0
+2024-03-13,Cocoa,0
+2024-03-14,Cocoa,0
+2024-03-15,Cocoa,0
+2024-03-16,Cocoa,0
+2024-03-17,Cocoa,0
+2024-03-18,Cocoa,0
+2024-03-19,Cocoa,0
+2024-03-20,Cocoa,1
+2024-03-21,Cocoa,0
+2024-03-22,Cocoa,0
+2024-03-23,Cocoa,1
+2024-03-24,Cocoa,0
+2024-03-25,Cocoa,0
+2024-03-26,Cocoa,1
+2024-03-27,Cocoa,0
+2024-03-28,Cocoa,0
+2024-03-29,Cocoa,0
+2024-03-30,Cocoa,0
+2024-03-31,Cocoa,0
+2024-04-01,Cocoa,0
+2024-04-02,Cocoa,0
+2024-04-03,Cocoa,0
+2024-04-04,Cocoa,0
+2024-04-05,Cocoa,1
+2024-04-06,Cocoa,0
+2024-04-07,Cocoa,0
+2024-04-08,Cocoa,0
+2024-04-09,Cocoa,0
+2024-04-10,Cocoa,0
+2024-04-11,Cocoa,0
+2024-04-12,Cocoa,0
+2024-04-13,Cocoa,0
+2024-04-14,Cocoa,0
+2024-04-15,Cocoa,0
+2024-04-16,Cocoa,2
+2024-04-17,Cocoa,0
+2024-04-18,Cocoa,0
+2024-04-19,Cocoa,1
+2024-04-20,Cocoa,1
+2024-04-21,Cocoa,0
+2024-04-22,Cocoa,0
+2024-04-23,Cocoa,0
+2024-04-24,Cocoa,0
+2024-04-25,Cocoa,0
+2024-04-26,Cocoa,1
+2024-04-27,Cocoa,0
+2024-04-28,Cocoa,0
+2024-04-29,Cocoa,0
+2024-04-30,Cocoa,0
+2024-05-02,Cocoa,0
+2024-05-03,Cocoa,0
+2024-05-06,Cocoa,0
+2024-05-07,Cocoa,2
+2024-05-08,Cocoa,0
+2024-05-09,Cocoa,0
+2024-05-10,Cocoa,0
+2024-05-11,Cocoa,1
+2024-05-12,Cocoa,0
+2024-05-13,Cocoa,0
+2024-05-14,Cocoa,0
+2024-05-15,Cocoa,0
+2024-05-16,Cocoa,0
+2024-05-17,Cocoa,0
+2024-05-18,Cocoa,0
+2024-05-19,Cocoa,0
+2024-05-20,Cocoa,1
+2024-05-21,Cocoa,1
+2024-05-22,Cocoa,0
+2024-05-23,Cocoa,0
+2024-05-24,Cocoa,0
+2024-05-25,Cocoa,0
+2024-05-26,Cocoa,0
+2024-05-27,Cocoa,1
+2024-05-28,Cocoa,1
+2024-05-29,Cocoa,1
+2024-05-30,Cocoa,0
+2024-05-31,Cocoa,1
+2024-06-01,Cocoa,2
+2024-06-02,Cocoa,0
+2024-06-03,Cocoa,0
+2024-06-04,Cocoa,0
+2024-06-05,Cocoa,1
+2024-06-06,Cocoa,0
+2024-06-07,Cocoa,0
+2024-06-08,Cocoa,0
+2024-06-09,Cocoa,0
+2024-06-10,Cocoa,0
+2024-06-11,Cocoa,0
+2024-06-12,Cocoa,0
+2024-06-13,Cocoa,0
+2024-06-14,Cocoa,0
+2024-06-15,Cocoa,1
+2024-06-16,Cocoa,0
+2024-06-17,Cocoa,0
+2024-06-18,Cocoa,0
+2024-06-19,Cocoa,1
+2024-06-20,Cocoa,0
+2024-06-21,Cocoa,0
+2024-06-22,Cocoa,0
+2024-06-23,Cocoa,0
+2024-06-24,Cocoa,0
+2024-06-25,Cocoa,0
+2024-06-26,Cocoa,0
+2024-06-27,Cocoa,0
+2024-06-28,Cocoa,0
+2024-06-29,Cocoa,0
+2024-06-30,Cocoa,0
+2024-07-01,Cocoa,0
+2024-07-02,Cocoa,0
+2024-07-03,Cocoa,0
+2024-07-04,Cocoa,0
+2024-07-05,Cocoa,1
+2024-07-06,Cocoa,0
+2024-07-07,Cocoa,1
+2024-07-08,Cocoa,0
+2024-07-09,Cocoa,0
+2024-07-10,Cocoa,0
+2024-07-11,Cocoa,0
+2024-07-12,Cocoa,0
+2024-07-13,Cocoa,0
+2024-07-14,Cocoa,0
+2024-07-15,Cocoa,0
+2024-07-16,Cocoa,0
+2024-07-17,Cocoa,0
+2024-07-18,Cocoa,0
+2024-07-19,Cocoa,1
+2024-07-20,Cocoa,0
+2024-07-21,Cocoa,1
+2024-07-22,Cocoa,0
+2024-07-23,Cocoa,1
+2024-07-24,Cocoa,0
+2024-07-25,Cocoa,1
+2024-07-26,Cocoa,0
+2024-07-27,Cocoa,0
+2024-07-28,Cocoa,0
+2024-07-29,Cocoa,1
+2024-07-30,Cocoa,0
+2024-07-31,Cocoa,2
+2024-08-01,Cocoa,0
+2024-08-02,Cocoa,0
+2024-08-03,Cocoa,0
+2024-08-04,Cocoa,0
+2024-08-05,Cocoa,2
+2024-08-06,Cocoa,1
+2024-08-07,Cocoa,1
+2024-08-08,Cocoa,0
+2024-08-09,Cocoa,0
+2024-08-10,Cocoa,3
+2024-08-11,Cocoa,1
+2024-08-12,Cocoa,0
+2024-08-13,Cocoa,1
+2024-08-14,Cocoa,0
+2024-08-15,Cocoa,0
+2024-08-16,Cocoa,0
+2024-08-17,Cocoa,0
+2024-08-18,Cocoa,0
+2024-08-19,Cocoa,1
+2024-08-20,Cocoa,0
+2024-08-21,Cocoa,0
+2024-08-22,Cocoa,0
+2024-08-23,Cocoa,1
+2024-08-24,Cocoa,0
+2024-08-25,Cocoa,0
+2024-08-26,Cocoa,0
+2024-08-27,Cocoa,0
+2024-08-28,Cocoa,0
+2024-08-29,Cocoa,0
+2024-08-30,Cocoa,0
+2024-08-31,Cocoa,0
+2024-09-01,Cocoa,0
+2024-09-02,Cocoa,1
+2024-09-03,Cocoa,4
+2024-09-04,Cocoa,0
+2024-09-05,Cocoa,0
+2024-09-06,Cocoa,0
+2024-09-07,Cocoa,1
+2024-09-08,Cocoa,0
+2024-09-09,Cocoa,0
+2024-09-10,Cocoa,0
+2024-09-11,Cocoa,0
+2024-09-12,Cocoa,0
+2024-09-13,Cocoa,0
+2024-09-14,Cocoa,0
+2024-09-15,Cocoa,0
+2024-09-16,Cocoa,0
+2024-09-17,Cocoa,0
+2024-09-18,Cocoa,0
+2024-09-19,Cocoa,0
+2024-09-20,Cocoa,0
+2024-09-21,Cocoa,1
+2024-09-22,Cocoa,1
+2024-09-23,Cocoa,0
+2024-09-24,Cocoa,0
+2024-09-25,Cocoa,0
+2024-09-26,Cocoa,0
+2024-09-27,Cocoa,0
+2024-09-28,Cocoa,1
+2024-09-29,Cocoa,0
+2024-09-30,Cocoa,0
+2024-10-01,Cocoa,0
+2024-10-02,Cocoa,0
+2024-10-03,Cocoa,1
+2024-10-04,Cocoa,1
+2024-10-05,Cocoa,1
+2024-10-06,Cocoa,0
+2024-10-07,Cocoa,1
+2024-10-08,Cocoa,0
+2024-10-09,Cocoa,0
+2024-10-10,Cocoa,0
+2024-10-11,Cocoa,3
+2024-10-12,Cocoa,0
+2024-10-13,Cocoa,0
+2024-10-14,Cocoa,1
+2024-10-15,Cocoa,1
+2024-10-16,Cocoa,0
+2024-10-17,Cocoa,0
+2024-10-18,Cocoa,6
+2024-10-19,Cocoa,1
+2024-10-20,Cocoa,4
+2024-10-21,Cocoa,2
+2024-10-22,Cocoa,0
+2024-10-23,Cocoa,1
+2024-10-24,Cocoa,0
+2024-10-25,Cocoa,4
+2024-10-26,Cocoa,1
+2024-10-27,Cocoa,0
+2024-10-28,Cocoa,2
+2024-10-29,Cocoa,2
+2024-10-30,Cocoa,0
+2024-10-31,Cocoa,0
+2024-11-01,Cocoa,3
+2024-11-02,Cocoa,1
+2024-11-03,Cocoa,2
+2024-11-04,Cocoa,2
+2024-11-05,Cocoa,4
+2024-11-06,Cocoa,0
+2024-11-07,Cocoa,1
+2024-11-08,Cocoa,0
+2024-11-09,Cocoa,2
+2024-11-10,Cocoa,1
+2024-11-11,Cocoa,0
+2024-11-12,Cocoa,2
+2024-11-13,Cocoa,0
+2024-11-14,Cocoa,1
+2024-11-15,Cocoa,2
+2024-11-16,Cocoa,0
+2024-11-17,Cocoa,0
+2024-11-18,Cocoa,0
+2024-11-19,Cocoa,3
+2024-11-20,Cocoa,0
+2024-11-21,Cocoa,2
+2024-11-22,Cocoa,1
+2024-11-23,Cocoa,0
+2024-11-24,Cocoa,0
+2024-11-25,Cocoa,0
+2024-11-26,Cocoa,4
+2024-11-28,Cocoa,0
+2024-11-29,Cocoa,2
+2024-11-30,Cocoa,2
+2024-12-01,Cocoa,2
+2024-12-02,Cocoa,1
+2024-12-03,Cocoa,1
+2024-12-04,Cocoa,0
+2024-12-05,Cocoa,0
+2024-12-06,Cocoa,0
+2024-12-07,Cocoa,0
+2024-12-08,Cocoa,0
+2024-12-09,Cocoa,1
+2024-12-10,Cocoa,0
+2024-12-11,Cocoa,1
+2024-12-12,Cocoa,2
+2024-12-13,Cocoa,1
+2024-12-14,Cocoa,2
+2024-12-15,Cocoa,1
+2024-12-16,Cocoa,1
+2024-12-17,Cocoa,2
+2024-12-18,Cocoa,0
+2024-12-19,Cocoa,0
+2024-12-20,Cocoa,0
+2024-12-21,Cocoa,1
+2024-12-22,Cocoa,1
+2024-12-23,Cocoa,0
+2024-12-24,Cocoa,0
+2024-12-25,Cocoa,2
+2024-12-26,Cocoa,0
+2024-12-27,Cocoa,1
+2024-12-28,Cocoa,0
+2024-12-29,Cocoa,0
+2024-12-30,Cocoa,0
+2024-12-31,Cocoa,1
+2025-01-02,Cocoa,2
+2025-01-03,Cocoa,0
+2025-01-04,Cocoa,1
+2025-01-05,Cocoa,0
+2025-01-06,Cocoa,0
+2025-01-07,Cocoa,2
+2025-01-08,Cocoa,0
+2025-01-09,Cocoa,0
+2025-01-10,Cocoa,0
+2025-01-11,Cocoa,0
+2025-01-12,Cocoa,0
+2025-01-13,Cocoa,0
+2025-01-14,Cocoa,0
+2025-01-15,Cocoa,0
+2025-01-16,Cocoa,0
+2025-01-17,Cocoa,3
+2025-01-18,Cocoa,0
+2025-01-20,Cocoa,0
+2025-01-21,Cocoa,1
+2025-01-22,Cocoa,1
+2025-01-24,Cocoa,2
+2025-01-25,Cocoa,0
+2025-01-26,Cocoa,0
+2025-01-27,Cocoa,0
+2025-01-28,Cocoa,1
+2025-01-29,Cocoa,0
+2025-01-30,Cocoa,0
+2025-01-31,Cocoa,1
+2025-02-01,Cocoa,0
+2025-02-02,Cocoa,0
+2025-02-03,Cocoa,2
+2025-02-04,Cocoa,3
+2025-02-05,Cocoa,3
+2025-02-06,Cocoa,5
+2025-02-07,Cocoa,5
+2025-02-08,Cocoa,0
+2025-02-09,Cocoa,3
+2025-02-10,Cocoa,4
+2025-02-11,Cocoa,2
+2025-02-12,Cocoa,2
+2025-02-13,Cocoa,1
+2025-02-14,Cocoa,1
+2025-02-15,Cocoa,0
+2025-02-16,Cocoa,0
+2025-02-17,Cocoa,0
+2025-02-18,Cocoa,5
+2025-02-19,Cocoa,3
+2025-02-20,Cocoa,1
+2025-02-21,Cocoa,3
+2025-02-22,Cocoa,0
+2025-02-23,Cocoa,1
+2025-02-24,Cocoa,5
+2025-02-25,Cocoa,1
+2025-02-26,Cocoa,1
+2025-02-27,Cocoa,4
+2025-02-28,Cocoa,1
+2025-03-01,Cocoa,0
+2025-03-02,Cocoa,1
+2025-03-03,Cocoa,2
+2025-03-04,Cocoa,2
+2025-03-05,Cocoa,2
+2025-03-06,Cocoa,1
+2025-03-07,Cocoa,2
+2025-03-08,Cocoa,0
+2025-03-09,Cocoa,1
+2025-03-10,Cocoa,1
+2025-03-11,Cocoa,2
+2025-03-12,Cocoa,2
+2025-03-13,Cocoa,0
+2025-03-14,Cocoa,3
+2025-03-15,Cocoa,0
+2025-03-16,Cocoa,0
+2025-03-17,Cocoa,2
+2025-03-18,Cocoa,4
+2025-03-19,Cocoa,1
+2025-03-20,Cocoa,1
+2025-03-21,Cocoa,0
+2025-03-22,Cocoa,1
+2025-03-23,Cocoa,2
+2024-03-03,Cortado,2
+2024-03-04,Cortado,0
+2024-03-05,Cortado,1
+2024-03-06,Cortado,1
+2024-03-07,Cortado,0
+2024-03-08,Cortado,1
+2024-03-09,Cortado,1
+2024-03-10,Cortado,1
+2024-03-11,Cortado,2
+2024-03-12,Cortado,1
+2024-03-13,Cortado,0
+2024-03-14,Cortado,2
+2024-03-15,Cortado,0
+2024-03-16,Cortado,3
+2024-03-17,Cortado,1
+2024-03-18,Cortado,1
+2024-03-19,Cortado,1
+2024-03-20,Cortado,2
+2024-03-21,Cortado,2
+2024-03-22,Cortado,0
+2024-03-23,Cortado,1
+2024-03-24,Cortado,0
+2024-03-25,Cortado,0
+2024-03-26,Cortado,3
+2024-03-27,Cortado,2
+2024-03-28,Cortado,2
+2024-03-29,Cortado,0
+2024-03-30,Cortado,0
+2024-03-31,Cortado,0
+2024-04-01,Cortado,0
+2024-04-02,Cortado,1
+2024-04-03,Cortado,2
+2024-04-04,Cortado,1
+2024-04-05,Cortado,2
+2024-04-06,Cortado,0
+2024-04-07,Cortado,1
+2024-04-08,Cortado,0
+2024-04-09,Cortado,0
+2024-04-10,Cortado,0
+2024-04-11,Cortado,0
+2024-04-12,Cortado,1
+2024-04-13,Cortado,0
+2024-04-14,Cortado,4
+2024-04-15,Cortado,0
+2024-04-16,Cortado,1
+2024-04-17,Cortado,1
+2024-04-18,Cortado,1
+2024-04-19,Cortado,0
+2024-04-20,Cortado,0
+2024-04-21,Cortado,0
+2024-04-22,Cortado,0
+2024-04-23,Cortado,0
+2024-04-24,Cortado,0
+2024-04-25,Cortado,0
+2024-04-26,Cortado,1
+2024-04-27,Cortado,0
+2024-04-28,Cortado,0
+2024-04-29,Cortado,3
+2024-04-30,Cortado,0
+2024-05-02,Cortado,0
+2024-05-03,Cortado,0
+2024-05-06,Cortado,2
+2024-05-07,Cortado,2
+2024-05-08,Cortado,0
+2024-05-09,Cortado,0
+2024-05-10,Cortado,0
+2024-05-11,Cortado,0
+2024-05-12,Cortado,0
+2024-05-13,Cortado,0
+2024-05-14,Cortado,0
+2024-05-15,Cortado,2
+2024-05-16,Cortado,0
+2024-05-17,Cortado,0
+2024-05-18,Cortado,0
+2024-05-19,Cortado,0
+2024-05-20,Cortado,1
+2024-05-21,Cortado,0
+2024-05-22,Cortado,1
+2024-05-23,Cortado,1
+2024-05-24,Cortado,3
+2024-05-25,Cortado,0
+2024-05-26,Cortado,2
+2024-05-27,Cortado,0
+2024-05-28,Cortado,1
+2024-05-29,Cortado,1
+2024-05-30,Cortado,0
+2024-05-31,Cortado,1
+2024-06-01,Cortado,1
+2024-06-02,Cortado,0
+2024-06-03,Cortado,0
+2024-06-04,Cortado,3
+2024-06-05,Cortado,1
+2024-06-06,Cortado,0
+2024-06-07,Cortado,2
+2024-06-08,Cortado,1
+2024-06-09,Cortado,2
+2024-06-10,Cortado,0
+2024-06-11,Cortado,0
+2024-06-12,Cortado,0
+2024-06-13,Cortado,1
+2024-06-14,Cortado,1
+2024-06-15,Cortado,0
+2024-06-16,Cortado,0
+2024-06-17,Cortado,2
+2024-06-18,Cortado,1
+2024-06-19,Cortado,1
+2024-06-20,Cortado,0
+2024-06-21,Cortado,0
+2024-06-22,Cortado,1
+2024-06-23,Cortado,0
+2024-06-24,Cortado,0
+2024-06-25,Cortado,0
+2024-06-26,Cortado,0
+2024-06-27,Cortado,1
+2024-06-28,Cortado,1
+2024-06-29,Cortado,0
+2024-06-30,Cortado,0
+2024-07-01,Cortado,0
+2024-07-02,Cortado,0
+2024-07-03,Cortado,0
+2024-07-04,Cortado,0
+2024-07-05,Cortado,0
+2024-07-06,Cortado,0
+2024-07-07,Cortado,0
+2024-07-08,Cortado,0
+2024-07-09,Cortado,0
+2024-07-10,Cortado,0
+2024-07-11,Cortado,0
+2024-07-12,Cortado,1
+2024-07-13,Cortado,0
+2024-07-14,Cortado,0
+2024-07-15,Cortado,0
+2024-07-16,Cortado,0
+2024-07-17,Cortado,0
+2024-07-18,Cortado,1
+2024-07-19,Cortado,0
+2024-07-20,Cortado,0
+2024-07-21,Cortado,1
+2024-07-22,Cortado,0
+2024-07-23,Cortado,0
+2024-07-24,Cortado,0
+2024-07-25,Cortado,2
+2024-07-26,Cortado,2
+2024-07-27,Cortado,0
+2024-07-28,Cortado,0
+2024-07-29,Cortado,0
+2024-07-30,Cortado,3
+2024-07-31,Cortado,4
+2024-08-01,Cortado,1
+2024-08-02,Cortado,1
+2024-08-03,Cortado,2
+2024-08-04,Cortado,0
+2024-08-05,Cortado,2
+2024-08-06,Cortado,1
+2024-08-07,Cortado,0
+2024-08-08,Cortado,3
+2024-08-09,Cortado,1
+2024-08-10,Cortado,2
+2024-08-11,Cortado,2
+2024-08-12,Cortado,0
+2024-08-13,Cortado,2
+2024-08-14,Cortado,3
+2024-08-15,Cortado,1
+2024-08-16,Cortado,0
+2024-08-17,Cortado,3
+2024-08-18,Cortado,1
+2024-08-19,Cortado,0
+2024-08-20,Cortado,2
+2024-08-21,Cortado,2
+2024-08-22,Cortado,1
+2024-08-23,Cortado,2
+2024-08-24,Cortado,3
+2024-08-25,Cortado,1
+2024-08-26,Cortado,1
+2024-08-27,Cortado,0
+2024-08-28,Cortado,0
+2024-08-29,Cortado,0
+2024-08-30,Cortado,0
+2024-08-31,Cortado,3
+2024-09-01,Cortado,1
+2024-09-02,Cortado,0
+2024-09-03,Cortado,1
+2024-09-04,Cortado,0
+2024-09-05,Cortado,0
+2024-09-06,Cortado,0
+2024-09-07,Cortado,4
+2024-09-08,Cortado,5
+2024-09-09,Cortado,0
+2024-09-10,Cortado,2
+2024-09-11,Cortado,1
+2024-09-12,Cortado,5
+2024-09-13,Cortado,0
+2024-09-14,Cortado,0
+2024-09-15,Cortado,2
+2024-09-16,Cortado,0
+2024-09-17,Cortado,3
+2024-09-18,Cortado,0
+2024-09-19,Cortado,2
+2024-09-20,Cortado,0
+2024-09-21,Cortado,2
+2024-09-22,Cortado,2
+2024-09-23,Cortado,1
+2024-09-24,Cortado,1
+2024-09-25,Cortado,1
+2024-09-26,Cortado,1
+2024-09-27,Cortado,1
+2024-09-28,Cortado,1
+2024-09-29,Cortado,1
+2024-09-30,Cortado,4
+2024-10-01,Cortado,0
+2024-10-02,Cortado,1
+2024-10-03,Cortado,1
+2024-10-04,Cortado,2
+2024-10-05,Cortado,2
+2024-10-06,Cortado,2
+2024-10-07,Cortado,0
+2024-10-08,Cortado,0
+2024-10-09,Cortado,0
+2024-10-10,Cortado,2
+2024-10-11,Cortado,2
+2024-10-12,Cortado,3
+2024-10-13,Cortado,3
+2024-10-14,Cortado,1
+2024-10-15,Cortado,1
+2024-10-16,Cortado,0
+2024-10-17,Cortado,0
+2024-10-18,Cortado,0
+2024-10-19,Cortado,0
+2024-10-20,Cortado,2
+2024-10-21,Cortado,3
+2024-10-22,Cortado,2
+2024-10-23,Cortado,1
+2024-10-24,Cortado,0
+2024-10-25,Cortado,1
+2024-10-26,Cortado,3
+2024-10-27,Cortado,0
+2024-10-28,Cortado,0
+2024-10-29,Cortado,2
+2024-10-30,Cortado,0
+2024-10-31,Cortado,0
+2024-11-01,Cortado,1
+2024-11-02,Cortado,1
+2024-11-03,Cortado,1
+2024-11-04,Cortado,0
+2024-11-05,Cortado,0
+2024-11-06,Cortado,0
+2024-11-07,Cortado,0
+2024-11-08,Cortado,0
+2024-11-09,Cortado,2
+2024-11-10,Cortado,0
+2024-11-11,Cortado,1
+2024-11-12,Cortado,0
+2024-11-13,Cortado,0
+2024-11-14,Cortado,0
+2024-11-15,Cortado,0
+2024-11-16,Cortado,2
+2024-11-17,Cortado,0
+2024-11-18,Cortado,0
+2024-11-19,Cortado,0
+2024-11-20,Cortado,0
+2024-11-21,Cortado,2
+2024-11-22,Cortado,0
+2024-11-23,Cortado,2
+2024-11-24,Cortado,0
+2024-11-25,Cortado,1
+2024-11-26,Cortado,0
+2024-11-28,Cortado,0
+2024-11-29,Cortado,0
+2024-11-30,Cortado,0
+2024-12-01,Cortado,0
+2024-12-02,Cortado,1
+2024-12-03,Cortado,0
+2024-12-04,Cortado,1
+2024-12-05,Cortado,1
+2024-12-06,Cortado,0
+2024-12-07,Cortado,0
+2024-12-08,Cortado,2
+2024-12-09,Cortado,1
+2024-12-10,Cortado,1
+2024-12-11,Cortado,1
+2024-12-12,Cortado,0
+2024-12-13,Cortado,0
+2024-12-14,Cortado,0
+2024-12-15,Cortado,0
+2024-12-16,Cortado,0
+2024-12-17,Cortado,1
+2024-12-18,Cortado,0
+2024-12-19,Cortado,0
+2024-12-20,Cortado,3
+2024-12-21,Cortado,4
+2024-12-22,Cortado,1
+2024-12-23,Cortado,3
+2024-12-24,Cortado,1
+2024-12-25,Cortado,0
+2024-12-26,Cortado,0
+2024-12-27,Cortado,2
+2024-12-28,Cortado,2
+2024-12-29,Cortado,3
+2024-12-30,Cortado,1
+2024-12-31,Cortado,2
+2025-01-02,Cortado,2
+2025-01-03,Cortado,1
+2025-01-04,Cortado,2
+2025-01-05,Cortado,0
+2025-01-06,Cortado,0
+2025-01-07,Cortado,0
+2025-01-08,Cortado,1
+2025-01-09,Cortado,1
+2025-01-10,Cortado,0
+2025-01-11,Cortado,2
+2025-01-12,Cortado,0
+2025-01-13,Cortado,1
+2025-01-14,Cortado,1
+2025-01-15,Cortado,0
+2025-01-16,Cortado,2
+2025-01-17,Cortado,0
+2025-01-18,Cortado,0
+2025-01-20,Cortado,2
+2025-01-21,Cortado,1
+2025-01-22,Cortado,0
+2025-01-24,Cortado,1
+2025-01-25,Cortado,0
+2025-01-26,Cortado,0
+2025-01-27,Cortado,2
+2025-01-28,Cortado,1
+2025-01-29,Cortado,0
+2025-01-30,Cortado,2
+2025-01-31,Cortado,0
+2025-02-01,Cortado,2
+2025-02-02,Cortado,0
+2025-02-03,Cortado,0
+2025-02-04,Cortado,2
+2025-02-05,Cortado,0
+2025-02-06,Cortado,0
+2025-02-07,Cortado,3
+2025-02-08,Cortado,1
+2025-02-09,Cortado,1
+2025-02-10,Cortado,0
+2025-02-11,Cortado,0
+2025-02-12,Cortado,0
+2025-02-13,Cortado,0
+2025-02-14,Cortado,0
+2025-02-15,Cortado,0
+2025-02-16,Cortado,0
+2025-02-17,Cortado,0
+2025-02-18,Cortado,0
+2025-02-19,Cortado,0
+2025-02-20,Cortado,0
+2025-02-21,Cortado,0
+2025-02-22,Cortado,0
+2025-02-23,Cortado,0
+2025-02-24,Cortado,0
+2025-02-25,Cortado,0
+2025-02-26,Cortado,1
+2025-02-27,Cortado,0
+2025-02-28,Cortado,0
+2025-03-01,Cortado,0
+2025-03-02,Cortado,0
+2025-03-03,Cortado,0
+2025-03-04,Cortado,0
+2025-03-05,Cortado,0
+2025-03-06,Cortado,0
+2025-03-07,Cortado,0
+2025-03-08,Cortado,0
+2025-03-09,Cortado,0
+2025-03-10,Cortado,0
+2025-03-11,Cortado,0
+2025-03-12,Cortado,0
+2025-03-13,Cortado,0
+2025-03-14,Cortado,0
+2025-03-15,Cortado,0
+2025-03-16,Cortado,0
+2025-03-17,Cortado,0
+2025-03-18,Cortado,0
+2025-03-19,Cortado,1
+2025-03-20,Cortado,1
+2025-03-21,Cortado,0
+2025-03-22,Cortado,0
+2025-03-23,Cortado,0
+2024-03-04,Espresso,1
+2024-03-05,Espresso,0
+2024-03-06,Espresso,0
+2024-03-07,Espresso,0
+2024-03-08,Espresso,0
+2024-03-09,Espresso,1
+2024-03-10,Espresso,1
+2024-03-11,Espresso,0
+2024-03-12,Espresso,0
+2024-03-13,Espresso,4
+2024-03-14,Espresso,2
+2024-03-15,Espresso,0
+2024-03-16,Espresso,0
+2024-03-17,Espresso,0
+2024-03-18,Espresso,0
+2024-03-19,Espresso,0
+2024-03-20,Espresso,0
+2024-03-21,Espresso,0
+2024-03-22,Espresso,1
+2024-03-23,Espresso,0
+2024-03-24,Espresso,0
+2024-03-25,Espresso,0
+2024-03-26,Espresso,0
+2024-03-27,Espresso,0
+2024-03-28,Espresso,0
+2024-03-29,Espresso,0
+2024-03-30,Espresso,0
+2024-03-31,Espresso,0
+2024-04-01,Espresso,0
+2024-04-02,Espresso,0
+2024-04-03,Espresso,0
+2024-04-04,Espresso,0
+2024-04-05,Espresso,1
+2024-04-06,Espresso,0
+2024-04-07,Espresso,1
+2024-04-08,Espresso,1
+2024-04-09,Espresso,0
+2024-04-10,Espresso,2
+2024-04-11,Espresso,0
+2024-04-12,Espresso,0
+2024-04-13,Espresso,0
+2024-04-14,Espresso,0
+2024-04-15,Espresso,1
+2024-04-16,Espresso,0
+2024-04-17,Espresso,1
+2024-04-18,Espresso,0
+2024-04-19,Espresso,0
+2024-04-20,Espresso,0
+2024-04-21,Espresso,0
+2024-04-22,Espresso,0
+2024-04-23,Espresso,0
+2024-04-24,Espresso,0
+2024-04-25,Espresso,0
+2024-04-26,Espresso,0
+2024-04-27,Espresso,0
+2024-04-28,Espresso,0
+2024-04-29,Espresso,0
+2024-04-30,Espresso,0
+2024-05-02,Espresso,0
+2024-05-03,Espresso,0
+2024-05-06,Espresso,0
+2024-05-07,Espresso,0
+2024-05-08,Espresso,0
+2024-05-09,Espresso,0
+2024-05-10,Espresso,0
+2024-05-11,Espresso,0
+2024-05-12,Espresso,0
+2024-05-13,Espresso,0
+2024-05-14,Espresso,0
+2024-05-15,Espresso,2
+2024-05-16,Espresso,0
+2024-05-17,Espresso,0
+2024-05-18,Espresso,0
+2024-05-19,Espresso,2
+2024-05-20,Espresso,0
+2024-05-21,Espresso,1
+2024-05-22,Espresso,0
+2024-05-23,Espresso,1
+2024-05-24,Espresso,0
+2024-05-25,Espresso,0
+2024-05-26,Espresso,0
+2024-05-27,Espresso,0
+2024-05-28,Espresso,0
+2024-05-29,Espresso,0
+2024-05-30,Espresso,2
+2024-05-31,Espresso,0
+2024-06-01,Espresso,0
+2024-06-02,Espresso,0
+2024-06-03,Espresso,0
+2024-06-04,Espresso,0
+2024-06-05,Espresso,0
+2024-06-06,Espresso,0
+2024-06-07,Espresso,1
+2024-06-08,Espresso,0
+2024-06-09,Espresso,1
+2024-06-10,Espresso,0
+2024-06-11,Espresso,0
+2024-06-12,Espresso,0
+2024-06-13,Espresso,2
+2024-06-14,Espresso,0
+2024-06-15,Espresso,1
+2024-06-16,Espresso,1
+2024-06-17,Espresso,0
+2024-06-18,Espresso,0
+2024-06-19,Espresso,0
+2024-06-20,Espresso,0
+2024-06-21,Espresso,1
+2024-06-22,Espresso,0
+2024-06-23,Espresso,0
+2024-06-24,Espresso,0
+2024-06-25,Espresso,0
+2024-06-26,Espresso,1
+2024-06-27,Espresso,0
+2024-06-28,Espresso,1
+2024-06-29,Espresso,0
+2024-06-30,Espresso,1
+2024-07-01,Espresso,1
+2024-07-02,Espresso,0
+2024-07-03,Espresso,1
+2024-07-04,Espresso,0
+2024-07-05,Espresso,2
+2024-07-06,Espresso,0
+2024-07-07,Espresso,0
+2024-07-08,Espresso,0
+2024-07-09,Espresso,0
+2024-07-10,Espresso,0
+2024-07-11,Espresso,0
+2024-07-12,Espresso,0
+2024-07-13,Espresso,0
+2024-07-14,Espresso,0
+2024-07-15,Espresso,0
+2024-07-16,Espresso,0
+2024-07-17,Espresso,0
+2024-07-18,Espresso,1
+2024-07-19,Espresso,0
+2024-07-20,Espresso,0
+2024-07-21,Espresso,0
+2024-07-22,Espresso,0
+2024-07-23,Espresso,0
+2024-07-24,Espresso,2
+2024-07-25,Espresso,1
+2024-07-26,Espresso,1
+2024-07-27,Espresso,2
+2024-07-28,Espresso,1
+2024-07-29,Espresso,0
+2024-07-30,Espresso,2
+2024-07-31,Espresso,0
+2024-08-01,Espresso,0
+2024-08-02,Espresso,0
+2024-08-03,Espresso,1
+2024-08-04,Espresso,0
+2024-08-05,Espresso,0
+2024-08-06,Espresso,0
+2024-08-07,Espresso,1
+2024-08-08,Espresso,1
+2024-08-09,Espresso,0
+2024-08-10,Espresso,0
+2024-08-11,Espresso,1
+2024-08-12,Espresso,1
+2024-08-13,Espresso,0
+2024-08-14,Espresso,1
+2024-08-15,Espresso,2
+2024-08-16,Espresso,2
+2024-08-17,Espresso,0
+2024-08-18,Espresso,0
+2024-08-19,Espresso,0
+2024-08-20,Espresso,1
+2024-08-21,Espresso,0
+2024-08-22,Espresso,0
+2024-08-23,Espresso,0
+2024-08-24,Espresso,2
+2024-08-25,Espresso,0
+2024-08-26,Espresso,0
+2024-08-27,Espresso,0
+2024-08-28,Espresso,0
+2024-08-29,Espresso,0
+2024-08-30,Espresso,0
+2024-08-31,Espresso,1
+2024-09-01,Espresso,0
+2024-09-02,Espresso,0
+2024-09-03,Espresso,0
+2024-09-04,Espresso,0
+2024-09-05,Espresso,0
+2024-09-06,Espresso,3
+2024-09-07,Espresso,4
+2024-09-08,Espresso,0
+2024-09-09,Espresso,1
+2024-09-10,Espresso,0
+2024-09-11,Espresso,0
+2024-09-12,Espresso,1
+2024-09-13,Espresso,0
+2024-09-14,Espresso,0
+2024-09-15,Espresso,1
+2024-09-16,Espresso,0
+2024-09-17,Espresso,1
+2024-09-18,Espresso,0
+2024-09-19,Espresso,0
+2024-09-20,Espresso,0
+2024-09-21,Espresso,0
+2024-09-22,Espresso,0
+2024-09-23,Espresso,0
+2024-09-24,Espresso,0
+2024-09-25,Espresso,0
+2024-09-26,Espresso,1
+2024-09-27,Espresso,0
+2024-09-28,Espresso,0
+2024-09-29,Espresso,0
+2024-09-30,Espresso,0
+2024-10-01,Espresso,0
+2024-10-02,Espresso,0
+2024-10-03,Espresso,0
+2024-10-04,Espresso,0
+2024-10-05,Espresso,0
+2024-10-06,Espresso,1
+2024-10-07,Espresso,0
+2024-10-08,Espresso,0
+2024-10-09,Espresso,2
+2024-10-10,Espresso,0
+2024-10-11,Espresso,0
+2024-10-12,Espresso,0
+2024-10-13,Espresso,1
+2024-10-14,Espresso,0
+2024-10-15,Espresso,2
+2024-10-16,Espresso,0
+2024-10-17,Espresso,0
+2024-10-18,Espresso,0
+2024-10-19,Espresso,0
+2024-10-20,Espresso,0
+2024-10-21,Espresso,1
+2024-10-22,Espresso,1
+2024-10-23,Espresso,1
+2024-10-24,Espresso,0
+2024-10-25,Espresso,2
+2024-10-26,Espresso,0
+2024-10-27,Espresso,0
+2024-10-28,Espresso,0
+2024-10-29,Espresso,1
+2024-10-30,Espresso,0
+2024-10-31,Espresso,0
+2024-11-01,Espresso,0
+2024-11-02,Espresso,0
+2024-11-03,Espresso,0
+2024-11-04,Espresso,0
+2024-11-05,Espresso,0
+2024-11-06,Espresso,1
+2024-11-07,Espresso,0
+2024-11-08,Espresso,0
+2024-11-09,Espresso,0
+2024-11-10,Espresso,0
+2024-11-11,Espresso,0
+2024-11-12,Espresso,0
+2024-11-13,Espresso,0
+2024-11-14,Espresso,1
+2024-11-15,Espresso,0
+2024-11-16,Espresso,0
+2024-11-17,Espresso,0
+2024-11-18,Espresso,0
+2024-11-19,Espresso,1
+2024-11-20,Espresso,0
+2024-11-21,Espresso,0
+2024-11-22,Espresso,0
+2024-11-23,Espresso,0
+2024-11-24,Espresso,0
+2024-11-25,Espresso,0
+2024-11-26,Espresso,0
+2024-11-28,Espresso,0
+2024-11-29,Espresso,0
+2024-11-30,Espresso,0
+2024-12-01,Espresso,0
+2024-12-02,Espresso,1
+2024-12-03,Espresso,0
+2024-12-04,Espresso,0
+2024-12-05,Espresso,0
+2024-12-06,Espresso,0
+2024-12-07,Espresso,0
+2024-12-08,Espresso,1
+2024-12-09,Espresso,0
+2024-12-10,Espresso,0
+2024-12-11,Espresso,1
+2024-12-12,Espresso,2
+2024-12-13,Espresso,0
+2024-12-14,Espresso,0
+2024-12-15,Espresso,0
+2024-12-16,Espresso,0
+2024-12-17,Espresso,0
+2024-12-18,Espresso,0
+2024-12-19,Espresso,1
+2024-12-20,Espresso,1
+2024-12-21,Espresso,0
+2024-12-22,Espresso,0
+2024-12-23,Espresso,0
+2024-12-24,Espresso,1
+2024-12-25,Espresso,0
+2024-12-26,Espresso,1
+2024-12-27,Espresso,0
+2024-12-28,Espresso,0
+2024-12-29,Espresso,2
+2024-12-30,Espresso,0
+2024-12-31,Espresso,1
+2025-01-02,Espresso,0
+2025-01-03,Espresso,0
+2025-01-04,Espresso,0
+2025-01-05,Espresso,0
+2025-01-06,Espresso,0
+2025-01-07,Espresso,0
+2025-01-08,Espresso,0
+2025-01-09,Espresso,1
+2025-01-10,Espresso,0
+2025-01-11,Espresso,0
+2025-01-12,Espresso,0
+2025-01-13,Espresso,1
+2025-01-14,Espresso,0
+2025-01-15,Espresso,0
+2025-01-16,Espresso,0
+2025-01-17,Espresso,0
+2025-01-18,Espresso,0
+2025-01-20,Espresso,0
+2025-01-21,Espresso,0
+2025-01-22,Espresso,1
+2025-01-24,Espresso,0
+2025-01-25,Espresso,0
+2025-01-26,Espresso,1
+2025-01-27,Espresso,0
+2025-01-28,Espresso,0
+2025-01-29,Espresso,1
+2025-01-30,Espresso,0
+2025-01-31,Espresso,0
+2025-02-01,Espresso,0
+2025-02-02,Espresso,0
+2025-02-03,Espresso,1
+2025-02-04,Espresso,0
+2025-02-05,Espresso,2
+2025-02-06,Espresso,1
+2025-02-07,Espresso,0
+2025-02-08,Espresso,0
+2025-02-09,Espresso,0
+2025-02-10,Espresso,0
+2025-02-11,Espresso,1
+2025-02-12,Espresso,0
+2025-02-13,Espresso,1
+2025-02-14,Espresso,2
+2025-02-15,Espresso,0
+2025-02-16,Espresso,0
+2025-02-17,Espresso,2
+2025-02-18,Espresso,1
+2025-02-19,Espresso,0
+2025-02-20,Espresso,1
+2025-02-21,Espresso,1
+2025-02-22,Espresso,1
+2025-02-23,Espresso,0
+2025-02-24,Espresso,0
+2025-02-25,Espresso,1
+2025-02-26,Espresso,0
+2025-02-27,Espresso,1
+2025-02-28,Espresso,1
+2025-03-01,Espresso,0
+2025-03-02,Espresso,0
+2025-03-03,Espresso,0
+2025-03-04,Espresso,0
+2025-03-05,Espresso,1
+2025-03-06,Espresso,1
+2025-03-07,Espresso,0
+2025-03-08,Espresso,0
+2025-03-09,Espresso,1
+2025-03-10,Espresso,0
+2025-03-11,Espresso,0
+2025-03-12,Espresso,0
+2025-03-13,Espresso,1
+2025-03-14,Espresso,1
+2025-03-15,Espresso,0
+2025-03-16,Espresso,0
+2025-03-17,Espresso,0
+2025-03-18,Espresso,1
+2025-03-19,Espresso,2
+2025-03-20,Espresso,1
+2025-03-21,Espresso,0
+2025-03-22,Espresso,1
+2025-03-23,Espresso,0
+2024-03-01,Hot Chocolate,3
+2024-03-02,Hot Chocolate,0
+2024-03-03,Hot Chocolate,2
+2024-03-04,Hot Chocolate,0
+2024-03-05,Hot Chocolate,4
+2024-03-06,Hot Chocolate,0
+2024-03-07,Hot Chocolate,1
+2024-03-08,Hot Chocolate,0
+2024-03-09,Hot Chocolate,3
+2024-03-10,Hot Chocolate,0
+2024-03-11,Hot Chocolate,0
+2024-03-12,Hot Chocolate,1
+2024-03-13,Hot Chocolate,1
+2024-03-14,Hot Chocolate,2
+2024-03-15,Hot Chocolate,1
+2024-03-16,Hot Chocolate,0
+2024-03-17,Hot Chocolate,0
+2024-03-18,Hot Chocolate,0
+2024-03-19,Hot Chocolate,2
+2024-03-20,Hot Chocolate,0
+2024-03-21,Hot Chocolate,0
+2024-03-22,Hot Chocolate,0
+2024-03-23,Hot Chocolate,0
+2024-03-24,Hot Chocolate,0
+2024-03-25,Hot Chocolate,0
+2024-03-26,Hot Chocolate,1
+2024-03-27,Hot Chocolate,1
+2024-03-28,Hot Chocolate,0
+2024-03-29,Hot Chocolate,0
+2024-03-30,Hot Chocolate,0
+2024-03-31,Hot Chocolate,0
+2024-04-01,Hot Chocolate,1
+2024-04-02,Hot Chocolate,0
+2024-04-03,Hot Chocolate,0
+2024-04-04,Hot Chocolate,0
+2024-04-05,Hot Chocolate,0
+2024-04-06,Hot Chocolate,0
+2024-04-07,Hot Chocolate,1
+2024-04-08,Hot Chocolate,0
+2024-04-09,Hot Chocolate,2
+2024-04-10,Hot Chocolate,1
+2024-04-11,Hot Chocolate,0
+2024-04-12,Hot Chocolate,1
+2024-04-13,Hot Chocolate,2
+2024-04-14,Hot Chocolate,0
+2024-04-15,Hot Chocolate,0
+2024-04-16,Hot Chocolate,0
+2024-04-17,Hot Chocolate,0
+2024-04-18,Hot Chocolate,2
+2024-04-19,Hot Chocolate,1
+2024-04-20,Hot Chocolate,1
+2024-04-21,Hot Chocolate,0
+2024-04-22,Hot Chocolate,0
+2024-04-23,Hot Chocolate,0
+2024-04-24,Hot Chocolate,0
+2024-04-25,Hot Chocolate,0
+2024-04-26,Hot Chocolate,1
+2024-04-27,Hot Chocolate,0
+2024-04-28,Hot Chocolate,0
+2024-04-29,Hot Chocolate,0
+2024-04-30,Hot Chocolate,0
+2024-05-02,Hot Chocolate,0
+2024-05-03,Hot Chocolate,0
+2024-05-06,Hot Chocolate,0
+2024-05-07,Hot Chocolate,0
+2024-05-08,Hot Chocolate,0
+2024-05-09,Hot Chocolate,0
+2024-05-10,Hot Chocolate,0
+2024-05-11,Hot Chocolate,0
+2024-05-12,Hot Chocolate,0
+2024-05-13,Hot Chocolate,0
+2024-05-14,Hot Chocolate,1
+2024-05-15,Hot Chocolate,0
+2024-05-16,Hot Chocolate,2
+2024-05-17,Hot Chocolate,0
+2024-05-18,Hot Chocolate,0
+2024-05-19,Hot Chocolate,1
+2024-05-20,Hot Chocolate,0
+2024-05-21,Hot Chocolate,0
+2024-05-22,Hot Chocolate,1
+2024-05-23,Hot Chocolate,1
+2024-05-24,Hot Chocolate,1
+2024-05-25,Hot Chocolate,0
+2024-05-26,Hot Chocolate,3
+2024-05-27,Hot Chocolate,0
+2024-05-28,Hot Chocolate,0
+2024-05-29,Hot Chocolate,2
+2024-05-30,Hot Chocolate,1
+2024-05-31,Hot Chocolate,1
+2024-06-01,Hot Chocolate,0
+2024-06-02,Hot Chocolate,0
+2024-06-03,Hot Chocolate,0
+2024-06-04,Hot Chocolate,2
+2024-06-05,Hot Chocolate,0
+2024-06-06,Hot Chocolate,0
+2024-06-07,Hot Chocolate,0
+2024-06-08,Hot Chocolate,0
+2024-06-09,Hot Chocolate,0
+2024-06-10,Hot Chocolate,2
+2024-06-11,Hot Chocolate,1
+2024-06-12,Hot Chocolate,2
+2024-06-13,Hot Chocolate,1
+2024-06-14,Hot Chocolate,0
+2024-06-15,Hot Chocolate,0
+2024-06-16,Hot Chocolate,4
+2024-06-17,Hot Chocolate,0
+2024-06-18,Hot Chocolate,0
+2024-06-19,Hot Chocolate,0
+2024-06-20,Hot Chocolate,0
+2024-06-21,Hot Chocolate,0
+2024-06-22,Hot Chocolate,0
+2024-06-23,Hot Chocolate,0
+2024-06-24,Hot Chocolate,0
+2024-06-25,Hot Chocolate,0
+2024-06-26,Hot Chocolate,0
+2024-06-27,Hot Chocolate,0
+2024-06-28,Hot Chocolate,0
+2024-06-29,Hot Chocolate,1
+2024-06-30,Hot Chocolate,1
+2024-07-01,Hot Chocolate,0
+2024-07-02,Hot Chocolate,0
+2024-07-03,Hot Chocolate,0
+2024-07-04,Hot Chocolate,0
+2024-07-05,Hot Chocolate,0
+2024-07-06,Hot Chocolate,0
+2024-07-07,Hot Chocolate,2
+2024-07-08,Hot Chocolate,0
+2024-07-09,Hot Chocolate,0
+2024-07-10,Hot Chocolate,0
+2024-07-11,Hot Chocolate,1
+2024-07-12,Hot Chocolate,4
+2024-07-13,Hot Chocolate,0
+2024-07-14,Hot Chocolate,0
+2024-07-15,Hot Chocolate,0
+2024-07-16,Hot Chocolate,1
+2024-07-17,Hot Chocolate,0
+2024-07-18,Hot Chocolate,1
+2024-07-19,Hot Chocolate,0
+2024-07-20,Hot Chocolate,0
+2024-07-21,Hot Chocolate,0
+2024-07-22,Hot Chocolate,0
+2024-07-23,Hot Chocolate,0
+2024-07-24,Hot Chocolate,0
+2024-07-25,Hot Chocolate,0
+2024-07-26,Hot Chocolate,0
+2024-07-27,Hot Chocolate,0
+2024-07-28,Hot Chocolate,0
+2024-07-29,Hot Chocolate,2
+2024-07-30,Hot Chocolate,0
+2024-07-31,Hot Chocolate,0
+2024-08-01,Hot Chocolate,0
+2024-08-02,Hot Chocolate,0
+2024-08-03,Hot Chocolate,0
+2024-08-04,Hot Chocolate,0
+2024-08-05,Hot Chocolate,0
+2024-08-06,Hot Chocolate,1
+2024-08-07,Hot Chocolate,0
+2024-08-08,Hot Chocolate,0
+2024-08-09,Hot Chocolate,1
+2024-08-10,Hot Chocolate,0
+2024-08-11,Hot Chocolate,0
+2024-08-12,Hot Chocolate,1
+2024-08-13,Hot Chocolate,0
+2024-08-14,Hot Chocolate,0
+2024-08-15,Hot Chocolate,2
+2024-08-16,Hot Chocolate,0
+2024-08-17,Hot Chocolate,0
+2024-08-18,Hot Chocolate,0
+2024-08-19,Hot Chocolate,0
+2024-08-20,Hot Chocolate,0
+2024-08-21,Hot Chocolate,0
+2024-08-22,Hot Chocolate,0
+2024-08-23,Hot Chocolate,1
+2024-08-24,Hot Chocolate,0
+2024-08-25,Hot Chocolate,0
+2024-08-26,Hot Chocolate,0
+2024-08-27,Hot Chocolate,0
+2024-08-28,Hot Chocolate,0
+2024-08-29,Hot Chocolate,0
+2024-08-30,Hot Chocolate,0
+2024-08-31,Hot Chocolate,0
+2024-09-01,Hot Chocolate,0
+2024-09-02,Hot Chocolate,0
+2024-09-03,Hot Chocolate,0
+2024-09-04,Hot Chocolate,0
+2024-09-05,Hot Chocolate,0
+2024-09-06,Hot Chocolate,1
+2024-09-07,Hot Chocolate,0
+2024-09-08,Hot Chocolate,0
+2024-09-09,Hot Chocolate,1
+2024-09-10,Hot Chocolate,1
+2024-09-11,Hot Chocolate,0
+2024-09-12,Hot Chocolate,0
+2024-09-13,Hot Chocolate,0
+2024-09-14,Hot Chocolate,0
+2024-09-15,Hot Chocolate,0
+2024-09-16,Hot Chocolate,0
+2024-09-17,Hot Chocolate,3
+2024-09-18,Hot Chocolate,0
+2024-09-19,Hot Chocolate,0
+2024-09-20,Hot Chocolate,0
+2024-09-21,Hot Chocolate,0
+2024-09-22,Hot Chocolate,2
+2024-09-23,Hot Chocolate,0
+2024-09-24,Hot Chocolate,1
+2024-09-25,Hot Chocolate,0
+2024-09-26,Hot Chocolate,0
+2024-09-27,Hot Chocolate,0
+2024-09-28,Hot Chocolate,1
+2024-09-29,Hot Chocolate,0
+2024-09-30,Hot Chocolate,1
+2024-10-01,Hot Chocolate,3
+2024-10-02,Hot Chocolate,4
+2024-10-03,Hot Chocolate,4
+2024-10-04,Hot Chocolate,1
+2024-10-05,Hot Chocolate,0
+2024-10-06,Hot Chocolate,4
+2024-10-07,Hot Chocolate,2
+2024-10-08,Hot Chocolate,1
+2024-10-09,Hot Chocolate,0
+2024-10-10,Hot Chocolate,3
+2024-10-11,Hot Chocolate,5
+2024-10-12,Hot Chocolate,0
+2024-10-13,Hot Chocolate,0
+2024-10-14,Hot Chocolate,0
+2024-10-15,Hot Chocolate,5
+2024-10-16,Hot Chocolate,2
+2024-10-17,Hot Chocolate,7
+2024-10-18,Hot Chocolate,1
+2024-10-19,Hot Chocolate,1
+2024-10-20,Hot Chocolate,2
+2024-10-21,Hot Chocolate,2
+2024-10-22,Hot Chocolate,1
+2024-10-23,Hot Chocolate,1
+2024-10-24,Hot Chocolate,4
+2024-10-25,Hot Chocolate,1
+2024-10-26,Hot Chocolate,0
+2024-10-27,Hot Chocolate,0
+2024-10-28,Hot Chocolate,1
+2024-10-29,Hot Chocolate,2
+2024-10-30,Hot Chocolate,1
+2024-10-31,Hot Chocolate,0
+2024-11-01,Hot Chocolate,0
+2024-11-02,Hot Chocolate,1
+2024-11-03,Hot Chocolate,2
+2024-11-04,Hot Chocolate,0
+2024-11-05,Hot Chocolate,2
+2024-11-06,Hot Chocolate,2
+2024-11-07,Hot Chocolate,1
+2024-11-08,Hot Chocolate,3
+2024-11-09,Hot Chocolate,4
+2024-11-10,Hot Chocolate,2
+2024-11-11,Hot Chocolate,2
+2024-11-12,Hot Chocolate,2
+2024-11-13,Hot Chocolate,0
+2024-11-14,Hot Chocolate,3
+2024-11-15,Hot Chocolate,1
+2024-11-16,Hot Chocolate,1
+2024-11-17,Hot Chocolate,3
+2024-11-18,Hot Chocolate,0
+2024-11-19,Hot Chocolate,0
+2024-11-20,Hot Chocolate,1
+2024-11-21,Hot Chocolate,1
+2024-11-22,Hot Chocolate,1
+2024-11-23,Hot Chocolate,1
+2024-11-24,Hot Chocolate,0
+2024-11-25,Hot Chocolate,3
+2024-11-26,Hot Chocolate,0
+2024-11-28,Hot Chocolate,0
+2024-11-29,Hot Chocolate,0
+2024-11-30,Hot Chocolate,1
+2024-12-01,Hot Chocolate,0
+2024-12-02,Hot Chocolate,0
+2024-12-03,Hot Chocolate,1
+2024-12-04,Hot Chocolate,2
+2024-12-05,Hot Chocolate,0
+2024-12-06,Hot Chocolate,2
+2024-12-07,Hot Chocolate,0
+2024-12-08,Hot Chocolate,0
+2024-12-09,Hot Chocolate,0
+2024-12-10,Hot Chocolate,1
+2024-12-11,Hot Chocolate,1
+2024-12-12,Hot Chocolate,0
+2024-12-13,Hot Chocolate,2
+2024-12-14,Hot Chocolate,0
+2024-12-15,Hot Chocolate,1
+2024-12-16,Hot Chocolate,2
+2024-12-17,Hot Chocolate,0
+2024-12-18,Hot Chocolate,0
+2024-12-19,Hot Chocolate,3
+2024-12-20,Hot Chocolate,0
+2024-12-21,Hot Chocolate,2
+2024-12-22,Hot Chocolate,3
+2024-12-23,Hot Chocolate,0
+2024-12-24,Hot Chocolate,2
+2024-12-25,Hot Chocolate,0
+2024-12-26,Hot Chocolate,0
+2024-12-27,Hot Chocolate,0
+2024-12-28,Hot Chocolate,1
+2024-12-29,Hot Chocolate,1
+2024-12-30,Hot Chocolate,1
+2024-12-31,Hot Chocolate,1
+2025-01-02,Hot Chocolate,1
+2025-01-03,Hot Chocolate,0
+2025-01-04,Hot Chocolate,0
+2025-01-05,Hot Chocolate,0
+2025-01-06,Hot Chocolate,0
+2025-01-07,Hot Chocolate,0
+2025-01-08,Hot Chocolate,0
+2025-01-09,Hot Chocolate,0
+2025-01-10,Hot Chocolate,1
+2025-01-11,Hot Chocolate,1
+2025-01-12,Hot Chocolate,1
+2025-01-13,Hot Chocolate,0
+2025-01-14,Hot Chocolate,0
+2025-01-15,Hot Chocolate,0
+2025-01-16,Hot Chocolate,2
+2025-01-17,Hot Chocolate,2
+2025-01-18,Hot Chocolate,2
+2025-01-20,Hot Chocolate,1
+2025-01-21,Hot Chocolate,1
+2025-01-22,Hot Chocolate,0
+2025-01-24,Hot Chocolate,1
+2025-01-25,Hot Chocolate,0
+2025-01-26,Hot Chocolate,0
+2025-01-27,Hot Chocolate,0
+2025-01-28,Hot Chocolate,0
+2025-01-29,Hot Chocolate,0
+2025-01-30,Hot Chocolate,2
+2025-01-31,Hot Chocolate,0
+2025-02-01,Hot Chocolate,0
+2025-02-02,Hot Chocolate,0
+2025-02-03,Hot Chocolate,2
+2025-02-04,Hot Chocolate,0
+2025-02-05,Hot Chocolate,3
+2025-02-06,Hot Chocolate,0
+2025-02-07,Hot Chocolate,1
+2025-02-08,Hot Chocolate,0
+2025-02-09,Hot Chocolate,1
+2025-02-10,Hot Chocolate,1
+2025-02-11,Hot Chocolate,1
+2025-02-12,Hot Chocolate,3
+2025-02-13,Hot Chocolate,0
+2025-02-14,Hot Chocolate,2
+2025-02-15,Hot Chocolate,2
+2025-02-16,Hot Chocolate,3
+2025-02-17,Hot Chocolate,1
+2025-02-18,Hot Chocolate,2
+2025-02-19,Hot Chocolate,2
+2025-02-20,Hot Chocolate,2
+2025-02-21,Hot Chocolate,1
+2025-02-22,Hot Chocolate,1
+2025-02-23,Hot Chocolate,0
+2025-02-24,Hot Chocolate,1
+2025-02-25,Hot Chocolate,0
+2025-02-26,Hot Chocolate,3
+2025-02-27,Hot Chocolate,0
+2025-02-28,Hot Chocolate,0
+2025-03-01,Hot Chocolate,0
+2025-03-02,Hot Chocolate,0
+2025-03-03,Hot Chocolate,5
+2025-03-04,Hot Chocolate,0
+2025-03-05,Hot Chocolate,1
+2025-03-06,Hot Chocolate,1
+2025-03-07,Hot Chocolate,3
+2025-03-08,Hot Chocolate,0
+2025-03-09,Hot Chocolate,0
+2025-03-10,Hot Chocolate,3
+2025-03-11,Hot Chocolate,2
+2025-03-12,Hot Chocolate,1
+2025-03-13,Hot Chocolate,0
+2025-03-14,Hot Chocolate,0
+2025-03-15,Hot Chocolate,0
+2025-03-16,Hot Chocolate,1
+2025-03-17,Hot Chocolate,0
+2025-03-18,Hot Chocolate,2
+2025-03-19,Hot Chocolate,1
+2025-03-20,Hot Chocolate,1
+2025-03-21,Hot Chocolate,1
+2025-03-22,Hot Chocolate,1
+2025-03-23,Hot Chocolate,0
+2024-03-01,Latte,2
+2024-03-02,Latte,1
+2024-03-03,Latte,2
+2024-03-04,Latte,2
+2024-03-05,Latte,3
+2024-03-06,Latte,0
+2024-03-07,Latte,3
+2024-03-08,Latte,2
+2024-03-09,Latte,1
+2024-03-10,Latte,2
+2024-03-11,Latte,2
+2024-03-12,Latte,1
+2024-03-13,Latte,0
+2024-03-14,Latte,3
+2024-03-15,Latte,1
+2024-03-16,Latte,0
+2024-03-17,Latte,1
+2024-03-18,Latte,0
+2024-03-19,Latte,2
+2024-03-20,Latte,2
+2024-03-21,Latte,1
+2024-03-22,Latte,0
+2024-03-23,Latte,2
+2024-03-24,Latte,2
+2024-03-25,Latte,3
+2024-03-26,Latte,4
+2024-03-27,Latte,1
+2024-03-28,Latte,1
+2024-03-29,Latte,1
+2024-03-30,Latte,3
+2024-03-31,Latte,0
+2024-04-01,Latte,0
+2024-04-02,Latte,1
+2024-04-03,Latte,0
+2024-04-04,Latte,3
+2024-04-05,Latte,2
+2024-04-06,Latte,1
+2024-04-07,Latte,1
+2024-04-08,Latte,1
+2024-04-09,Latte,1
+2024-04-10,Latte,1
+2024-04-11,Latte,1
+2024-04-12,Latte,0
+2024-04-13,Latte,2
+2024-04-14,Latte,2
+2024-04-15,Latte,0
+2024-04-16,Latte,0
+2024-04-17,Latte,0
+2024-04-18,Latte,2
+2024-04-19,Latte,1
+2024-04-20,Latte,1
+2024-04-21,Latte,1
+2024-04-22,Latte,2
+2024-04-23,Latte,0
+2024-04-24,Latte,1
+2024-04-25,Latte,1
+2024-04-26,Latte,2
+2024-04-27,Latte,0
+2024-04-28,Latte,2
+2024-04-29,Latte,0
+2024-04-30,Latte,2
+2024-05-02,Latte,2
+2024-05-03,Latte,3
+2024-05-06,Latte,0
+2024-05-07,Latte,1
+2024-05-08,Latte,1
+2024-05-09,Latte,3
+2024-05-10,Latte,3
+2024-05-11,Latte,3
+2024-05-12,Latte,3
+2024-05-13,Latte,0
+2024-05-14,Latte,1
+2024-05-15,Latte,1
+2024-05-16,Latte,3
+2024-05-17,Latte,2
+2024-05-18,Latte,1
+2024-05-19,Latte,0
+2024-05-20,Latte,4
+2024-05-21,Latte,3
+2024-05-22,Latte,0
+2024-05-23,Latte,3
+2024-05-24,Latte,0
+2024-05-25,Latte,1
+2024-05-26,Latte,3
+2024-05-27,Latte,3
+2024-05-28,Latte,1
+2024-05-29,Latte,5
+2024-05-30,Latte,3
+2024-05-31,Latte,5
+2024-06-01,Latte,2
+2024-06-02,Latte,2
+2024-06-03,Latte,3
+2024-06-04,Latte,2
+2024-06-05,Latte,2
+2024-06-06,Latte,4
+2024-06-07,Latte,0
+2024-06-08,Latte,0
+2024-06-09,Latte,4
+2024-06-10,Latte,3
+2024-06-11,Latte,2
+2024-06-12,Latte,2
+2024-06-13,Latte,2
+2024-06-14,Latte,1
+2024-06-15,Latte,1
+2024-06-16,Latte,1
+2024-06-17,Latte,0
+2024-06-18,Latte,0
+2024-06-19,Latte,3
+2024-06-20,Latte,5
+2024-06-21,Latte,2
+2024-06-22,Latte,1
+2024-06-23,Latte,1
+2024-06-24,Latte,1
+2024-06-25,Latte,1
+2024-06-26,Latte,2
+2024-06-27,Latte,0
+2024-06-28,Latte,1
+2024-06-29,Latte,1
+2024-06-30,Latte,1
+2024-07-01,Latte,0
+2024-07-02,Latte,1
+2024-07-03,Latte,2
+2024-07-04,Latte,0
+2024-07-05,Latte,0
+2024-07-06,Latte,4
+2024-07-07,Latte,1
+2024-07-08,Latte,2
+2024-07-09,Latte,0
+2024-07-10,Latte,1
+2024-07-11,Latte,1
+2024-07-12,Latte,0
+2024-07-13,Latte,2
+2024-07-14,Latte,2
+2024-07-15,Latte,0
+2024-07-16,Latte,0
+2024-07-17,Latte,0
+2024-07-18,Latte,4
+2024-07-19,Latte,4
+2024-07-20,Latte,4
+2024-07-21,Latte,1
+2024-07-22,Latte,1
+2024-07-23,Latte,4
+2024-07-24,Latte,2
+2024-07-25,Latte,1
+2024-07-26,Latte,5
+2024-07-27,Latte,2
+2024-07-28,Latte,1
+2024-07-29,Latte,1
+2024-07-30,Latte,3
+2024-07-31,Latte,7
+2024-08-01,Latte,0
+2024-08-02,Latte,1
+2024-08-03,Latte,2
+2024-08-04,Latte,0
+2024-08-05,Latte,5
+2024-08-06,Latte,3
+2024-08-07,Latte,3
+2024-08-08,Latte,0
+2024-08-09,Latte,2
+2024-08-10,Latte,2
+2024-08-11,Latte,5
+2024-08-12,Latte,3
+2024-08-13,Latte,3
+2024-08-14,Latte,4
+2024-08-15,Latte,3
+2024-08-16,Latte,1
+2024-08-17,Latte,2
+2024-08-18,Latte,0
+2024-08-19,Latte,1
+2024-08-20,Latte,6
+2024-08-21,Latte,2
+2024-08-22,Latte,2
+2024-08-23,Latte,3
+2024-08-24,Latte,0
+2024-08-25,Latte,1
+2024-08-26,Latte,2
+2024-08-27,Latte,1
+2024-08-28,Latte,0
+2024-08-29,Latte,0
+2024-08-30,Latte,1
+2024-08-31,Latte,0
+2024-09-01,Latte,4
+2024-09-02,Latte,2
+2024-09-03,Latte,3
+2024-09-04,Latte,4
+2024-09-05,Latte,2
+2024-09-06,Latte,4
+2024-09-07,Latte,7
+2024-09-08,Latte,0
+2024-09-09,Latte,9
+2024-09-10,Latte,2
+2024-09-11,Latte,4
+2024-09-12,Latte,1
+2024-09-13,Latte,4
+2024-09-14,Latte,0
+2024-09-15,Latte,0
+2024-09-16,Latte,6
+2024-09-17,Latte,4
+2024-09-18,Latte,2
+2024-09-19,Latte,1
+2024-09-20,Latte,1
+2024-09-21,Latte,6
+2024-09-22,Latte,3
+2024-09-23,Latte,1
+2024-09-24,Latte,7
+2024-09-25,Latte,1
+2024-09-26,Latte,4
+2024-09-27,Latte,2
+2024-09-28,Latte,4
+2024-09-29,Latte,4
+2024-09-30,Latte,2
+2024-10-01,Latte,3
+2024-10-02,Latte,2
+2024-10-03,Latte,0
+2024-10-04,Latte,1
+2024-10-05,Latte,0
+2024-10-06,Latte,4
+2024-10-07,Latte,5
+2024-10-08,Latte,8
+2024-10-09,Latte,3
+2024-10-10,Latte,5
+2024-10-11,Latte,5
+2024-10-12,Latte,2
+2024-10-13,Latte,2
+2024-10-14,Latte,8
+2024-10-15,Latte,6
+2024-10-16,Latte,2
+2024-10-17,Latte,9
+2024-10-18,Latte,3
+2024-10-19,Latte,4
+2024-10-20,Latte,6
+2024-10-21,Latte,7
+2024-10-22,Latte,2
+2024-10-23,Latte,2
+2024-10-24,Latte,4
+2024-10-25,Latte,2
+2024-10-26,Latte,4
+2024-10-27,Latte,2
+2024-10-28,Latte,4
+2024-10-29,Latte,5
+2024-10-30,Latte,7
+2024-10-31,Latte,3
+2024-11-01,Latte,1
+2024-11-02,Latte,2
+2024-11-03,Latte,1
+2024-11-04,Latte,2
+2024-11-05,Latte,3
+2024-11-06,Latte,2
+2024-11-07,Latte,3
+2024-11-08,Latte,3
+2024-11-09,Latte,3
+2024-11-10,Latte,0
+2024-11-11,Latte,3
+2024-11-12,Latte,4
+2024-11-13,Latte,2
+2024-11-14,Latte,4
+2024-11-15,Latte,2
+2024-11-16,Latte,5
+2024-11-17,Latte,2
+2024-11-18,Latte,4
+2024-11-19,Latte,3
+2024-11-20,Latte,1
+2024-11-21,Latte,2
+2024-11-22,Latte,3
+2024-11-23,Latte,2
+2024-11-24,Latte,1
+2024-11-25,Latte,3
+2024-11-26,Latte,3
+2024-11-28,Latte,2
+2024-11-29,Latte,2
+2024-11-30,Latte,0
+2024-12-01,Latte,4
+2024-12-02,Latte,1
+2024-12-03,Latte,2
+2024-12-04,Latte,2
+2024-12-05,Latte,3
+2024-12-06,Latte,2
+2024-12-07,Latte,1
+2024-12-08,Latte,1
+2024-12-09,Latte,0
+2024-12-10,Latte,0
+2024-12-11,Latte,3
+2024-12-12,Latte,0
+2024-12-13,Latte,1
+2024-12-14,Latte,1
+2024-12-15,Latte,1
+2024-12-16,Latte,3
+2024-12-17,Latte,0
+2024-12-18,Latte,2
+2024-12-19,Latte,1
+2024-12-20,Latte,0
+2024-12-21,Latte,4
+2024-12-22,Latte,0
+2024-12-23,Latte,3
+2024-12-24,Latte,1
+2024-12-25,Latte,3
+2024-12-26,Latte,0
+2024-12-27,Latte,1
+2024-12-28,Latte,2
+2024-12-29,Latte,1
+2024-12-30,Latte,2
+2024-12-31,Latte,2
+2025-01-02,Latte,0
+2025-01-03,Latte,1
+2025-01-04,Latte,1
+2025-01-05,Latte,1
+2025-01-06,Latte,0
+2025-01-07,Latte,0
+2025-01-08,Latte,1
+2025-01-09,Latte,3
+2025-01-10,Latte,0
+2025-01-11,Latte,6
+2025-01-12,Latte,0
+2025-01-13,Latte,3
+2025-01-14,Latte,3
+2025-01-15,Latte,5
+2025-01-16,Latte,3
+2025-01-17,Latte,1
+2025-01-18,Latte,1
+2025-01-20,Latte,1
+2025-01-21,Latte,2
+2025-01-22,Latte,1
+2025-01-24,Latte,1
+2025-01-25,Latte,0
+2025-01-26,Latte,0
+2025-01-27,Latte,3
+2025-01-28,Latte,2
+2025-01-29,Latte,0
+2025-01-30,Latte,0
+2025-01-31,Latte,2
+2025-02-01,Latte,1
+2025-02-02,Latte,4
+2025-02-03,Latte,4
+2025-02-04,Latte,0
+2025-02-05,Latte,2
+2025-02-06,Latte,1
+2025-02-07,Latte,2
+2025-02-08,Latte,0
+2025-02-09,Latte,2
+2025-02-10,Latte,4
+2025-02-11,Latte,2
+2025-02-12,Latte,2
+2025-02-13,Latte,2
+2025-02-14,Latte,1
+2025-02-15,Latte,0
+2025-02-16,Latte,1
+2025-02-17,Latte,3
+2025-02-18,Latte,0
+2025-02-19,Latte,2
+2025-02-20,Latte,2
+2025-02-21,Latte,3
+2025-02-22,Latte,0
+2025-02-23,Latte,0
+2025-02-24,Latte,5
+2025-02-25,Latte,0
+2025-02-26,Latte,4
+2025-02-27,Latte,4
+2025-02-28,Latte,3
+2025-03-01,Latte,1
+2025-03-02,Latte,1
+2025-03-03,Latte,5
+2025-03-04,Latte,2
+2025-03-05,Latte,3
+2025-03-06,Latte,1
+2025-03-07,Latte,3
+2025-03-08,Latte,0
+2025-03-09,Latte,0
+2025-03-10,Latte,5
+2025-03-11,Latte,2
+2025-03-12,Latte,4
+2025-03-13,Latte,2
+2025-03-14,Latte,7
+2025-03-15,Latte,0
+2025-03-16,Latte,1
+2025-03-17,Latte,3
+2025-03-18,Latte,4
+2025-03-19,Latte,3
+2025-03-20,Latte,1
+2025-03-21,Latte,6
+2025-03-22,Latte,1
+2025-03-23,Latte,2

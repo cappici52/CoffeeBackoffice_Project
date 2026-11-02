@@ -99,7 +99,7 @@ npm run test:e2e
 ```
 
 - 50 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย และ LAN/production security headers
-- Python model/selection tests 14 กรณี รวมตรวจผลตรงกับโมเดล ProjectA และกันข้อมูลอนาคตรั่ว
+- Python model/selection tests 22 กรณี รวมตรวจผลตรงกับโมเดล ProjectA กันข้อมูลอนาคตรั่ว และทำซ้ำผลเทรน Coffee Sales จริง
 - Browser test ครอบคลุม 21 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
 - Tests บน PostgreSQL และ browser ใช้ schema สุ่มแล้วลบ ไม่เขียน test orders ลงตารางร้านจริง ต้องใช้ development database ที่อนุญาตสร้าง schema
 - Browser plugin ไม่พร้อมใน session นี้ จึงใช้ Playwright/Edge; CI ใช้ Chromium ภาพ QA อยู่ใน OS temp หรือ `QA_OUTPUT_DIR` ไม่ commit รูปทดสอบ
@@ -112,6 +112,7 @@ Migration มี checksum ห้ามแก้ไฟล์ที่ใช้แ
 - [สเปกต้นฉบับ](docs/coffee-shop-backoffice-spec.md)
 - [สถานะงานและขอบเขต](docs/roadmap.md)
 - [กติกา domain / การรับเงินและปิดวัน](docs/domain-decisions.md)
+- [ผลทดลองเทรนด้วยข้อมูล Coffee Sales จริงและข้อจำกัด](docs/coffee-sales-evaluation.md) — เทรนและทดสอบแล้ว แต่ยังไม่เปิดใช้แทนโมเดลในแอปเพราะแพ้ baseline ที่เลือกจาก validation
 - [แนวทาง UI และ token](DESIGN.md) / [พฤติกรรมร่วม](UX-CONTRACT.md)
 - [ภาพแนวทางและ brief จาก ImageGen](docs/design/concept.md)
 

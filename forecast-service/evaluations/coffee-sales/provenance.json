@@ -1,0 +1,32 @@
+{
+  "source_url": "https://www.kaggle.com/datasets/ihelon/coffee-sales",
+  "dataset_ref": "ihelon/coffee-sales",
+  "archive_sha256": "e7942082609296f308f459f03f5e3f7da7ee3c5e3be18145eb171c28abf11a56",
+  "source_csv": "index_1.csv",
+  "source_csv_sha256": "2a600445a1836da436a3e890e1e1cce0ecf279d369d3a9e280db3ea0d06b594e",
+  "ignored_members": [
+    "index_2.csv"
+  ],
+  "raw_rows": 3636,
+  "products": 8,
+  "first_date": "2024-03-01",
+  "last_date": "2025-03-23",
+  "machine_active_days": 381,
+  "unknown_days": [
+    "2024-05-01",
+    "2024-05-04",
+    "2024-05-05",
+    "2024-11-27",
+    "2025-01-01",
+    "2025-01-19",
+    "2025-01-23"
+  ],
+  "target": "recorded beverage transactions per product per source-calendar day",
+  "zero_policy": "No records after product introduction on a machine-active day => zero transactions; full missing days remain unknown.",
+  "quantity_limitation": "No quantity column; one record is one recorded vend event, not independently verified cups.",
+  "price_policy": "Money/currency and customer identifiers are excluded from all features.",
+  "license": "CC0: Public Domain",
+  "publisher_last_updated": "2025-03-25T10:20:05.3Z",
+  "license_metadata_url": "https://www.kaggle.com/api/v1/datasets/list?search=coffee%20sales&user=ihelon",
+  "prepared_csv_sha256": "76f019bb07d48dccdaad53a60e8d6ca03089ba672cd178f457ec9bb12f62186f"
+}
