@@ -5,7 +5,7 @@ import type { Database, Sql } from '../db.js';
 import type { User } from '../security.js';
 import { fail,idSchema,imageUrl,money,note,pagination,quantity,record,text } from './shared.js';
 
-const option = z.object({name:text,extra_price_satang:money.default(0),ingredient_id:idSchema.nullable().default(null),ingredient_qty:quantity.nullable().default(null),replaces_ingredient_id:idSchema.nullable().default(null)}).strict().refine(v=>v.ingredient_id ? v.ingredient_qty!==null : v.ingredient_qty===null && v.replaces_ingredient_id===null,'Ingredient and quantity must be provided together');
+const option = z.object({name:text,extra_price_satang:money.default(0),ingredient_id:idSchema.nullable().default(null),ingredient_qty:z.union([quantity,z.literal(0)]).nullable().default(null),replaces_ingredient_id:idSchema.nullable().default(null)}).strict().refine(v=>v.ingredient_id ? v.ingredient_qty!==null : v.ingredient_qty===null && v.replaces_ingredient_id===null,'Ingredient and quantity must be provided together');
 const group = z.object({name:text,is_required:z.boolean(),multi_select:z.boolean(),options:z.array(option).min(1).max(30)}).strict();
 const productFields=z.object({category_id:idSchema,name:text,description:note.default(''),price_satang:money,image_url:imageUrl.default(''),is_available:z.boolean().default(true),target_prep_seconds:z.number().int().min(1).max(7200).default(180),station:z.enum(['bar','kitchen']).default('bar'),option_groups:z.array(group).max(10).default([])}).strict();
 export async function catalog(sql: Sql) {

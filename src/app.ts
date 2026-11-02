@@ -8,6 +8,7 @@ import { usersRouter } from './users.js';
 import { ApiError } from './security.js';
 import { catalogRouter } from './shop/catalog.js';
 import { inventoryRouter } from './shop/inventory.js';
+import { ordersRouter } from './shop/orders.js';
 
 export function createApp(db: Database, config: Config) {
   const app = express();
@@ -23,6 +24,7 @@ export function createApp(db: Database, config: Config) {
   app.use('/api/users', usersRouter(db, auth.authenticate, auth.requireRoles('owner', 'manager')));
   app.use('/api', catalogRouter(db,auth.authenticate,auth.requireRoles('owner','manager'),auth.requireRoles('owner','manager','cashier')));
   app.use('/api', inventoryRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
+  app.use('/api', ordersRouter(db,auth.authenticate,auth.requireRoles('owner','manager','cashier')));
   app.use((_req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
   const handleError: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
     if (error instanceof ApiError) { res.status(error.status).json({ error: error.code }); return; }

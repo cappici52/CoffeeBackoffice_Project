@@ -5,3 +5,9 @@ coverage/
 .env.*
 !.env.example
 *.log
+.venv/
+__pycache__/
+*.pyc
+test-results/
+playwright-report/
+.local/
