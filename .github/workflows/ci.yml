@@ -30,6 +30,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - run: npm run test:simulation
       - name: Integration tests on PostgreSQL 18
         run: npm test
         env:
