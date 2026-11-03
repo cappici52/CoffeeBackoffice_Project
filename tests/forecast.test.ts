@@ -40,7 +40,7 @@ function forecastResponse(body: string, init?: ResponseInit) {
           history_days: 28,
           reason: "controller-fixture",
           selection: {},
-          pipeline: "coffee-demand-v4-mean28",
+          pipeline: "coffee-demand-v5",
           ...row.diagnostics,
         },
       }))
@@ -372,7 +372,7 @@ test("new generations append immutable runs, keep snapshots and allow selecting 
   ).rejects.toThrow();
 });
 
-test("delivered unpaid goods and later refunds remain demand on the delivery day", async () => {
+test("fulfilled unpaid goods count but cancelled orders are excluded from demand", async () => {
   const order = await delivered(newProduct, day(-5), 3);
   const before = (await history(fixture.db, "actual")).find(
     (h) => h.product_id === newProduct && h.date === day(-5),
@@ -386,12 +386,10 @@ test("delivered unpaid goods and later refunds remain demand on the delivery day
     order,
   ]);
   expect(
-    Number(
-      (await history(fixture.db, "actual")).find(
-        (h) => h.product_id === newProduct && h.date === day(-5),
-      )?.qty,
+    (await history(fixture.db, "actual")).find(
+      (h) => h.product_id === newProduct && h.date === day(-5),
     ),
-  ).toBe(3);
+  ).toBeUndefined();
 });
 
 test("reissuing the same lead does not replace or multiply genuine accuracy samples", async () => {
@@ -842,6 +840,86 @@ test("v4 evaluation stays separate from legacy forecasts and measures realized i
   ).toBe(100);
 });
 
+test("backtest cuts off future sales, ignores closures learned later and never creates issued forecasts", async () => {
+  const menu = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO products(id,category_id,name,price_satang,station,forecast_since) SELECT $1,category_id,'As-of test',7500,'bar',$3 FROM products WHERE id=$2",
+    [menu, product, day(-10)],
+  );
+  await delivered(menu, day(-5), 10);
+  await delivered(menu, day(-4), 999);
+  for (const d of [-5, -4])
+    await fixture.db.query(
+      "INSERT INTO day_closings(date,closed_by,summary) VALUES($1,$2,'{}') ON CONFLICT DO NOTHING",
+      [day(d), owner],
+    );
+  await fixture.db.query(
+    "INSERT INTO forecast_day_quality(date,product_id,kind,note,updated_by) VALUES($1,$2,'closed','Learned after cutoff',$3)",
+    [day(-4), menu, owner],
+  );
+  const before = (
+    await fixture.db.query("SELECT count(*)::int AS n FROM forecast_runs")
+  ).rows[0]!.n;
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(async (_url, options) => {
+      const body = JSON.parse(options!.body as string);
+      expect(
+        body.history.every((h: { date: string }) => h.date <= day(-5)),
+      ).toBe(true);
+      expect(body.history.some((h: { qty: number }) => h.qty === 999)).toBe(
+        false,
+      );
+      expect(body.history.at(-1).qty).toBe(10);
+      return forecastResponse(
+        JSON.stringify([
+          {
+            date: day(-4),
+            product_id: menu,
+            predicted_qty: 10,
+            lower: null,
+            upper: null,
+            model_version: "mean-7-v1",
+            history_source: "actual",
+            diagnostics: { origin: day(-5) },
+          },
+        ]),
+        { status: 200 },
+      );
+    });
+  const analysis = await request(app)
+    .post("/api/forecasts/backtest")
+    .set("Origin", origin)
+    .set("Cookie", cookie)
+    .send({
+      cutoff: day(-5),
+      horizon: 1,
+      history_days: 180,
+      product_id: menu,
+      cohort: "genuine",
+    })
+    .expect(200);
+  expect(fetch).toHaveBeenCalledOnce();
+  expect(analysis.body.forecasts[0].predicted_qty).toBe(10);
+  expect(analysis.body.kind).toBe("backtest");
+  expect(
+    (await fixture.db.query("SELECT count(*)::int AS n FROM forecast_runs"))
+      .rows[0]!.n,
+  ).toBe(before);
+  await request(app)
+    .post("/api/forecasts/backtest")
+    .set("Origin", origin)
+    .set("Cookie", cookie)
+    .send({ cutoff: day(0) })
+    .expect(400);
+  await request(app)
+    .post("/api/forecasts/generate")
+    .set("Origin", origin)
+    .set("Cookie", cookie)
+    .send({ horizon: 7, date_from: day(1), date_to: day(1) })
+    .expect(400);
+});
+
 test("an explicitly closed future menu day records a scheduled zero without changing old forecasts", async () => {
   const menu = randomUUID();
   await fixture.db.query(
@@ -888,12 +966,12 @@ test("an explicitly closed future menu day records a scheduled zero without chan
     .expect(200);
   expect(
     JSON.parse(fetch.mock.calls[0]![1]!.body as string).method_policy,
-  ).toBe("mean28");
+  ).toBe("auto");
   const run = await request(app)
     .get("/api/forecasts/runs/" + created.body.run_id)
     .set("Cookie", cookie)
     .expect(200);
   expect(Number(run.body.points[0].predicted_qty)).toBe(0);
   expect(run.body.points[0].model_version).toBe("scheduled-closure-v1");
-  expect(run.body.run.input_quality.method_policy).toBe("mean28");
+  expect(run.body.run.input_quality.method_policy).toBe("auto");
 });

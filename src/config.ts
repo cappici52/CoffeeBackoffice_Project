@@ -13,6 +13,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
       DATABASE_URL: z.string().startsWith("postgres").min(15),
       SESSION_HOURS: z.coerce.number().int().min(1).max(168).default(12),
       FORECAST_SERVICE_URL: z.url().default("http://127.0.0.1:8001"),
+      FORECAST_SAFETY_FACTOR: z.coerce.number().min(1).max(2).default(1),
     })
     .parse(env);
   const origin = new URL(config.APP_ORIGIN);

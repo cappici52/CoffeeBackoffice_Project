@@ -160,7 +160,7 @@ test("forecast response is validated and replenishment uses recipe minus current
             history_days: 28,
             reason: "report-fixture",
             selection: {},
-            pipeline: "coffee-demand-v4-mean28",
+            pipeline: "coffee-demand-v5",
           },
         },
       ]),

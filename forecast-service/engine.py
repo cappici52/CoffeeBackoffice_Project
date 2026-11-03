@@ -13,9 +13,15 @@ import numpy as np
 from xgboost import DMatrix, train
 from forecast_errors import InsufficientHistory
 
-PIPELINE_VERSION = "coffee-demand-v4"
-METHODS = ("weekly-naive-v1", "mean-7-v1", "mean-28-v1", "weekday-mean-v1", "ses-v1")
-FEATURES = ["product", "lag_1", "lag_7", "lag_28", "mean_7", "mean_28", "observed_28", "weekday_mean", "weekday", "month", "lead", "price"]
+PIPELINE_VERSION = "coffee-demand-v5"
+METHODS = ("weekly-naive-v1", "last-value-v1", "mean-7-v1", "mean-28-v1", "weekday-mean-v1", "ses-v1")
+FEATURES = ["product", "lag_1", "lag_7", "lag_14", "lag_28", "mean_7", "mean_14", "mean_28", "std_7", "std_28", "observed_28", "weekday_mean", "weekday", "day_of_month", "week_of_year", "month", "is_weekend", "lead", "price"]
+
+class Series(dict):
+    """Per-request feature memo; observations are fixed before fitting any fold."""
+    def __init__(self):
+        super().__init__()
+        self.feature_cache = {}
 
 
 def stats(series, origin, target, method):
@@ -23,6 +29,8 @@ def stats(series, origin, target, method):
     values = [r["qty"] for _, r in prior]
     if not values:
         raise ValueError("No prior observations")
+    if method == 'last-value-v1':
+        return float(values[-1])
     recent = lambda days: [r["qty"] for d, r in prior if d > origin - timedelta(days=days)]
     weekdays = [r["qty"] for d, r in prior if d.weekday() == target.weekday() and d > origin - timedelta(days=56)]
     if method == "weekly-naive-v1":
@@ -41,15 +49,26 @@ def stats(series, origin, target, method):
 
 
 def features(series, product, origin, target):
+    key = (product, origin, target)
+    cache = getattr(series, 'feature_cache', None)
+    if cache is not None and key in cache:
+        return cache[key]
     prior = {d: r for d, r in series.items() if d <= origin}
-    last = prior[max(prior)]
+    priced = [r for d,r in sorted(prior.items()) if r['qty'] > 0]
     values = lambda days: [r["qty"] for d, r in prior.items() if d > origin - timedelta(days=days)]
     weekday = [r["qty"] for d, r in prior.items() if d.weekday() == target.weekday() and d > origin - timedelta(days=56)]
-    return [product, *[prior.get(origin - timedelta(days=lag-1), {}).get("qty", np.nan) for lag in (1, 7, 28)],
-            float(np.mean(values(7))) if values(7) else np.nan,
-            float(np.mean(values(28))) if values(28) else np.nan, len(values(28)),
-            float(np.mean(weekday)) if weekday else np.nan, target.weekday(), target.month,
-            (target-origin).days, last["unit_price"]]
+    v7,v14,v28=values(7),values(14),values(28)
+    result = [product, *[prior.get(origin - timedelta(days=lag-1), {}).get("qty", np.nan) for lag in (1, 7, 14, 28)],
+            float(np.mean(v7)) if v7 else np.nan,
+            float(np.mean(v14)) if v14 else np.nan,
+            float(np.mean(v28)) if v28 else np.nan,
+            float(np.std(v7)) if v7 else np.nan,
+            float(np.std(v28)) if v28 else np.nan, len(v28),
+            float(np.mean(weekday)) if weekday else np.nan, target.weekday(), target.day, target.isocalendar().week, target.month, int(target.weekday()>=5),
+            (target-origin).days, priced[-1]['unit_price'] if priced else 0.]
+    if cache is not None:
+        cache[key] = result
+    return result
 
 
 def fit(series, ids, cutoff):
@@ -63,7 +82,7 @@ def fit(series, ids, cutoff):
             for lead in (1, 7, 14, 30):
                 target = origin + timedelta(days=lead)
                 if target in history:
-                    x.append(features(history, index, origin, target))
+                    x.append(features(series[product], index, origin, target))
                     y.append(history[target]["qty"])
     if len(y) < 60 or not any(y):
         return None
@@ -83,10 +102,11 @@ def estimates(series, ids, origin, targets, method, booster=None):
 
 def metrics(pairs):
     if not pairs:
-        return {"mae": 0., "rmse": 0., "wape": None, "samples": 0}
+        return {"mae": None, "rmse": None, "wape": None, "bias":None,"samples": 0}
     actual, predicted = np.asarray(pairs, dtype=float).T
     absolute = np.abs(actual-predicted)
     return {"mae": float(np.mean(absolute)), "rmse": float(np.sqrt(np.mean((actual-predicted)**2))),
+            "bias":float(np.mean(predicted-actual)),
             "wape": float(np.sum(absolute)/np.sum(actual)*100) if np.sum(actual) else None, "samples": len(pairs)}
 
 
@@ -94,14 +114,15 @@ def metrics(pairs):
 def run(snapshot):
     data = json.loads(snapshot)
     ids, horizon, gap = data["ids"], data["horizon"], data["gap"]
-    series = {p: {} for p in ids}
+    series = {p: Series() for p in ids}
     for r in data["history"]:
         series[r["product_id"]][date.fromisoformat(r["date"])] = r
     origin = date.fromisoformat(data["origin"])
     # Reserve the last 30 calendar target days for calibration, after selection.
     calibration_origin = origin - timedelta(days=30+gap)
-    has_calibration = all(sum(d <= calibration_origin for d in series[p]) >= 28 and
-                          sum(calibration_origin+timedelta(days=gap) < d <= origin for d in series[p]) >= 20 for p in ids)
+    calibration_ids = [p for p in ids if sum(d <= calibration_origin for d in series[p]) >= 28 and
+                          sum(calibration_origin+timedelta(days=gap) < d <= origin for d in series[p]) >= 20]
+    has_calibration = bool(calibration_ids)
     selection_end = calibration_origin if has_calibration else origin
     backs = list(range(14, 0, -1)) if horizon == 1 else ([28,21,14,7] if horizon == 7 else [60,30])
     scores = {p: {m: [] for m in (*METHODS, "direct")} for p in ids}
@@ -110,16 +131,17 @@ def run(snapshot):
     policy=data.get('policy','auto')
     for back in (backs if policy=='auto' else []):
         cutoff = selection_end - timedelta(days=back+gap)
-        if not all(sum(d <= cutoff for d in series[p]) >= 28 for p in ids):
+        fold_ids = [p for p in ids if sum(d <= cutoff for d in series[p]) >= 28]
+        if not fold_ids:
             continue
         targets = [cutoff+timedelta(days=gap+i) for i in range(1,horizon+1)]
         # Every candidate sees exactly the same observed targets.
-        booster = fit(series, ids, cutoff)
+        booster = fit(series, fold_ids, cutoff)
         for method in (*METHODS, "direct"):
             if method == "direct" and booster is None:
                 continue
-            predictions = estimates(series,ids,cutoff,targets,method,booster)
-            for product in ids:
+            predictions = estimates(series,fold_ids,cutoff,targets,method,booster)
+            for product in fold_ids:
                 pairs = [(series[product][d]["qty"], value) for d,value in zip(targets,predictions[product]) if d in series[product]]
                 scores[product][method] += pairs
                 if pairs:
@@ -140,16 +162,20 @@ def run(snapshot):
                 wins = sum(a < b for a,b in paired)
                 if len(paired) >= 2 and wins/len(paired) >= .6 and direct["mae"] < measured[best]["mae"]*.95:
                     selected[p] = "direct"
-        diagnostics[p] = {"selection":measured,"validation_origins":folds}
+        diagnostics[p] = {"selection":measured,"validation_origins":len(fold_scores[p][METHODS[0]])}
+        if not measured:
+            selected[p]='mean-7-v1'
+            diagnostics[p]['validation_origins']=0
         if policy!='auto':
             selected[p]='mean-28-v1' if policy=='mean28' else 'weekly-naive-v1'
     radii, calibration = {}, {}
     if has_calibration:
-        model = fit(series,ids,calibration_origin) if "direct" in selected.values() else None
+        model = fit(series,calibration_ids,calibration_origin) if any(selected[p]=='direct' for p in calibration_ids) else None
         targets = [calibration_origin+timedelta(days=gap+i) for i in range(1,31)]
         for method in set(selected.values()):
-            predicted = estimates(series,ids,calibration_origin,targets,method,model)
-            for p in ids:
+            if method=='direct' and model is None:continue
+            predicted = estimates(series,calibration_ids,calibration_origin,targets,method,model)
+            for p in calibration_ids:
                 if selected[p] != method:
                     continue
                 errors = sorted(abs(series[p][d]["qty"]-v) for d,v in zip(targets,predicted[p]) if d in series[p])
@@ -159,7 +185,7 @@ def run(snapshot):
     final_model = fit(series,ids,origin) if "direct" in selected.values() else None
     targets = [date.fromisoformat(d) for d in data["targets"]]
     output = []
-    version = "coffee-direct-v4-" + hashlib.sha256(snapshot.encode()).hexdigest()[:12]
+    version = "coffee-direct-v5-" + hashlib.sha256(snapshot.encode()).hexdigest()[:12]
     for method in set(selected.values()):
         predicted = estimates(series,ids,origin,targets,method,final_model)
         for p in ids:
@@ -175,7 +201,7 @@ def run(snapshot):
                     "model_version":version if method=="direct" else method,
                     "history_source":data["source"],
                     "diagnostics":{"origin":origin.isoformat(),"history_days":len(series[p]),"horizon":horizon,"gap_days":gap,
-                        "reason":"declared_baseline_policy" if policy!='auto' else "v4_prior_only_selection" if folds else "short_history_weekly",
+                        "reason":"declared_baseline_policy" if policy!='auto' else "prior_only_selection" if diagnostics[p]['selection'] else "limited_history_mean",
                         **diagnostics[p],"pipeline":PIPELINE_VERSION if policy=='auto' else PIPELINE_VERSION+'-'+policy,"method_policy":policy,"training_cohort":data["cohort"],
                         "interval_kind":"empirical_absolute_80" if radius is not None else "unavailable",
                         "calibration":calibration.get(p)}})
@@ -210,8 +236,8 @@ def predict(date_from,date_to,product_ids,history,cohort="genuine",policy='auto'
     usable=sorted([r for r in usable if origin-timedelta(days=179) <= date.fromisoformat(r["date"]) <= origin],key=lambda r:(r["date"],r["product_id"]))
     for p in product_ids:
         values=[r for r in usable if r["product_id"]==p]
-        if sum(date.fromisoformat(r["date"]) > origin-timedelta(days=56) for r in values)<28:
-            raise InsufficientHistory("Need 28 usable observations in the latest 56 days")
+        if not values:
+            raise InsufficientHistory("No usable observations")
     gap=(start-origin).days-1
     if not 0 <= gap <= 6:
         raise InsufficientHistory("Latest observation is stale")

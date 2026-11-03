@@ -31,7 +31,7 @@ export function selectDataset(
         ? r.source === "demo"
         : r.source === "actual" && r.simulated === (cohort === "simulation"),
     );
-  const productReady = (cohort: Cohort, id: string) => {
+  const productReady = (cohort: Cohort, id: string, minimum = 28) => {
     const values = group(cohort)
       .filter((r) => r.product_id === id)
       .sort((a, b) => a.date.localeCompare(b.date));
@@ -39,7 +39,7 @@ export function selectDataset(
       (r) => Date.parse(r.date) >= Date.parse(today) - 56 * 86400000,
     );
     return (
-      recent.length >= 28 &&
+      recent.length >= minimum &&
       !!values.at(-1) &&
       Date.parse(today) - Date.parse(values.at(-1)!.date) <= 6 * 86400000
     );
@@ -54,7 +54,13 @@ export function selectDataset(
           ? "simulation"
           : ready("demo")
             ? "demo"
-            : "genuine"
+            : products.every((id) => productReady("genuine", id, 1))
+              ? "genuine"
+              : products.every((id) => productReady("simulation", id, 1))
+                ? "simulation"
+                : products.every((id) => productReady("demo", id, 1))
+                  ? "demo"
+                  : "genuine"
       : requested;
   const selected = group(cohort).filter((r) => products.includes(r.product_id));
   return {
@@ -66,7 +72,9 @@ export function selectDataset(
         product_id: id,
         observations: values.length,
         latest_date: values.at(-1)?.date ?? null,
-        ready: productReady(cohort, id),
+        ready: productReady(cohort, id, 1),
+        model_ready: productReady(cohort, id),
+        limited_history: !productReady(cohort, id),
       };
     }),
     excluded: {
@@ -84,7 +92,7 @@ export async function dataset(
   products: string[],
   requested: Cohort | "auto",
   allowDemo = false,
-  range?: { from: string; to: string },
+  range?: { from: string; to: string; referenceDate?: string },
 ) {
   const today = businessDate();
   const result = await sql.query(
@@ -95,6 +103,7 @@ export async function dataset(
       bool_or(o.simulation_run_id IS NOT NULL) AND bool_or(o.simulation_run_id IS NULL) AS mixed
     FROM orders o JOIN order_items i ON i.order_id=o.id
     WHERE o.completed_at >= $4::date::timestamp AT TIME ZONE 'Asia/Bangkok'
+      AND o.status='completed'
       AND o.completed_at < (least($5::date,$1::date-1)+1)::timestamp AT TIME ZONE 'Asia/Bangkok'
       AND i.product_id=ANY($2::uuid[]) GROUP BY 1,2
   ), observed AS (
@@ -131,6 +140,6 @@ export async function dataset(
     })) as Observation[],
     products,
     requested,
-    today,
+    range?.referenceDate ?? today,
   );
 }

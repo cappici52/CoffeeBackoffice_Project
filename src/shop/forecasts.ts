@@ -15,6 +15,8 @@ import {
 import { metrics, intervalMetrics } from "./forecast-metrics.js";
 import { serializeForecastHistory } from "./forecast-snapshot.js";
 import { dataset, type Cohort } from "./forecast-data.js";
+import { requirements } from "./forecast-planning.js";
+import { forecastSummary } from "./forecast-summary.js";
 
 const forecastRow = z
   .object({
@@ -30,7 +32,7 @@ const forecastRow = z
     diagnostics: z
       .object({
         origin: dateSchema,
-        history_days: z.number().int().min(28).max(180),
+        history_days: z.number().int().min(1).max(180),
         reason: z.string().max(200),
         horizon: z
           .union([z.literal(1), z.literal(7), z.literal(30)])
@@ -57,6 +59,7 @@ const forecastRow = z
             mae: z.number().nonnegative(),
             rmse: z.number().nonnegative(),
             wape: z.number().nonnegative().nullable(),
+            bias: z.number().finite().optional(),
             samples: z.number().int().nonnegative(),
           }),
         ),
@@ -83,7 +86,7 @@ export async function history(
         SELECT (o.completed_at AT TIME ZONE 'Asia/Bangkok')::date AS date,i.product_id,
           sum(i.qty) AS qty,sum(i.qty::bigint*i.unit_price_satang) AS revenue_satang,'actual' AS source
         FROM orders o JOIN order_items i ON i.order_id=o.id
-        WHERE o.completed_at IS NOT NULL GROUP BY 1,2
+        WHERE o.completed_at IS NOT NULL AND o.status='completed' GROUP BY 1,2
       ), observations AS (
         SELECT date,product_id,qty,revenue_satang,source FROM fulfilled
         WHERE date >= coalesce($2::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 120)
@@ -127,6 +130,127 @@ export async function history(
     )
   ).rows;
 }
+export async function computeForecast(
+  db: Database,
+  config: Config,
+  from: string,
+  to: string,
+  products: string[],
+  dataMode: "actual" | "mixed",
+  cohort: Cohort | "auto",
+  methodPolicy: "auto" | "mean28" | "weekly",
+  asOf?: string,
+  historyDays = 180,
+) {
+  const range = dateRange.parse({ date_from: from, date_to: to });
+  const reference =
+    asOf ??
+    new Date(Date.parse(businessDate()) - 86400000).toISOString().slice(0, 10);
+  const training = await dataset(db, products, cohort, dataMode === "mixed", {
+    from: new Date(Date.parse(reference) - (historyDays - 1) * 86400000)
+      .toISOString()
+      .slice(0, 10),
+    to: reference,
+    referenceDate: new Date(Date.parse(reference) + 86400000)
+      .toISOString()
+      .slice(0, 10),
+  });
+  const inputHistory = training.rows
+    .filter((h) => products.includes(h.product_id))
+    .map((h) => ({
+      date: h.date,
+      product_id: h.product_id,
+      qty: Number(h.qty),
+      unit_price: Number(h.unit_price),
+      source: h.source,
+    }));
+  let result: unknown;
+  try {
+    const response = await fetch(`${config.FORECAST_SERVICE_URL}/forecast`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...range,
+        product_id: null,
+        product_ids: products,
+        history: inputHistory,
+        pipeline: "v5",
+        cohort: training.cohort,
+        method_policy: methodPolicy,
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (response.status === 422) {
+      const error = (await response.json().catch(() => null)) as {
+        detail?: { code?: string };
+      } | null;
+      if (error?.detail?.code === "FORECAST_INSUFFICIENT_HISTORY")
+        throw new ApiError(409, "FORECAST_INSUFFICIENT_HISTORY");
+    }
+    fail(response.ok, 502, "FORECAST_SERVICE_UNAVAILABLE");
+    result = await response.json();
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    fail(false, 502, "FORECAST_SERVICE_UNAVAILABLE");
+  }
+  const parsed = z.array(forecastRow).max(30000).safeParse(result);
+  fail(parsed.success, 502, "FORECAST_INVALID_RESPONSE");
+  const rows = parsed.data;
+  const expectedPipeline =
+    methodPolicy === "auto"
+      ? "coffee-demand-v5"
+      : "coffee-demand-v5-" + methodPolicy;
+  fail(
+    rows.every(
+      (row) =>
+        row.diagnostics?.pipeline === expectedPipeline &&
+        (!row.diagnostics.training_cohort ||
+          row.diagnostics.training_cohort === training.cohort),
+    ),
+    502,
+    "FORECAST_INVALID_RESPONSE",
+  );
+  const closedTargets = new Set(
+    (
+      await db.query(
+        "SELECT date::text,product_id FROM forecast_day_quality WHERE kind='closed' AND date BETWEEN $1::date AND $2::date AND ($3::date IS NULL OR updated_at < ($3::date+1)::timestamp AT TIME ZONE 'Asia/Bangkok')",
+        [from, to, asOf ?? null],
+      )
+    ).rows.map((r) => r.date + ":" + r.product_id),
+  );
+  for (const row of rows)
+    if (closedTargets.has(row.date + ":" + row.product_id)) {
+      row.predicted_qty = 0;
+      row.lower = null;
+      row.upper = null;
+      row.model_version = "scheduled-closure-v1";
+      if (row.diagnostics) {
+        row.diagnostics.reason = "scheduled_closure";
+        row.diagnostics.interval_kind = "unavailable";
+        row.diagnostics.calibration = null;
+      }
+    }
+  const expected =
+    products.length * ((Date.parse(to) - Date.parse(from)) / 86400000 + 1);
+  const keys = new Set(rows.map((r) => `${r.date}:${r.product_id}`));
+  fail(
+    rows.length === expected &&
+      keys.size === expected &&
+      rows.every(
+        (r) =>
+          r.date >= from && r.date <= to && products.includes(r.product_id),
+      ),
+    502,
+    "FORECAST_INVALID_RESPONSE",
+  );
+  fail(
+    dataMode !== "actual" || rows.every((r) => r.history_source === "actual"),
+    502,
+    "FORECAST_INVALID_RESPONSE",
+  );
+  return { rows, training, inputHistory };
+}
+
 export async function generateForecasts(
   db: Database,
   config: Config,
@@ -136,7 +260,7 @@ export async function generateForecasts(
   productId?: string,
   dataMode: "actual" | "mixed" = "actual",
   cohort: Cohort | "auto" = "auto",
-  methodPolicy: "auto" | "mean28" | "weekly" = "mean28",
+  methodPolicy: "auto" | "mean28" | "weekly" = "auto",
 ) {
   const range = dateRange.parse({ date_from: from, date_to: to });
   fail(
@@ -161,102 +285,28 @@ export async function generateForecasts(
     409,
     "NO_FORECAST_PRODUCTS",
   );
-  const training = await dataset(db, products, cohort, dataMode === "mixed");
-  const inputHistory = training.rows
-    .filter((h) => products.includes(h.product_id))
-    .map((h) => ({
-      date: h.date,
-      product_id: h.product_id,
-      qty: Number(h.qty),
-      unit_price: Number(h.unit_price),
-      source: h.source,
-    }));
-  let result: unknown;
-  try {
-    const response = await fetch(`${config.FORECAST_SERVICE_URL}/forecast`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...range,
-        product_id: null,
-        product_ids: products,
-        history: inputHistory,
-        pipeline: "v4",
-        cohort: training.cohort,
-        method_policy: methodPolicy,
-      }),
-      signal: AbortSignal.timeout(60_000),
-    });
-    if (response.status === 422) {
-      const error = (await response.json().catch(() => null)) as {
-        detail?: { code?: string };
-      } | null;
-      if (error?.detail?.code === "FORECAST_INSUFFICIENT_HISTORY")
-        throw new ApiError(409, "FORECAST_INSUFFICIENT_HISTORY");
-    }
-    fail(response.ok, 502, "FORECAST_SERVICE_UNAVAILABLE");
-    result = await response.json();
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    fail(false, 502, "FORECAST_SERVICE_UNAVAILABLE");
-  }
-  const parsed = z.array(forecastRow).max(30000).safeParse(result);
-  fail(parsed.success, 502, "FORECAST_INVALID_RESPONSE");
-  const rows = parsed.data;
-  const expectedPipeline =
-    methodPolicy === "auto"
-      ? "coffee-demand-v4"
-      : "coffee-demand-v4-" + methodPolicy;
-  fail(
-    rows.every(
-      (row) =>
-        row.diagnostics?.pipeline === expectedPipeline &&
-        (!row.diagnostics.training_cohort ||
-          row.diagnostics.training_cohort === training.cohort),
-    ),
-    502,
-    "FORECAST_INVALID_RESPONSE",
+  const { rows, training, inputHistory } = await computeForecast(
+    db,
+    config,
+    from,
+    to,
+    products,
+    dataMode,
+    cohort,
+    methodPolicy,
   );
-  const closedTargets = new Set(
-    (
-      await db.query(
-        "SELECT date::text,product_id FROM forecast_day_quality WHERE kind='closed' AND date BETWEEN $1::date AND $2::date",
-        [from, to],
-      )
-    ).rows.map((r) => r.date + ":" + r.product_id),
-  );
-  for (const row of rows)
-    if (closedTargets.has(row.date + ":" + row.product_id)) {
-      row.predicted_qty = 0;
-      row.lower = null;
-      row.upper = null;
-      row.model_version = "scheduled-closure-v1";
-      if (row.diagnostics) {
-        row.diagnostics.reason = "scheduled_closure";
-        row.diagnostics.interval_kind = "unavailable";
-        row.diagnostics.calibration = null;
-      }
-    }
-  const expected =
-    products.length * ((Date.parse(to) - Date.parse(from)) / 86400000 + 1);
-  const keys = new Set(rows.map((r) => `${r.date}:${r.product_id}`));
   const versions = [...new Set(rows.map((r) => r.model_version))].sort();
-  fail(
-    rows.length === expected &&
-      keys.size === expected &&
-      rows.every(
-        (r) =>
-          r.date >= from && r.date <= to && products.includes(r.product_id),
-      ),
-    502,
-    "FORECAST_INVALID_RESPONSE",
-  );
-  fail(
-    dataMode !== "actual" || rows.every((r) => r.history_source === "actual"),
-    502,
-    "FORECAST_INVALID_RESPONSE",
-  );
   const runId = randomUUID();
+  const planning = await requirements(
+    db,
+    rows
+      .filter((p) => p.date > businessDate(generatedAt))
+      .map((p) => ({
+        product_id: p.product_id,
+        predicted_qty: p.predicted_qty,
+      })),
+    config.FORECAST_SAFETY_FACTOR,
+  );
   const simulated =
     (
       await db.query(
@@ -276,7 +326,7 @@ export async function generateForecasts(
     await sql.query("SELECT pg_advisory_xact_lock(7301004)");
     const snapshot = serializeForecastHistory(inputHistory);
     await sql.query(
-      "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history,created_by,contains_simulated_sales,training_cohort,input_quality) VALUES($1,$2,$3,$4,$5,'fulfilled_v1',$6,$7,$8,$9,$10,$11)",
+      "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history,created_by,contains_simulated_sales,training_cohort,input_quality,planning_snapshot) VALUES($1,$2,$3,$4,$5,'fulfilled_v1',$6,$7,$8,$9,$10,$11,$12)",
       [
         runId,
         generatedAt.toISOString(),
@@ -291,12 +341,13 @@ export async function generateForecasts(
         JSON.stringify({
           pipeline:
             methodPolicy === "auto"
-              ? "coffee-demand-v4"
-              : "coffee-demand-v4-" + methodPolicy,
+              ? "coffee-demand-v5"
+              : "coffee-demand-v5-" + methodPolicy,
           method_policy: methodPolicy,
           excluded: training.excluded,
           window_days: 180,
         }),
+        JSON.stringify(planning),
       ],
     );
     for (const row of rows) {
@@ -347,7 +398,7 @@ export async function generateForecasts(
     run_id: runId,
     count: rows.length,
     model_version:
-      versions.length === 1 ? versions[0] : "coffee-selection-v1-mixed",
+      versions.length === 1 ? versions[0] : "coffee-demand-v5-mixed",
     model_versions: versions,
   };
 }
@@ -394,7 +445,14 @@ export function forecastsRouter(
       .object({
         date: dateSchema,
         product_id: idSchema,
-        kind: z.enum(["normal", "closed", "stockout", "incomplete"]),
+        kind: z.enum([
+          "normal",
+          "closed",
+          "stockout",
+          "incomplete",
+          "outlier",
+          "unknown",
+        ]),
         note: z.string().trim().min(1).max(1000),
       })
       .strict()
@@ -439,17 +497,44 @@ export function forecastsRouter(
     res.json({ saved: true });
   });
   r.post("/forecasts/generate", async (req, res) => {
+    if (req.body.horizon !== undefined)
+      z.union([z.literal(1), z.literal(7), z.literal(30)]).parse(
+        req.body.horizon,
+      );
     const input = dateRange
       .safeExtend({
         product_id: idSchema.optional(),
         data_mode: z.enum(["actual", "mixed"]).default("actual"),
-        method_policy: z.enum(["auto", "mean28", "weekly"]).default("mean28"),
+        method_policy: z.enum(["auto", "mean28", "weekly"]).default("auto"),
         cohort: z
           .enum(["auto", "genuine", "simulation", "demo"])
           .default("auto"),
       })
-      .parse(req.body);
+      .parse(
+        req.body.horizon && !req.body.date_from
+          ? {
+              ...req.body,
+              date_from: new Date(Date.parse(businessDate()) + 86400000)
+                .toISOString()
+                .slice(0, 10),
+              date_to: new Date(
+                Date.parse(businessDate()) +
+                  Number(req.body.horizon) * 86400000,
+              )
+                .toISOString()
+                .slice(0, 10),
+            }
+          : req.body,
+      );
     fail(input.date_from > businessDate(), 400, "FORECAST_MUST_BE_FUTURE");
+    if (req.body.horizon !== undefined)
+      fail(
+        (Date.parse(input.date_to) - Date.parse(input.date_from)) / 86400000 +
+          1 ===
+          req.body.horizon,
+        400,
+        "FORECAST_HORIZON_CONFLICT",
+      );
     res.json(
       await generateForecasts(
         db,
@@ -464,6 +549,111 @@ export function forecastsRouter(
       ),
     );
   });
+  r.post("/forecasts/backtest", async (req, res) => {
+    const input = z
+      .object({
+        cutoff: dateSchema,
+        horizon: z
+          .union([z.literal(1), z.literal(7), z.literal(30)])
+          .default(30),
+        history_days: z
+          .union([z.literal(30), z.literal(90), z.literal(180)])
+          .default(180),
+        product_id: idSchema.optional(),
+        cohort: z
+          .enum(["auto", "genuine", "simulation", "demo"])
+          .default("auto"),
+        data_mode: z.enum(["actual", "mixed"]).default("actual"),
+      })
+      .strict()
+      .parse(req.body);
+    fail(input.cutoff < businessDate(), 400, "INVALID_FORECAST_CUTOFF");
+    fail(
+      input.cohort !== "demo" || input.data_mode === "mixed",
+      400,
+      "FORECAST_SOURCE_CONFLICT",
+    );
+    const add = (n: number) =>
+      new Date(Date.parse(input.cutoff) + n * 86400000)
+        .toISOString()
+        .slice(0, 10);
+    const products = (
+      await db.query(
+        "SELECT id FROM products WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY id",
+        [input.product_id ?? null],
+      )
+    ).rows.map((p) => p.id as string);
+    fail(products.length > 0, 409, "NO_FORECAST_PRODUCTS");
+    const result = await computeForecast(
+      db,
+      config,
+      add(1),
+      add(input.horizon),
+      products,
+      input.data_mode,
+      input.cohort,
+      "auto",
+      input.cutoff,
+      input.history_days,
+    );
+    const truth = await dataset(
+      db,
+      products,
+      result.training.cohort,
+      input.data_mode === "mixed",
+      { from: add(1), to: add(input.horizon) },
+    );
+    const lookup = new Map(
+      truth.rows.map((p) => [p.date + ":" + p.product_id, p.qty]),
+    );
+    const pairs = result.rows
+      .filter((p) => lookup.has(p.date + ":" + p.product_id))
+      .map((p) => ({
+        actual: lookup.get(p.date + ":" + p.product_id)!,
+        predicted: p.predicted_qty,
+        lower: p.lower,
+        upper: p.upper,
+      }));
+    const analysisId = randomUUID(),
+      score = metrics(pairs);
+    await record(
+      db,
+      res.locals.user,
+      "forecast.analysis",
+      "forecast_analysis",
+      analysisId,
+      {
+        cutoff: input.cutoff,
+        horizon: input.horizon,
+        history_days: input.history_days,
+        cohort: result.training.cohort,
+        history_sha256: createHash("sha256")
+          .update(serializeForecastHistory(result.inputHistory))
+          .digest("hex"),
+        score,
+      },
+    );
+    res.json({
+      analysis_id: analysisId,
+      kind: "backtest",
+      cutoff: input.cutoff,
+      date_from: add(1),
+      date_to: add(input.horizon),
+      cohort: result.training.cohort,
+      history_days: input.history_days,
+      history_observations: result.inputHistory.length,
+      forecasts: result.rows.map((p) => ({
+        ...p,
+        predicted_qty: p.predicted_qty,
+        lower_qty: p.lower,
+        upper_qty: p.upper,
+        product_name: "",
+      })),
+      actual: truth.rows,
+      score,
+      interval: intervalMetrics(pairs),
+    });
+  });
   r.get("/forecasts", async (req, res) => {
     const input = dateRange
       .safeExtend({
@@ -471,6 +661,7 @@ export function forecastsRouter(
         run_id: idSchema.optional(),
         data_mode: z.enum(["actual", "mixed"]).default("actual"),
         lead_days: z.coerce.number().int().min(1).max(30).optional(),
+        safety_factor: z.coerce.number().min(1).max(2).optional(),
       })
       .parse(req.query);
     const params = [input.date_from, input.date_to, input.product_id ?? null];
@@ -535,25 +726,45 @@ export function forecastsRouter(
           !displayedProducts.size ||
           displayedProducts.has(h.product_id)),
     );
-    const recommendations = (
-      await db.query(
-        `WITH selected AS (SELECT * FROM jsonb_to_recordset($1::jsonb) AS x(product_id uuid,predicted_qty numeric))
-      SELECT i.id,i.name,i.unit,i.current_stock,sum(f.predicted_qty*ri.qty) AS required_qty,
-      greatest(0,sum(f.predicted_qty*ri.qty)-i.current_stock) AS order_qty FROM selected f
-      JOIN recipe_ingredients ri ON ri.product_id=f.product_id JOIN ingredients i ON i.id=ri.ingredient_id
-      WHERE i.is_active GROUP BY i.id,i.name,i.unit,i.current_stock ORDER BY order_qty DESC,i.name`,
-        [
-          JSON.stringify(
-            points
-              .filter((p) => p.date > businessDate())
-              .map((p) => ({
-                product_id: p.product_id,
-                predicted_qty: Number(p.predicted_qty),
-              })),
-          ),
-        ],
-      )
-    ).rows;
+    const planning = await requirements(
+      db,
+      points
+        .filter((p) => p.date > businessDate())
+        .map((p) => ({
+          product_id: p.product_id,
+          predicted_qty: p.predicted_qty,
+        })),
+      input.safety_factor ?? config.FORECAST_SAFETY_FACTOR,
+    );
+    const recommendations = planning.ingredients;
+    const tomorrow = new Date(Date.parse(businessDate()) + 86400000)
+      .toISOString()
+      .slice(0, 10);
+    const recent = await dataset(
+      db,
+      [...displayedProducts],
+      displayedRun?.training_cohort === "simulation"
+        ? "simulation"
+        : displayedRun?.training_cohort === "demo"
+          ? "demo"
+          : "genuine",
+      input.data_mode === "mixed",
+      {
+        from: new Date(Date.parse(businessDate()) - 7 * 86400000)
+          .toISOString()
+          .slice(0, 10),
+        to: businessDate(),
+      },
+    );
+    const summary = forecastSummary(
+      tomorrow,
+      points.map((p) => ({
+        date: p.date,
+        product_id: p.product_id,
+        qty: p.predicted_qty,
+      })),
+      recent.rows,
+    );
     const sales = await history(db, "actual", {
       from: input.date_from,
       to: input.date_to,
@@ -577,7 +788,7 @@ export function forecastsRouter(
     const archived = (
       await db.query(
         `WITH ranked AS (
-      SELECT p.*,r.generated_at,r.data_mode,r.contains_simulated_sales,r.training_cohort,coalesce(p.diagnostics->>'pipeline','legacy') AS pipeline,row_number() OVER(PARTITION BY p.forecast_date,p.product_id,p.lead_days,p.history_source,CASE WHEN r.training_cohort='legacy' THEN r.data_mode ELSE r.training_cohort END,r.contains_simulated_sales,coalesce(p.diagnostics->>'pipeline','legacy'),r.training_cohort
+      SELECT p.*,r.generated_at,r.data_mode,r.contains_simulated_sales,r.training_cohort,(r.date_to-r.date_from+1)::int AS horizon,coalesce(p.diagnostics->>'pipeline','legacy') AS pipeline,row_number() OVER(PARTITION BY p.forecast_date,p.product_id,p.lead_days,p.history_source,(r.date_to-r.date_from),CASE WHEN r.training_cohort='legacy' THEN r.data_mode ELSE r.training_cohort END,r.contains_simulated_sales,coalesce(p.diagnostics->>'pipeline','legacy'),r.training_cohort
         ORDER BY r.generated_at,r.id) AS rank
       FROM forecast_run_points p JOIN forecast_runs r ON r.id=p.run_id
       WHERE p.forecast_date BETWEEN $1::date AND $2::date AND ($3::uuid IS NULL OR p.product_id=$3)
@@ -676,6 +887,8 @@ export function forecastsRouter(
                     ? "mixed"
                     : p.history_source,
         pipeline: p.pipeline as string,
+        model: p.model_version as string,
+        horizon: Number(p.horizon),
         lower:
           p.diagnostics?.interval_kind !== "empirical_absolute_80" ||
           p.lower_qty === null
@@ -702,9 +915,7 @@ export function forecastsRouter(
       }));
     const evaluationPipeline = displayedRun
       ? (displayedRun.input_quality?.pipeline ?? "legacy")
-      : allComparisons.some((p) => p.pipeline === "coffee-demand-v4")
-        ? "coffee-demand-v4"
-        : "legacy";
+      : "coffee-demand-v5";
     const comparisons = allComparisons.filter(
       (p) => p.pipeline === evaluationPipeline,
     );
@@ -748,6 +959,40 @@ export function forecastsRouter(
           ),
         };
       }),
+    );
+    const byModel = [...new Set(comparisons.map((p) => p.model))].flatMap(
+      (model) =>
+        ["actual", "simulation", "demo", "mixed"].map((source) => ({
+          model,
+          source,
+          ...metrics(
+            comparisons.filter((p) => p.model === model && p.source === source),
+          ),
+        })),
+    );
+    const byProduct = [
+      ...new Set(comparisons.map((p) => p.product_id)),
+    ].flatMap((product_id) =>
+      ["actual", "simulation", "demo", "mixed"].map((source) => ({
+        product_id,
+        source,
+        ...metrics(
+          comparisons.filter(
+            (p) => p.product_id === product_id && p.source === source,
+          ),
+        ),
+      })),
+    );
+    const byScope = [1, 7, 30].flatMap((horizon) =>
+      ["actual", "simulation", "demo", "mixed"].map((source) => ({
+        horizon,
+        source,
+        ...metrics(
+          comparisons.filter(
+            (p) => p.horizon === horizon && p.source === source,
+          ),
+        ),
+      })),
     );
     const groups = [
       ...new Set(genuine.map((p) => `${p.product_id}:${p.lead_days}`)),
@@ -817,11 +1062,16 @@ export function forecastsRouter(
       forecasts: points,
       actual,
       recommendations,
+      planning,
+      summary,
       accuracy,
       evaluation: {
         basis: "fulfilled_v1",
         policy: "earliest-issued-per-target-menu-lead",
         by_source: bySource,
+        by_model: byModel,
+        by_product: byProduct,
+        by_scope: byScope,
         by_horizon: byHorizon,
         by_product_lead: groups,
         latest_test: latestTest,
@@ -840,7 +1090,7 @@ export function forecastsRouter(
       recommendation_basis: "base_recipe",
       model_mode: points.length
         ? points.every((p) =>
-            /^(projecta-xgb-|coffee-xgb-|coffee-direct-v4-|scheduled-closure-v1$|ses-v1$|damped-holt-v1$|mean-28-v1$|mean-7-v1$|weekday-mean-v1$|weekly-naive-v1$)/.test(
+            /^(projecta-xgb-|coffee-xgb-|coffee-direct-v[45]-|last-value-v1$|scheduled-closure-v1$|ses-v1$|damped-holt-v1$|mean-28-v1$|mean-7-v1$|weekday-mean-v1$|weekly-naive-v1$)/.test(
               p.model_version,
             ),
           )
