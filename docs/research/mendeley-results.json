@@ -1,0 +1,54 @@
+{
+  "source_url": "https://data.mendeley.com/datasets/kcgf45y24m/2",
+  "data_mode": "PUBLIC_DATASET",
+  "dataset_id": "893da7cf-5067-51c1-9d59-bc444543cb9c",
+  "run_id": "0cd8326d-6bb7-4d88-85f1-718acc3342ab",
+  "executed_at": "2026-11-03T17:07:32.650Z",
+  "outlet_id": "SHOP001",
+  "cutoff": "2025-09-01",
+  "cutoff_policy": "exclusive_target_start",
+  "training_from": "2025-03-05",
+  "training_to": "2025-08-31",
+  "horizon": 30,
+  "date_from": "2025-09-01",
+  "date_to": "2025-09-30",
+  "history_sha256": "d27d819d1aec39ed067fba7fd8672cf79d15ff364dfbe361dde08331924b4d9a",
+  "score_product_day": {
+    "samples": 2820,
+    "mae": 0.88771595744681,
+    "rmse": 1.1306769667732213,
+    "wape": 80.91011635423413,
+    "mape": 38.74141427294769,
+    "bias": 0.026504609929077976,
+    "zero_actual_samples": 955
+  },
+  "score_daily_total": {
+    "samples": 30,
+    "mae": 9.640233333333326,
+    "rmse": 12.420500938636353,
+    "wape": 9.347349709114408,
+    "mape": 9.620971186936815,
+    "bias": 2.49143333333332,
+    "zero_actual_samples": 0
+  },
+  "coverage": {
+    "expected": 2820,
+    "matched": 2820,
+    "missing": 0,
+    "inferred_zero": 955
+  },
+  "selected_methods_by_product": {
+    "XGBoost v5": 7,
+    "last-value-v1": 13,
+    "mean-28-v1": 39,
+    "mean-7-v1": 20,
+    "ses-v1": 9,
+    "weekday-mean-v1": 6
+  },
+  "limitations": [
+    "Retrospective evaluation, not prospective CoffeeBackoffice validation.",
+    "Publisher describes real POS provenance; source business not independently audited.",
+    "Recorded item occurrences and inferred zeros are not proven unconstrained demand.",
+    "Product/day and daily-total scores answer different questions. No selection thresholds were tuned on this holdout."
+  ]
+}

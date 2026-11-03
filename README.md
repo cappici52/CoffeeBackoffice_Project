@@ -138,3 +138,15 @@ API หลัก: `/api/auth/*`, `/api/users`, `/api/catalog`, `/api/categories`
 Active forecasting design, APIs, measured results and limitations: [Forecast v5](docs/forecast-v5.md). Historical v4 results remain in [Forecast v4](docs/forecast-v4.md).
 
 Original protected PromptPay image setup and manual-payment behavior: [PromptPay image](docs/promptpay-image.md).
+
+## Historical Replay จากข้อมูล POS สาธารณะ
+
+ใช้ Mendeley Anonymous Transactional Dataset V2 (CC BY 4.0) ที่ตรวจคอลัมน์และ hash แล้ว แยกไว้ในตารางวิจัย ไม่เพิ่ม orders/payments หรือเปลี่ยนสต็อกร้าน เปิด `/forecast/replay` เพื่อเลือกสาขา สินค้า วันเริ่มทดสอบ และระยะ 1/7/30 วัน ใช้เฉพาะข้อมูลก่อนวันเริ่มทดสอบฝึกและเลือกโมเดล บันทึกผลแบบแก้ไม่ได้ก่อนจับคู่ Actual พร้อม MAE/RMSE/WAPE/Bias และดาวน์โหลด JSON
+
+```powershell
+npm run dataset:prepare -- --download
+npm run dataset:import -- .local/public-datasets/mendeley-kcgf45y24m-v2/prepared.json
+npm run local:lan
+```
+
+เครื่องนี้นำเข้าข้อมูลไว้แล้ว ไม่ต้องนำเข้าซ้ำเพื่อสาธิต ดู [คู่มือข้อมูล การแบ่ง train/test ผลที่วัดได้ ข้อจำกัด และขั้นตอนนำเสนอ](docs/public-dataset-replay.md) ทดสอบหน้าจอด้วย `npm run test:public-replay-ui` ซึ่งสร้างเฉพาะ research runs และตรวจว่าข้อมูลร้านไม่เปลี่ยน ผลย้อนหลังไม่ใช่ความแม่นยำล่วงหน้าของร้านที่เพิ่งเปิดใช้งาน
