@@ -564,3 +564,60 @@ test("browsing reaches beyond training history and unclosed observations stay ou
   expect(closed.some((h) => h.product_id === menu)).toBe(false);
   expect(response.body.accuracy.samples).toBe(0);
 });
+
+test("horizon comparisons use the frozen weekly baseline and match identical evaluation pairs", async () => {
+  const menu = randomUUID(),
+    run = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO products(id,category_id,name,price_satang,station) SELECT $1,category_id,'Baseline check',7500,'bar' FROM products WHERE id=$2",
+    [menu, product],
+  );
+  const input = Array.from({ length: 28 }, (_, i) => ({
+    date: day(-68 + i),
+    product_id: menu,
+    qty: 10,
+    unit_price: 75,
+    source: "actual",
+  }));
+  await fixture.db.query(
+    "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history) VALUES($1,$2,$3,$4,'actual','fulfilled_v1',$5,$6)",
+    [
+      run,
+      day(-40) + "T08:00:00+07:00",
+      day(-39),
+      day(-10),
+      "f".repeat(64),
+      JSON.stringify(input),
+    ],
+  );
+  for (const [offset, lead] of [
+    [-39, 1],
+    [-33, 7],
+    [-10, 30],
+  ]) {
+    await delivered(menu, day(offset!), 12);
+    await fixture.db.query(
+      "INSERT INTO day_closings(date,closed_by,summary) VALUES($1,$2,'{}')",
+      [day(offset!), owner],
+    );
+    await fixture.db.query(
+      "INSERT INTO forecast_run_points(run_id,forecast_date,product_id,predicted_qty,model_version,history_source,lead_days,diagnostics) VALUES($1,$2,$3,8,'mean-7-v1','actual',$4,$5)",
+      [run, day(offset!), menu, lead, JSON.stringify({ origin: day(-41) })],
+    );
+  }
+  const result = await request(app)
+    .get(
+      `/api/forecasts?date_from=${day(-39)}&date_to=${day(-10)}&product_id=${menu}`,
+    )
+    .set("Cookie", cookie)
+    .expect(200);
+  const groups = result.body.evaluation.by_horizon.filter(
+    (r: { source: string }) => r.source === "actual",
+  );
+  expect(groups.map((r: { samples: number }) => r.samples)).toEqual([1, 2, 3]);
+  for (const g of groups) {
+    expect(g.mae).toBe(4);
+    expect(g.baseline.mae).toBe(2);
+    expect(g.paired_model.samples).toBe(g.baseline.samples);
+  }
+});

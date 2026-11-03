@@ -104,8 +104,10 @@ def predict(date_from, date_to, product_ids, history):
     # Predict unobserved days before the requested range, too. Never relabel a
     # day-ahead result as a later day or fill missing historical days with zero.
     from selection import selected_forecasts, choose
-    predictions, versions = selected_forecasts(histories, prices, price_histories, origin, (end - origin).days, product_ids, sources)
-    snapshot = json.dumps({"origin": origin.isoformat(), "histories": histories, "price_histories": price_histories, "product_ids": product_ids, "sources": sources}, sort_keys=True)
+    horizon = 1 if start == end else (7 if (end - start).days < 7 else 30)
+    gap_days = (start - origin).days - 1
+    predictions, versions = selected_forecasts(histories, prices, price_histories, origin, (end - origin).days, product_ids, sources, horizon, gap_days)
+    snapshot = json.dumps({"origin": origin.isoformat(), "histories": histories, "price_histories": price_histories, "product_ids": product_ids, "sources": sources, "horizon": horizon, "gap_days": gap_days}, sort_keys=True)
     selection_scores = {row["product_id"]: row for row in choose(snapshot)[2]}
     def source_label(index, version):
         used = {s for group in sources for s in group} if version.startswith("coffee-xgb-") else set(sources[index])
@@ -114,7 +116,10 @@ def predict(date_from, date_to, product_ids, history):
                  predicted_qty=round(quantity, 3), lower=None, upper=None, model_version=version,
                  history_source=source_label(index, version),
                  diagnostics={"origin": origin.isoformat(), "history_days": len(histories[index]),
-                   "reason": "rolling_validation_2_origins" if product_id in selection_scores else "short_history_weekly",
+                   "reason": "rolling_validation_horizon_" + str(horizon) if product_id in selection_scores else "short_history_weekly",
+                   "horizon": horizon,
+                   "gap_days": gap_days,
+                   "validation_origins": selection_scores.get(product_id, {}).get("origins", 0),
                    "selection": selection_scores.get(product_id, {}).get("selection_metrics", {})})
             for index, (product_id, quantities, version) in enumerate(zip(product_ids, predictions, versions))
             for offset, quantity in enumerate(quantities)

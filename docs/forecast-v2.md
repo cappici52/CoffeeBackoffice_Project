@@ -20,9 +20,17 @@
 
 สมการ smoothing อ้างอิง [Forecasting: Principles and Practice](https://otexts.com/fpp3/exponential-smoothing.html) ค่าพารามิเตอร์กำหนดไว้ล่วงหน้า ไม่ได้อ้างว่าเป็น ETS ที่ optimize likelihood หรือช่วงความเชื่อมั่นที่สอบเทียบแล้ว โมเดลสถิติเก็บ state จากข้อมูลก่อน origin เท่านั้น
 
-28–83 วันต่อเนื่องใช้ weekly baseline เพื่อหลีกเลี่ยงเลือกวิธีจากข้อมูลน้อย เมื่อครบ 84 วัน เลือกตาม MAE ต่อเมนูจาก rolling validation สอง origins ที่ย้อนหลัง 42 และ 28 วัน แต่ละ origin พยากรณ์ 28 วัน รวม 56 คู่ต่อเมนู หน้าต่าง validation ซ้อนกัน 14 วัน จึง **ไม่ใช่ independent holdout** และห้ามนับว่าเป็นข้อมูลทดสอบอิสระ 56 วัน
+เลือกตาม MAE รายเมนูและระยะที่ร้องขอ โดยใช้ rolling validation ที่คำตอบแต่ละช่วงไม่ซ้อนกัน:
 
-ทุกวิธีใช้ target/ช่วงวันเดียวกัน ไม่ใช้ราคาจากอนาคต หากคะแนนเท่ากันคง weekly baseline โมเดลร้านฝึกใหม่ด้วยประวัติทั้งหมดเฉพาะเมื่อถูกเลือก ผลลัพธ์คง model version และ diagnostic scores ของทุก candidate ไม่มีการบังคับให้ XGBoost ชนะ บริการใช้ `coffee-selection-v2`
+| ระยะ | ประวัติขั้นต่ำสำหรับเลือกวิธี | จุดออกผลย้อนหลัง | คู่ต่อเมนู |
+| --- | ---: | --- | ---: |
+| 1 วัน | 42 วัน | ย้อนหลัง 14 ถึง 1 วัน | 14 |
+| 7 วัน | 56 วัน | ย้อนหลัง 28, 21, 14, 7 วัน | 28 |
+| 30 วัน | 88 วัน | ย้อนหลัง 60, 30 วัน | 60 |
+
+ทุกจุดมีข้อมูลฝึกก่อนคำตอบอย่างน้อย 28 วัน หากยังไม่ถึงเกณฑ์ใช้ weekly baseline โดยยังต้องมีประวัติครบ 28 วันต่อเนื่อง คะแนน selection เหล่านี้ **ไม่ใช่ independent holdout** แม้หน้าต่างไม่ซ้อนกันแล้ว ห้ามเปลี่ยนวิธีแล้วอ้างคะแนน holdout เดิมเป็นผลทดสอบใหม่
+
+ทุกวิธีใช้ target/ช่วงวันเดียวกัน ไม่ใช้ราคาจากอนาคต หากคะแนนเท่ากันคง weekly baseline โมเดลร้านฝึกใหม่ด้วยประวัติทั้งหมดเฉพาะเมื่อถูกเลือก ผลลัพธ์คง model version และ diagnostic scores ของทุก candidate ไม่มีการบังคับให้ XGBoost ชนะ บริการใช้ `coffee-selection-v3`
 
 ## รอบพยากรณ์ที่แก้ย้อนหลังไม่ได้
 
@@ -67,3 +75,17 @@ Nightly worker ใช้โหมด actual เสมอและยังเป
 Backend ตรวจ archive immutability/snapshots, permission/export, cross-midnight payment vs delivery, unpaid/refunded deliveries, provenance, duplicate evaluation and zero-demand metrics บน PGlite และ PostgreSQL จริง Model tests ตรวจ rolling splits, future price isolation, baselines/smoothing, common-origin completeness และ reproducibility ของโมเดลเดิม Browser ตรวจ mode switch/readiness, old-run selection/export, duplicate generation, mobile and accessibility ใน schema ทดลอง
 
 สำรองฐานก่อน migration 010 และตรวจ recovery หลังเพิ่มสองตาราง Archive เพิ่มขนาด DB ตามจำนวนรอบ ควรสำรองนอกเครื่องและเฝ้าดูพื้นที่ว่าง ไม่เปิด endpoint ลบ archive โดยอัตโนมัติ
+
+## Monthly history and evaluation contract
+
+History browsing and UTF-8 BOM CSV use the requested range (maximum 367 days), independently of the 120-day training window. Unknown daily quantities stay blank. CSV includes closed/unclosed status, simulation lineage, prediction/model/run metadata and formula-neutralized names. Unclosed order observations are isolated chart points and excluded from training, readiness and evaluation; demo mode remains explicitly synthetic.
+
+The 1/7/30 evaluation table uses issued archived predictions and closed-day outcomes, separated by provenance. Weekly baseline values come only from the original run snapshot; the paired-model and baseline MAEs use identical available pairs. Horizons are cumulative leads 1 through 1/7/30, not errors of aggregated weekly/monthly totals. Historical targets never enter current stock recommendations. Use 1-7 days to assist preparation and 30 days for trend planning; simulated scores do not establish real-customer accuracy.
+
+## Verification on 2026-11-03
+
+Local checks: 80 PostgreSQL integration/configuration tests, 30 Python model tests, and 25 browser workflow groups passed. Main-app read-only QA verifies April history beyond the training window, UTF-8 CSV download, monthly navigation, desktop/mobile layout, and archived 1/7/30-day baseline comparisons against the independently saved replay report. New main-app rounds for 1/7/30 days produced 8/56/240 points in about 2.7/1.6/2.0 seconds; unclosed November 2 observations were absent from their inputs.
+
+A posthoc reanalysis of the already-examined October 3-November 1 simulation window using its original frozen input gave v3 MAE 2.658917, RMSE 3.269751 and WAPE 36.07349% (240 pairs). Original issued v2 scores were MAE 2.775421, RMSE 3.430429 and WAPE 37.65410%. This retrospective result is lower than v2 on the examined simulation, but is not evidence of improved real-shop accuracy or a new untouched holdout. No tuning was performed against these outcomes, and the old immutable archive/scores remain unchanged. New future rounds must accumulate closed-day outcomes before they can establish prospective accuracy.
+
+Selection validation also reproduces the gap between the last closed observation and the first requested target (0-6 days): each fold recursively bridges those unobserved days before scoring its 1/7/30-day target window. Minimum selection history increases by this gap. This prevents a nominal next-day request from being selected using day-ahead errors when its latest closed input is several days old.

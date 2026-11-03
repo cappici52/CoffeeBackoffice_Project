@@ -31,6 +31,11 @@ const forecastRow = z
         origin: dateSchema,
         history_days: z.number().int().min(28).max(120),
         reason: z.string().max(200),
+        horizon: z
+          .union([z.literal(1), z.literal(7), z.literal(30)])
+          .optional(),
+        validation_origins: z.number().int().min(0).max(30).optional(),
+        gap_days: z.number().int().min(0).max(6).optional(),
         selection: z.record(
           z.string().max(100),
           z.object({
@@ -384,10 +389,12 @@ export function forecastsRouter(
       WHERE i.is_active GROUP BY i.id,i.name,i.unit,i.current_stock ORDER BY order_qty DESC,i.name`,
         [
           JSON.stringify(
-            points.map((p) => ({
-              product_id: p.product_id,
-              predicted_qty: Number(p.predicted_qty),
-            })),
+            points
+              .filter((p) => p.date > businessDate())
+              .map((p) => ({
+                product_id: p.product_id,
+                predicted_qty: Number(p.predicted_qty),
+              })),
           ),
         ],
       )
@@ -405,7 +412,7 @@ export function forecastsRouter(
     const archived = (
       await db.query(
         `WITH ranked AS (
-      SELECT p.*,r.generated_at,r.data_mode,r.contains_simulated_sales,row_number() OVER(PARTITION BY p.forecast_date,p.product_id,p.lead_days,p.history_source,r.data_mode
+      SELECT p.*,r.generated_at,r.data_mode,r.contains_simulated_sales,row_number() OVER(PARTITION BY p.forecast_date,p.product_id,p.lead_days,p.history_source,r.data_mode,r.contains_simulated_sales
         ORDER BY r.generated_at,r.id) AS rank
       FROM forecast_run_points p JOIN forecast_runs r ON r.id=p.run_id
       WHERE p.forecast_date BETWEEN $1::date AND $2::date AND ($3::uuid IS NULL OR p.product_id=$3)
@@ -414,6 +421,40 @@ export function forecastsRouter(
         [...params, input.lead_days ?? null],
       )
     ).rows;
+    const snapshots = new Map(
+      (
+        await db.query(
+          "SELECT id,input_history FROM forecast_runs WHERE id=ANY($1::uuid[])",
+          [[...new Set(archived.map((p) => p.run_id))]],
+        )
+      ).rows.map((r) => {
+        const rows = r.input_history as {
+          date: string;
+          product_id: string;
+          qty: number;
+        }[];
+        const menus = new Set(rows.map((h) => h.product_id));
+        const dates = new Map<string, Set<string>>();
+        for (const h of rows) {
+          if (!dates.has(h.date)) dates.set(h.date, new Set());
+          dates.get(h.date)!.add(h.product_id);
+        }
+        const origin = [...dates]
+          .filter(([, products]) => products.size === menus.size)
+          .map(([date]) => date)
+          .sort()
+          .at(-1);
+        return [
+          r.id,
+          {
+            origin,
+            values: new Map(
+              rows.map((h) => [h.date + ":" + h.product_id, Number(h.qty)]),
+            ),
+          },
+        ] as const;
+      }),
+    );
     const comparisons = archived
       .filter(
         (p) =>
@@ -429,6 +470,19 @@ export function forecastsRouter(
         history_source: p.history_source,
         data_mode: p.data_mode,
         simulated: p.contains_simulated_sales === true,
+        baseline: (() => {
+          const snapshot = snapshots.get(p.run_id);
+          const origin = p.diagnostics?.origin ?? snapshot?.origin;
+          if (!origin || !snapshot) return undefined;
+          const delta = (Date.parse(p.date) - Date.parse(origin)) / 86400000;
+          if (delta <= 0) return undefined;
+          const date = new Date(
+            Date.parse(p.date) - Math.ceil(delta / 7) * 7 * 86400000,
+          )
+            .toISOString()
+            .slice(0, 10);
+          return snapshot.values.get(date + ":" + p.product_id);
+        })(),
       }));
     const genuine = comparisons.filter(
       (p) =>
@@ -450,6 +504,29 @@ export function forecastsRouter(
                   : p.history_source) === source,
           ),
         ),
+      }),
+    );
+    const byHorizon = bySource.flatMap(({ source }) =>
+      [1, 7, 30].map((horizon) => {
+        const pairs = comparisons.filter(
+          (p) =>
+            p.lead_days <= horizon &&
+            (p.simulated
+              ? "simulation"
+              : p.history_source === "actual" && p.data_mode !== "actual"
+                ? "mixed"
+                : p.history_source) === source,
+        );
+        const paired = pairs.filter((p) => p.baseline !== undefined);
+        return {
+          source,
+          horizon,
+          ...metrics(pairs),
+          paired_model: metrics(paired),
+          baseline: metrics(
+            paired.map((p) => ({ actual: p.actual, predicted: p.baseline! })),
+          ),
+        };
       }),
     );
     const groups = [
@@ -524,6 +601,7 @@ export function forecastsRouter(
         basis: "fulfilled_v1",
         policy: "earliest-issued-per-target-menu-lead",
         by_source: bySource,
+        by_horizon: byHorizon,
         by_product_lead: groups,
         latest_test: latestTest,
       },

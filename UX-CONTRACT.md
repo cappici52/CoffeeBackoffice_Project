@@ -92,3 +92,5 @@ See docs/forecast-v2.md for the current contract, superseding the earlier single
 ## Forecast monthly history and export
 
 Monthly navigation preserves menu/source/lead filters and resets the archived round to automatic. Date ranges up to 367 days retrieve history independently of the 120-day training window. UTF-8 BOM CSV exports every calendar day for the observed/predicted menus, including unknown days as blanks, closed/unclosed status and simulation provenance; names are quoted and formula-neutralized. Only closed-day order observations enter new model inputs, readiness and evaluation. Unclosed totals remain visible as isolated points. Forecast horizon options are 1, 7 and 30 days; the 28-day feature-history requirement remains.
+
+Forecast selection uses horizon-specific, non-overlapping prior-only validation for 1/7/30 days. Saved-round evaluation compares frozen weekly baselines on identical observable pairs, grouped by source and cumulative lead horizon. Historical forecast targets never drive current stock recommendations. Selection scores remain distinct from independent test accuracy.

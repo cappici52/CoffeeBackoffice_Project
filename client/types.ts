@@ -222,6 +222,9 @@ export interface Forecasts {
       origin: string;
       history_days: number;
       reason: string;
+      horizon?: 1 | 7 | 30;
+      validation_origins?: number;
+      gap_days?: number;
       selection: Record<
         string,
         { mae: number; rmse: number; wape: number | null; samples: number }
@@ -268,6 +271,12 @@ export interface Forecasts {
     basis: string;
     policy: string;
     by_source: (ForecastMetrics & { source: string })[];
+    by_horizon?: (ForecastMetrics & {
+      source: string;
+      horizon: number;
+      paired_model: ForecastMetrics;
+      baseline: ForecastMetrics;
+    })[];
     by_product_lead: (ForecastMetrics & {
       product_id: string;
       lead_days: number;

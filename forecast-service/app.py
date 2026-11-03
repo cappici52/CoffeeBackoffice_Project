@@ -26,7 +26,8 @@ class ForecastRequest(BaseModel):
 @app.get("/health")
 def health():
     return {"status": "ok", "model_version": PIPELINE_VERSION, "source_model_version": MODEL_VERSION,
-            "mode": "adaptive", "interval_kind": "unavailable", "minimum_history_days": 28, "local_training_days": 84}
+            "mode": "adaptive", "interval_kind": "unavailable", "minimum_history_days": 28,
+            "selection_minimum_days_by_horizon": {"1": 42, "7": 56, "30": 88}}
 
 @app.post("/forecast")
 def forecast(request: ForecastRequest):

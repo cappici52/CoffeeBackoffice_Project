@@ -1,4 +1,4 @@
-"""Select a forecasting method using prior-only, 28-day recursive validation.
+"""Select a forecasting method using prior-only, horizon-specific recursive validation.
 
 ProjectA is a candidate, not an assumption that retail demand fits a coffee shop.
 The optional new XGBoost candidate learns the shop's own unit quantities/prices.
@@ -16,7 +16,7 @@ from xgboost import DMatrix, train
 
 from model import FEATURES, MODEL, MODEL_VERSION, recursive_forecast
 
-PIPELINE_VERSION = "coffee-selection-v2"
+PIPELINE_VERSION = "coffee-selection-v3"
 STATISTICAL_METHODS = ["weekly-naive-v1", "mean-28-v1", "mean-7-v1", "weekday-mean-v1", "ses-v1", "damped-holt-v1"]
 RUNTIME = Path(os.environ.get("FORECAST_MODEL_DIR", Path(__file__).parent / "runtime"))
 
@@ -114,30 +114,38 @@ def choose(snapshot):
     histories, price_histories = data["histories"], data["price_histories"]
     selected = ["weekly-naive-v1"] * len(histories)
     scores = []
-    eligible = [i for i, h in enumerate(histories) if len(h) >= 84]
+    horizon = data.get("horizon", 30)
+    gap = data.get("gap_days", 0)
+    if horizon not in (1, 7, 30):
+        raise ValueError("Selection horizon must be 1, 7 or 30")
+    if not isinstance(gap, int) or not 0 <= gap <= 6:
+        raise ValueError("Selection history gap must be 0-6 days")
+    backs = list(range(14, 0, -1)) if horizon == 1 else ([28, 21, 14, 7] if horizon == 7 else [60, 30])
+    backs = [back + gap for back in backs]
+    eligible = [i for i, h in enumerate(histories) if len(h) >= 28 + max(backs)]
     if not eligible:
         return selected, None, scores
     methods = STATISTICAL_METHODS
-    version = "coffee-xgb-v2-" + hashlib.sha256(snapshot.encode()).hexdigest()[:12]
+    version = "coffee-xgb-v3-" + hashlib.sha256(snapshot.encode()).hexdigest()[:12]
     actuals = {i: [] for i in eligible}
     estimates = {i: {m: [] for m in methods + [MODEL_VERSION, version]} for i in eligible}
-    # Two prior-only rolling origins, each forecasting 28 days. The windows
-    # overlap: these are selection diagnostics, never an independent holdout.
-    for back in [42, 28]:
+    # Non-overlapping target windows; all training ends before each target.
+    # These select a method, never stand in for an untouched final holdout.
+    for back in backs:
         training = [histories[i][:-back] for i in eligible]
         training_prices = [price_histories[i][:-back] for i in eligible]
         validation_origin = origin - timedelta(days=back)
         candidate = fit(training, training_prices, validation_origin)
         prices = [p[-1] for p in training_prices]
-        transferred = recursive_forecast(training, prices, validation_origin, 28, MODEL)
-        local = recursive_forecast(training, prices, validation_origin, 28, candidate) if candidate else None
+        transferred = recursive_forecast(training, prices, validation_origin, gap + horizon, MODEL)
+        local = recursive_forecast(training, prices, validation_origin, gap + horizon, candidate) if candidate else None
         for offset, index in enumerate(eligible):
-            actuals[index] += histories[index][-back:][:28]
+            actuals[index] += histories[index][-back + gap:][:horizon]
             for method in methods:
-                estimates[index][method] += baseline(training[offset], 28, method)
-            estimates[index][MODEL_VERSION] += transferred[offset]
+                estimates[index][method] += baseline(training[offset], gap + horizon, method)[gap:]
+            estimates[index][MODEL_VERSION] += transferred[offset][gap:]
             if local is not None:
-                estimates[index][version] += local[offset]
+                estimates[index][version] += local[offset][gap:]
     for index in eligible:
         metrics = {m: evaluation(actuals[index], values) for m, values in estimates[index].items()
                    if len(values) == len(actuals[index])}
@@ -146,8 +154,8 @@ def choose(snapshot):
         # merely because it was trained.
         selected[index] = best if metrics[best]["mae"] < metrics["weekly-naive-v1"]["mae"] - 1e-6 else "weekly-naive-v1"
         scores.append({"product_id": data["product_ids"][index], "selection_mae": {m:v["mae"] for m,v in metrics.items()},
-                       "selection_metrics": metrics, "selected": selected[index], "validation_days": 28,
-                       "origins": 2, "evaluation_kind": "rolling_validation_overlapping"})
+                       "selection_metrics": metrics, "selected": selected[index], "validation_days": horizon,
+                       "origins": len(backs), "gap_days": gap, "evaluation_kind": "rolling_validation_nonoverlapping"})
     fitted = fit([histories[i] for i in eligible], [price_histories[i] for i in eligible], origin) if version in selected else None
     persist(fitted, version, {"pipeline_version": PIPELINE_VERSION, "model_version": version if fitted else None,
                              "origin": origin.isoformat(), "features": FEATURES, "history_sources": data["sources"],
@@ -155,9 +163,9 @@ def choose(snapshot):
     return selected, fitted, scores
 
 
-def selected_forecasts(histories, prices, price_histories, origin, days, product_ids, sources):
+def selected_forecasts(histories, prices, price_histories, origin, days, product_ids, sources, horizon=30, gap_days=0):
     snapshot = json.dumps({"origin": origin.isoformat(), "histories": histories, "price_histories": price_histories,
-                           "product_ids": product_ids, "sources": sources}, sort_keys=True)
+                           "product_ids": product_ids, "sources": sources, "horizon": horizon, "gap_days": gap_days}, sort_keys=True)
     methods, fitted, _ = choose(snapshot)
     results = [baseline(h, days, method) if method in STATISTICAL_METHODS else baseline(h, days, "weekly-naive-v1") for h, method in zip(histories, methods)]
     for prefix, booster in [("projecta-xgb-", MODEL), ("coffee-xgb-", fitted)]:

@@ -135,11 +135,11 @@ export default function Forecast() {
     <>
       <Notice>
         ใช้ XGBoost จาก ProjectA เทียบกับโมเดลที่เทรนจากประวัติร้าน
-        ยอดสัปดาห์ก่อน และค่าเฉลี่ยหลายวิธี เลือกวิธีรายเมนูจากการทดสอบย้อนหลัง
-        28 วันสองจุดเวลาเมื่อมีข้อมูลครบ 84 วัน
-        หากประวัติสั้นจะใช้ยอดสัปดาห์ก่อน ต้องมีข้อมูลอย่างน้อย 28
-        วันติดต่อกันที่ปิดยอดแล้ว ผลนี้ยังไม่ผ่านการยืนยันความแม่นยำกับร้านกาแฟ
-        และไม่มีช่วงความเชื่อมั่น
+        ยอดสัปดาห์ก่อน และค่าเฉลี่ยหลายวิธี เลือกวิธีรายเมนูตามระยะ 1, 7 หรือ 30
+        วัน ทดสอบย้อนหลังหลายจุดเวลาโดยช่วงคำตอบไม่ซ้อนกัน
+        และใช้เฉพาะข้อมูลก่อนคำตอบ หากประวัติสั้นจะใช้ยอดสัปดาห์ก่อน
+        ต้องมีข้อมูลอย่างน้อย 28 วันติดต่อกันที่ปิดยอดแล้ว
+        ผลนี้ยังไม่ผ่านการยืนยันความแม่นยำกับร้านกาแฟ และไม่มีช่วงความเชื่อมั่น
       </Notice>
       <Notice>
         ยอดสำหรับเตรียมสินค้าใช้วันส่งมอบ รวมรายการเสิร์ฟแล้วที่ยังไม่จ่าย
@@ -338,6 +338,7 @@ export default function Forecast() {
       <QueryState {...resource} retry={resource.reload} />
       {data && (
         <Form
+          noValidate
           guard={false}
           onSave={async () => {
             const url = URL.createObjectURL(
@@ -491,6 +492,7 @@ export default function Forecast() {
                       ]}
                     />
                     <Area
+                      isAnimationActive={false}
                       dataKey="interval"
                       fill="var(--primary)"
                       fillOpacity={0.12}
@@ -498,6 +500,7 @@ export default function Forecast() {
                       connectNulls={false}
                     />
                     <Line
+                      isAnimationActive={false}
                       dataKey="actual"
                       stroke="var(--text)"
                       strokeWidth={2}
@@ -505,6 +508,7 @@ export default function Forecast() {
                       connectNulls={false}
                     />
                     <Line
+                      isAnimationActive={false}
                       dataKey="partialActual"
                       name="ยอดบางส่วน / ยังไม่ปิดวัน"
                       stroke="var(--warning)"
@@ -514,6 +518,7 @@ export default function Forecast() {
                       connectNulls={false}
                     />
                     <Line
+                      isAnimationActive={false}
                       dataKey="forecast"
                       stroke="var(--primary)"
                       strokeWidth={2}
@@ -657,8 +662,9 @@ export default function Forecast() {
           {displayedMetrics?.samples === 0 && (
             <Notice>
               ยังไม่มีคู่ข้อมูลสำหรับคะแนนที่เลือก
-              วันอนาคตยังไม่มียอดส่งมอบให้เทียบ จึงยังคำนวณ MAPE/RMSE/MAE/WAPE
-              ไม่ได้
+              ต้องมีรอบพยากรณ์ที่ออกก่อนวันเป้าหมายและยอดปิดวันที่ตรงกัน
+              วันอนาคตหรือวันที่ไม่มีผลล่วงหน้าเก็บไว้ จึงยังคำนวณ
+              MAPE/RMSE/MAE/WAPE ไม่ได้
             </Notice>
           )}
           {data.evaluation.latest_test && (
@@ -695,6 +701,64 @@ export default function Forecast() {
                 ))}
             </Notice>
           )}
+          <details className="section-details">
+            <summary>เปรียบเทียบระยะ 1, 7 และ 30 วันกับยอดสัปดาห์ก่อน</summary>
+            <p className="caption muted">
+              คะแนนจากรอบที่บันทึกไว้และวันที่ปิดยอดแล้ว
+              ตามแหล่งข้อมูลที่เลือกด้านบน ระยะ 7 และ 30
+              วันรวมทุกวันตั้งแต่วันแรกถึงระยะนั้น
+              วิธีพื้นฐานใช้ประวัติที่มีตอนออกพยากรณ์ ไม่เห็นคำตอบล่วงหน้า
+            </p>
+            <div
+              className="table-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="เลื่อนตารางเปรียบเทียบระยะพยากรณ์"
+            >
+              <table>
+                <caption>
+                  ผลทดสอบตามระยะ ·{" "}
+                  {sourceLabel(selectedScore?.source ?? "actual")}
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">ระยะ</th>
+                    <th scope="col">คู่ทดสอบ</th>
+                    <th scope="col">MAE</th>
+                    <th scope="col">RMSE</th>
+                    <th scope="col">MAPE</th>
+                    <th scope="col">WAPE</th>
+                    <th scope="col">MAE เทียบวิธีพื้นฐาน (คู่เดียวกัน)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.evaluation.by_horizon
+                    ?.filter((e) => e.source === selectedScore?.source)
+                    .map((e) => (
+                      <tr key={e.horizon}>
+                        <th scope="row">1–{e.horizon} วัน</th>
+                        <td>{e.samples}</td>
+                        {[e.mae, e.rmse, e.mape, e.wape].map((v, i) => (
+                          <td key={i}>
+                            {v == null ? "—" : number(v) + (i > 1 ? "%" : "")}
+                          </td>
+                        ))}
+                        <td>
+                          {e.baseline.samples
+                            ? `${number(e.paired_model.mae!)} / ${number(e.baseline.mae!)} · ${e.baseline.samples} คู่`
+                            : "ไม่มี snapshot ที่เทียบได้"}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="caption muted">
+              ใช้ช่วยเตรียมของช่วง 1–7 วันก่อน ส่วน 30 วันใช้วางแผนแนวโน้ม
+              ตรวจยอดจริงและสต็อกก่อนตัดสินใจซื้อ
+              ผลจากข้อมูลจำลองยังไม่ยืนยันความแม่นยำกับลูกค้าจริง
+            </p>
+          </details>
           <details className="section-details">
             <summary>ผลวัดจริงแยกเมนูและระยะล่วงหน้า</summary>
             <div
@@ -753,9 +817,9 @@ export default function Forecast() {
               ))}
             </ul>
           </details>
-          <h2 className="section-title">วัตถุดิบที่ควรสั่งเพิ่ม</h2>
+          <h2 className="section-title">วัตถุดิบตามแผนพยากรณ์</h2>
           <p className="muted caption">
-            พยากรณ์ × สูตรพื้นฐาน − สต็อกคงเหลือ ·
+            เฉพาะวันอนาคต: พยากรณ์ × สูตรพื้นฐาน − สต็อกคงเหลือ ·
             ต้องตรวจสต็อกและตัวเลือกจริงก่อนสั่งซื้อ
           </p>
           <div className="table-panel">
@@ -857,9 +921,18 @@ export default function Forecast() {
                             </summary>
                             <p>
                               {f.diagnostics.reason === "short_history_weekly"
-                                ? "ประวัติยังไม่ครบ 84 วัน จึงใช้ยอดสัปดาห์ก่อน"
-                                : "เลือก MAE ต่ำสุดจากการทดสอบย้อนหลังสองจุดเวลา (ไม่ใช่คะแนนทดสอบอิสระ)"}
+                                ? "ประวัติยังไม่ถึงเกณฑ์เลือกวิธีสำหรับระยะนี้ จึงใช้ยอดสัปดาห์ก่อน"
+                                : "เลือก MAE ต่ำสุดจากการทดสอบย้อนหลังหลายจุดเวลา (ไม่ใช่คะแนนทดสอบอิสระ)"}
                             </p>
+                            {f.diagnostics.horizon && (
+                              <p className="caption muted">
+                                ทดสอบระยะ {f.diagnostics.horizon} วัน ·{" "}
+                                {f.diagnostics.validation_origins ?? 0} จุดเวลา
+                                · ข้ามวันที่ยังไม่ทราบยอด{" "}
+                                {f.diagnostics.gap_days ?? 0}{" "}
+                                วันก่อนเริ่มช่วงเป้าหมาย
+                              </p>
+                            )}
                             <ul>
                               {Object.entries(f.diagnostics.selection).map(
                                 ([method, score]) => (

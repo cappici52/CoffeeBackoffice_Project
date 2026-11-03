@@ -91,7 +91,7 @@ class ForecastTests(unittest.TestCase):
         history = observations([10 + i % 7 for i in range(28)])
         whole = predict("2026-11-03", "2026-11-10", ["p1"], history)
         later = predict("2026-11-04", "2026-11-10", ["p1"], history)
-        self.assertEqual(later, whole[1:])
+        self.assertEqual([r["predicted_qty"] for r in later], [r["predicted_qty"] for r in whole[1:]])
 
     def test_stale_history_and_incomplete_product_batches_fail(self):
         for products, end in [(["p1", "p2"], date(2026, 11, 2)), (["p1"], date(2026, 10, 20))]:
@@ -117,8 +117,8 @@ class ForecastTests(unittest.TestCase):
         self.assertIn("not an independent", metadata["evaluation_note"])
         self.assertIn(MODEL_VERSION, metadata["selection"][0]["selection_mae"])
         self.assertTrue(any(k.startswith("coffee-xgb-") for k in metadata["selection"][0]["selection_mae"]))
-        self.assertEqual(metadata["selection"][0]["origins"], 2)
-        self.assertTrue(all(m["samples"] == 56 for m in metadata["selection"][0]["selection_metrics"].values()))
+        self.assertEqual(metadata["selection"][0]["origins"], 4)
+        self.assertTrue(all(m["samples"] == 28 for m in metadata["selection"][0]["selection_metrics"].values()))
 
     def test_api_requires_price_and_source_and_rejects_nonfinite_sales(self):
         payload = dict(date_from="2026-11-03", date_to="2026-11-09", product_ids=["00000000-0000-4000-8000-000000000001"], history=[])
@@ -132,10 +132,10 @@ class ForecastTests(unittest.TestCase):
         self.assertEqual(health()["mode"], "adaptive")
 
     def test_selection_never_uses_prices_from_the_validation_window(self):
-        base = dict(origin="2026-11-02", histories=[[15.0] * 84], product_ids=["p1"], sources=[["demo"]])
+        base = dict(origin="2026-11-02", histories=[[15.0] * 120], horizon=30, product_ids=["p1"], sources=[["demo"]])
         scores = []
         for price in [65.0, 999.0]:
-            snapshot = json.dumps({**base, "price_histories": [[65.0] * 56 + [price] * 28]}, sort_keys=True)
+            snapshot = json.dumps({**base, "price_histories": [[65.0] * 90 + [price] * 30]}, sort_keys=True)
             errors = choose(snapshot)[2][0]["selection_mae"]
             scores.append({"local" if k.startswith("coffee-xgb-") else k:v for k,v in errors.items()})
         self.assertEqual(scores[0], scores[1])

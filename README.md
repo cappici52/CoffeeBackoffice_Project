@@ -102,8 +102,8 @@ npm run build
 npm run test:e2e
 ```
 
-- 75 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast ทั้งชุด/รายเมนู, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย, LAN/production security headers และอัปโหลด/ตรวจไฟล์รูป
-- Python model/selection tests 28 กรณี รวมตรวจผลตรงกับโมเดล ProjectA กันข้อมูลอนาคตรั่ว ประวัติสิ้นสุดต่างวัน และทำซ้ำผลเทรน Coffee Sales จริง
+- 80 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast ทั้งชุด/รายเมนู, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย, LAN/production security headers และอัปโหลด/ตรวจไฟล์รูป
+- Python model/selection tests 30 กรณี รวมตรวจผลตรงกับโมเดล ProjectA กันข้อมูลอนาคตรั่ว ประวัติสิ้นสุดต่างวัน เลือกวิธีตามระยะพยากรณ์และช่วงข้อมูลขาด และทำซ้ำผลเทรน Coffee Sales จริง
 - Browser test ครอบคลุม 25 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, อัปโหลดรูป/พรีวิวบนมือถือ, พยากรณ์เฉพาะเมนู, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
 - Tests บน PostgreSQL และ browser ใช้ schema สุ่มแล้วลบ ไม่เขียน test orders ลงตารางร้านจริง ต้องใช้ development database ที่อนุญาตสร้าง schema
 - Browser plugin ไม่พร้อมใน session นี้ จึงใช้ Playwright/Edge; CI ใช้ Chromium ภาพ QA อยู่ใน OS temp หรือ `QA_OUTPUT_DIR` ไม่ commit รูปทดสอบ

@@ -60,6 +60,24 @@ try {
       );
       assert.equal(score.samples, report.menus.length * 30);
       assert(Math.abs(score.mae - report.holdout_metrics.mae) < 1e-9);
+      const horizons = data.evaluation.by_horizon.filter(
+        (s) => s.source === "simulation",
+      );
+      assert.deepEqual(
+        horizons.map((s) => s.samples),
+        [8, 56, 240],
+      );
+      const monthly = horizons.find((s) => s.horizon === 30);
+      assert.equal(monthly.baseline.samples, 240);
+      assert(Math.abs(monthly.baseline.mae - report.weekly_metrics.mae) < 1e-9);
+      assert(
+        Math.abs(monthly.paired_model.mae - report.holdout_metrics.mae) < 1e-9,
+      );
+      assert.equal(
+        data.recommendations.length,
+        0,
+        "Historical targets must not reduce present inventory",
+      );
       assert.equal(data.accuracy.samples, 0);
     }
     await page.goto(
@@ -181,6 +199,7 @@ try {
     ),
   );
   checks.push(
+    "1/7/30-day cumulative evaluation and frozen weekly baseline match independent replay report; historical targets excluded from purchasing",
     "All four metric cards follow the chosen source; future scores stay unavailable; missing-day note and historical-test shortcut work",
   );
   await page.goto(base + "/forecast");
@@ -223,6 +242,12 @@ try {
   for (const width of [1536, 390]) {
     await page.setViewportSize({ width, height: 960 });
     await expect(page.getByLabel("ดูรายเดือน", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "ส่งออก CSV ตามช่วงที่เลือก",
+        exact: true,
+      }),
+    ).toBeVisible();
     assert(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
