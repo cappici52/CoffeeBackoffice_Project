@@ -12,10 +12,10 @@
 - สูตร/ขั้นตอน วัตถุดิบ รับเข้า ของเสีย แจ้งสต็อกต่ำ และตัดสต็อกครั้งเดียวตอนยืนยันออเดอร์หรือรับชำระล่วงหน้าด้วย DB transaction
 - ยอดขายรายวัน/ช่วงวันที่ เมนูและช่วงเวลาขายดี กำไรขั้นต้นเฉพาะ owner เวลาเตรียมเฉลี่ย และปิดวัน
 - FastAPI forecast แยกบริการ บันทึกผลพยากรณ์ กราฟ ปริมาณเตรียม แนะนำวัตถุดิบ และ MAE/WAPE/MAPE/RMSE/Bias เมื่อมีข้อมูลเทียบ
-- worker พยากรณ์หลัง 02:00 Asia/Bangkok วันละหนึ่งครั้ง พร้อม catch-up/retry
+- worker พยากรณ์ 1/7/30 วันหลัง 02:00 Asia/Bangkok เมื่อปิดวันก่อนหน้าแล้ว พร้อม retry และป้องกันรอบซ้ำ
 - Audit logs, version conflict checks และป้องกันออเดอร์/ตัดสต็อกซ้ำเมื่อเครือข่ายขัดข้อง
 
-**ขอบเขตเริ่มต้น:** PromptPay เป็นการตรวจเงินและยืนยันโดยพนักงาน ไม่มี gateway/ตรวจสลิปอัตโนมัติ การคืนเงินเป็นการบันทึกหลังคืนเงินจริงด้วยพนักงาน Forecast v2 ใช้ประวัติส่งมอบจริงเป็นค่าเริ่มต้น เปรียบเทียบ XGBoost กับ weekly/means/SES/damped Holt ผ่าน rolling validation เก็บผลแยกทุกรอบพร้อม snapshot และคะแนนจริงแยก lead/เมนู โหมด demo ต้องเลือกทดลองอย่างชัดเจน ผลใหม่ไม่มีช่วงความเชื่อมั่น และยังต้องประเมินความแม่นยำกับยอดจริงของร้าน ฟีเจอร์เสริมเฟส 8 เช่นสมาชิก/IoT/หลายสาขายังไม่รวมใน core release
+**ขอบเขตเริ่มต้น:** PromptPay ตรวจเงินและยืนยันโดยพนักงาน การคืนเงินบันทึกหลังคืนเงินจริง Forecast v5 ใช้จำนวนส่งมอบจากออเดอร์ completed แยกชุดปกติ/จำลอง/ตัวอย่าง เปรียบเทียบ baselines, SES และ XGBoost ด้วย rolling validation เก็บรอบและ snapshot แบบแก้ย้อนหลังไม่ได้ มีช่วงค่าจากความคลาดเคลื่อนเมื่อข้อมูลพอ และแยกการวิเคราะห์ย้อนหลังออกจากคะแนนผลที่ออกล่วงหน้าจริง ดู [สถาปัตยกรรมและข้อจำกัด](docs/forecast-v5.md)
 
 ## เริ่มใช้งานกับ PostgreSQL ในเครื่อง (Windows)
 
@@ -131,10 +131,10 @@ Migration มี checksum ห้ามแก้ไฟล์ที่ใช้แ
 
 API หลัก: `/api/auth/*`, `/api/users`, `/api/catalog`, `/api/categories`, `/api/products`, `/api/ingredients`, `/api/stock-movements`, `/api/recipes/:productId`, `/api/orders`, `/api/kds`, `/api/events`, `/api/reports`, `/api/reports/close`, `/api/forecasts`, `/api/forecasts/generate`, `/api/audit-logs`
 
-เชื่อมโมเดลจริงแล้ว ดู [การเชื่อมโมเดลและวิธีเลือกพยากรณ์](docs/forecast-integration.md) ต้องมีประวัติรายเมนูอย่างน้อย 28 วันติดต่อกัน; เมื่อครบ 84 วัน ระบบจะเทรนโมเดลจากประวัติร้านและเทียบย้อนหลังสอง origins ช่วงละ 28 วันก่อนเลือกใช้ วันที่ไม่มีข้อมูลไม่ถูกเติมศูนย์อัตโนมัติ ผลจากข้อมูลตัวอย่างไม่ใช่หลักฐานความแม่นยำของร้านจริง เก็บโมเดลที่เทรนใหม่ใน `forecast-service/runtime/` หรือ Docker volume `coffee_forecast_models`
+ระบบพยากรณ์ใช้ FastAPI และข้อมูล PostgreSQL ผ่าน Node มีประวัติ 1–27 วันที่ใช้ได้จะใช้วิธีพื้นฐาน เมื่อมีข้อมูลพอจึงเลือกวิธีตามผลทดสอบก่อนช่วงเป้าหมาย ไม่บังคับ XGBoost ชนะ วันที่ไม่มีข้อมูลไม่เติมศูนย์ ข้อมูลจำลองไม่ยืนยันความแม่นยำกับร้านจริง ดู [Forecast v5](docs/forecast-v5.md) และ [ข้อกำหนดเป้าหมาย](docs/forecast-target-spec.md)
 
 ภาพถ่ายจริงประกอบครบ 8 เมนู แสดงใน POS/QR และพรีวิวตอนแก้ไข โดยไม่มีลิงก์เครดิตหรือข้อความ license บนหน้าจอ ดู [รายละเอียดภาพเมนู](docs/menu-photographs.md)
 
-Active forecasting design, fixed retrospective results and evidence limits: [Forecast v4](docs/forecast-v4.md).
+Active forecasting design, APIs, measured results and limitations: [Forecast v5](docs/forecast-v5.md). Historical v4 results remain in [Forecast v4](docs/forecast-v4.md).
 
 Original protected PromptPay image setup and manual-payment behavior: [PromptPay image](docs/promptpay-image.md).

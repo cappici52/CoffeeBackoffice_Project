@@ -83,3 +83,7 @@ npm run db:restore -- .local/backups/coffee-เวลาที่สำรอง
 การตั้งค่า Compose ใน repo เป็น development ต้องเตรียมโดเมนและ HTTPS จริงก่อนเปิด production ตั้ง `NODE_ENV=production`, `APP_ORIGIN`/`PUBLIC_ORIGIN` เป็น HTTPS ที่ไม่มี path/trailing slash ใช้บัญชี DB เฉพาะร้านและรหัสเฉพาะ ให้ PostgreSQL/forecast อยู่ในเครือข่ายภายใน เปิดเฉพาะ reverse proxy ไป API อย่าเปิดพอร์ต DB/forecast สาธารณะ จัดบริการให้ restart หลัง reboot และทดสอบกู้คืนบนเครื่องปลายทาง
 
 ยังไม่มีโดเมน/เครื่องปลายทางที่ผู้ใช้ระบุ จึงไม่ได้เผยแพร่ระบบสู่สาธารณะหรือซื้อบริการ หากมีหลาย API instances ต้องใช้ shared rate-limit store และกำหนด trusted proxy ตาม topology จริง ห้ามตั้ง `trust proxy=true` แบบไม่จำกัด
+
+## Forecast v5 operations
+
+See [active architecture and APIs](forecast-v5.md). Run migrations after a verified backup; migration 014 is additive and keeps old forecasts. Keep Node and FastAPI at the same version. Worker needs yesterday's closing after 02:00 Bangkok and creates all three horizons atomically; a missing closing waits and failures retry. `FORECAST_SAFETY_FACTOR` defaults to 1 (1–2 supported); the dashboard can override its view without changing saved snapshots. New v5 models refit from saved business inputs and do not require offline ProjectA artifacts/runtime caches. Do not confuse a retrospective analysis with a prediction actually issued in the past. Genuine accuracy requires future customer outcomes; simulation and old-pipeline results remain separately labeled.

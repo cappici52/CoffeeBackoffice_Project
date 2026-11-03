@@ -1,6 +1,8 @@
 # Forecast integration and model selection
 
-**Current contract:** [forecast-v2.md](forecast-v2.md) supersedes the original paid-sales history, single-origin selection and overwritten-only evaluation behavior described below. V2 adds delivery-day actual-only history, statistical alternatives, rolling validation and append-only archived rounds. The original integration/activation numbers below are historical evidence, not the current evaluation policy.
+> Historical document. The current production contract is [Forecast v5](forecast-v5.md). Older method thresholds, endpoints and results below describe earlier versions; they are retained for audit, not active implementation instructions.
+
+**Historical v2 contract:** [forecast-v2.md](forecast-v2.md) superseded the original paid-sales history, single-origin selection and overwritten-only evaluation behavior described below. V2 adds delivery-day actual-only history, statistical alternatives, rolling validation and append-only archived rounds. The original integration/activation numbers below are historical evidence, not the current evaluation policy.
 
 ## Uneven observations and new menus
 

@@ -1,5 +1,7 @@
 # แผนประเมินพยากรณ์ด้วยข้อมูลร้าน
 
+> Historical document. The current production contract is [Forecast v5](forecast-v5.md). Older method thresholds, endpoints and results below describe earlier versions; they are retained for audit, not active implementation instructions.
+
 ## สิ่งที่พิสูจน์แล้วและสิ่งที่ยังพิสูจน์ไม่ได้
 
 โมเดล ProjectA เชื่อมผ่าน native JSON และตรวจผลเทียบต้นฉบับแล้ว ระบบเทรน candidate จากประวัติร้านและเลือกเทียบ weekly baseline ได้ แต่ข้อมูล demo ของร้านไม่พิสูจน์ความแม่นยำในการใช้งานจริง

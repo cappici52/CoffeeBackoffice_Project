@@ -1,5 +1,7 @@
 # พยากรณ์ความต้องการสินค้า v2
 
+> Historical document. The current production contract is [Forecast v5](forecast-v5.md). Older method thresholds, endpoints and results below describe earlier versions; they are retained for audit, not active implementation instructions.
+
 ## ข้อมูลที่ใช้และเป้าหมาย
 
 ค่าเริ่มต้นใช้ **ประวัติส่งมอบจริงเท่านั้น** (`data_mode=actual`) จำนวนต่อเมนูต่อวัน Bangkok จาก `orders.completed_at` และ order item snapshots นับสินค้าเสิร์ฟแล้วแม้ยังไม่ชำระหรือคืนเงินภายหลัง ไม่เอาวันรับเงินมาเลื่อนความต้องการ รายงานการเงินและ `sales_daily.source=actual` เดิมยังใช้วันรับเงินตามเดิม ไม่มีการแก้ payment/stock/order timestamps เพื่อเทรน

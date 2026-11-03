@@ -1,6 +1,8 @@
 # Demand forecasting v4
 
-This replaces the active pipeline; all v2/v3 archives, snapshots, scripts and native ProjectA parity checks remain available. No order/payment/stock history is rewritten. Migration 012 adds quality annotations and training metadata; it does not modify applied migrations or archived predictions.
+> Historical document. The current production contract is [Forecast v5](forecast-v5.md). Older method thresholds, endpoints and results below describe earlier versions; they are retained for audit, not active implementation instructions.
+
+At its release, v4 replaced the previous pipeline; all v2/v3 archives, snapshots, scripts and native ProjectA parity checks remain available. No order/payment/stock history is rewritten. Migration 012 adds quality annotations and training metadata; it does not modify applied migrations or archived predictions.
 
 ## Dataset contract
 

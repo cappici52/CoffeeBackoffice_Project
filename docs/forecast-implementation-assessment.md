@@ -38,3 +38,7 @@ Target: user-supplied CoffeeBackoffice_Forecasting_Codex_Plan.md. Reviewed befor
 
 ## Reference inventory
 Production: src/app.ts -> src/shop/forecasts.ts -> src/shop/forecast-data.ts -> FastAPI app.py -> engine_v4.py; src/forecast-worker.ts uses generateForecasts; ingredient joins use recipe_ingredients and ingredients. Frontend Forecast.tsx / ForecastData / ForecastMonitor / forecast-view.ts. Tests forecast*, reports.test.ts, shop-replay.test.ts; scripts/browser-test.mjs, check-main-shop-replay.mjs, replay-shop-sales.mjs; Docker/CI start app:app. Offline legacy chain: evaluate_shop -> model/selection; evaluate_rolling -> coffee_demand/selection; train_external/import_projecta and their tests. Documentation: forecast-v2/v4/integration/data-review/evaluation-plan, system-design/domain-decisions, simulations and README. Applied DB migrations stop at 013; 10515 orders observed before changes.
+
+## Completion follow-up
+
+The assessment above is the pre-change record. The incremental refactor is complete; current architecture, exact changed-file map, removal reference audit, migration 014, verification and remaining real-data evidence limitations are documented in [Forecast v5](forecast-v5.md). Reused the existing service/API/archive rather than rewriting business modules or adding monthly tables. The original 013-and-earlier migrations and existing sales/forecast data were preserved.
