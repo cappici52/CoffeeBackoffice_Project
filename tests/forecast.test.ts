@@ -621,3 +621,44 @@ test("horizon comparisons use the frozen weekly baseline and match identical eva
     expect(g.paired_model.samples).toBe(g.baseline.samples);
   }
 });
+
+test("source-separated dataset honors audited quality exclusions without changing sales", async () => {
+  const menu = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO products(id,category_id,name,price_satang,station) SELECT $1,category_id,'Quality check',7500,'bar' FROM products WHERE id=$2",
+    [menu, product],
+  );
+  await delivered(menu, day(-4), 5);
+  const url = `/api/forecasts/data?cohort=genuine&product_id=${menu}`;
+  await request(app).get(url).expect(401);
+  const before = await request(app).get(url).set("Cookie", cookie).expect(200);
+  expect(before.body.rows.some((r: { qty: number }) => r.qty === 5)).toBe(true);
+  await request(app)
+    .put("/api/forecasts/quality")
+    .set("Cookie", cookie)
+    .set("Origin", origin)
+    .send({
+      date: day(-4),
+      product_id: menu,
+      kind: "stockout",
+      note: "Known supply interruption",
+    })
+    .expect(200);
+  const after = await request(app).get(url).set("Cookie", cookie).expect(200);
+  expect(after.body.rows).toHaveLength(0);
+  expect(after.body.excluded.flagged).toBe(1);
+  expect(
+    Number(
+      (await history(fixture.db, "actual")).find((r) => r.product_id === menu)
+        ?.qty,
+    ),
+  ).toBe(5);
+  expect(
+    (
+      await fixture.db.query(
+        "SELECT action FROM audit_logs WHERE entity_id=$1 AND action='forecast.quality'",
+        [menu],
+      )
+    ).rows,
+  ).toHaveLength(1);
+});

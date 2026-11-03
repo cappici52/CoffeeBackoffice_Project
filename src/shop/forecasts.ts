@@ -14,6 +14,7 @@ import {
 } from "./shared.js";
 import { metrics } from "./forecast-metrics.js";
 import { serializeForecastHistory } from "./forecast-snapshot.js";
+import { dataset } from "./forecast-data.js";
 
 const forecastRow = z
   .object({
@@ -289,6 +290,84 @@ export function forecastsRouter(
 ) {
   const r = Router();
   r.use("/forecasts", auth, manage);
+  r.get("/forecasts/data", async (req, res) => {
+    const input = z
+      .object({
+        product_id: idSchema.optional(),
+        cohort: z
+          .enum(["auto", "genuine", "simulation", "demo"])
+          .default("auto"),
+      })
+      .parse(req.query);
+    const products = (
+      await db.query(
+        "SELECT id,name FROM products WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY name",
+        [input.product_id ?? null],
+      )
+    ).rows;
+    const data = await dataset(
+      db,
+      products.map((p) => p.id),
+      input.cohort,
+      input.cohort === "demo",
+    );
+    const flags = (
+      await db.query(
+        "SELECT q.*,q.date::text AS date,p.name AS product_name FROM forecast_day_quality q JOIN products p ON p.id=q.product_id WHERE q.date BETWEEN $1::date-180 AND $1::date+30 AND ($2::uuid IS NULL OR q.product_id=$2) ORDER BY q.date DESC,p.name LIMIT 200",
+        [businessDate(), input.product_id ?? null],
+      )
+    ).rows;
+    res.json({ ...data, products, flags, window_days: 180 });
+  });
+  r.put("/forecasts/quality", async (req, res) => {
+    const input = z
+      .object({
+        date: dateSchema,
+        product_id: idSchema,
+        kind: z.enum(["normal", "closed", "stockout", "incomplete"]),
+        note: z.string().trim().min(1).max(1000),
+      })
+      .strict()
+      .parse(req.body);
+    fail(
+      input.date <=
+        new Date(Date.parse(businessDate()) + 30 * 86400000)
+          .toISOString()
+          .slice(0, 10),
+      400,
+      "FUTURE_DATE",
+    );
+    await db.transaction(async (sql) => {
+      fail(
+        (
+          await sql.query("SELECT id FROM products WHERE id=$1", [
+            input.product_id,
+          ])
+        ).rows.length,
+        404,
+        "NOT_FOUND",
+      );
+      await sql.query(
+        "INSERT INTO forecast_day_quality(date,product_id,kind,note,updated_by) VALUES($1,$2,$3,$4,$5) ON CONFLICT(date,product_id) DO UPDATE SET kind=excluded.kind,note=excluded.note,updated_by=excluded.updated_by,updated_at=now()",
+        [
+          input.date,
+          input.product_id,
+          input.kind,
+          input.note,
+          res.locals.user.id,
+        ],
+      );
+      await record(
+        sql,
+        res.locals.user,
+        "forecast.quality",
+        "product",
+        input.product_id,
+        input,
+      );
+    });
+    res.json({ saved: true });
+  });
   r.post("/forecasts/generate", async (req, res) => {
     const input = dateRange
       .safeExtend({
