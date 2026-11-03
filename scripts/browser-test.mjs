@@ -257,7 +257,9 @@ try {
   checks.push("Reports reflect the real paid order");
   await go("/forecast");
   await expect(
-    page.getByText("ต้องมี 28 วันต่อเนื่องและข้อมูลล่าสุดไม่เก่า").first(),
+    page
+      .getByText("ต้องมี 28 วันใช้ได้ใน 56 วันล่าสุด และข้อมูลไม่เกิน 6 วัน")
+      .first(),
   ).toBeVisible();
   await page
     .getByLabel("ข้อมูลที่ใช้สร้าง", { exact: true })
@@ -272,12 +274,12 @@ try {
   await expect(
     page
       .getByText(
-        /^(weekly-naive-v1|projecta-xgb-|coffee-xgb-|mean-|weekday-mean-)/,
+        /^(weekly-naive-v1|coffee-direct-v4-|ses-v1|mean-|weekday-mean-)/,
       )
       .first(),
   ).toBeAttached();
   await expect(
-    page.getByText("ไม่มีช่วงค่า", { exact: true }).first(),
+    page.getByText(/แถบช่วงค่ามาจากความคลาดเคลื่อนย้อนหลัง/).first(),
   ).toBeAttached();
   await expect(page.getByText("mock-weekday-v1", { exact: true })).toHaveCount(
     0,
@@ -450,6 +452,26 @@ try {
   assert(selectedResponse.request().postDataJSON().product_id);
   checks.push(
     "Selected-menu forecasting works while a new menu has no history",
+  );
+  await page
+    .getByText("บันทึกวันที่ร้านหยุด สินค้าหมด หรือข้อมูลไม่ครบ", {
+      exact: true,
+    })
+    .click();
+  await page
+    .getByLabel("เหตุผลหรือรายละเอียด", { exact: true })
+    .fill("QA stockout annotation in isolated schema");
+  await page
+    .getByRole("button", { name: "บันทึกคุณภาพข้อมูล", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "บันทึกคุณภาพข้อมูลแล้ว" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/QA stockout annotation in isolated schema/),
+  ).toBeVisible();
+  checks.push(
+    "Audited forecast-quality annotation through shared form in isolated schema",
   );
   await go("/inventory?tab=recipes");
   await page

@@ -12,9 +12,9 @@ import {
   idSchema,
   record,
 } from "./shared.js";
-import { metrics } from "./forecast-metrics.js";
+import { metrics, intervalMetrics } from "./forecast-metrics.js";
 import { serializeForecastHistory } from "./forecast-snapshot.js";
-import { dataset } from "./forecast-data.js";
+import { dataset, type Cohort } from "./forecast-data.js";
 
 const forecastRow = z
   .object({
@@ -30,13 +30,27 @@ const forecastRow = z
     diagnostics: z
       .object({
         origin: dateSchema,
-        history_days: z.number().int().min(28).max(120),
+        history_days: z.number().int().min(28).max(180),
         reason: z.string().max(200),
         horizon: z
           .union([z.literal(1), z.literal(7), z.literal(30)])
           .optional(),
         validation_origins: z.number().int().min(0).max(30).optional(),
         gap_days: z.number().int().min(0).max(6).optional(),
+        pipeline: z.string().max(100).optional(),
+        method_policy: z.enum(["auto", "mean28", "weekly"]).optional(),
+        training_cohort: z.enum(["genuine", "simulation", "demo"]).optional(),
+        interval_kind: z
+          .enum(["empirical_absolute_80", "unavailable"])
+          .optional(),
+        calibration: z
+          .object({
+            samples: z.number().int().min(20).max(30),
+            date_from: dateSchema,
+            date_to: dateSchema,
+          })
+          .nullable()
+          .optional(),
         selection: z.record(
           z.string().max(100),
           z.object({
@@ -121,6 +135,8 @@ export async function generateForecasts(
   actor?: string,
   productId?: string,
   dataMode: "actual" | "mixed" = "actual",
+  cohort: Cohort | "auto" = "auto",
+  methodPolicy: "auto" | "mean28" | "weekly" = "mean28",
 ) {
   const range = dateRange.parse({ date_from: from, date_to: to });
   fail(
@@ -129,6 +145,11 @@ export async function generateForecasts(
     "FORECAST_RANGE_TOO_LONG",
   );
   const generatedAt = new Date();
+  fail(
+    cohort !== "demo" || dataMode === "mixed",
+    400,
+    "FORECAST_SOURCE_CONFLICT",
+  );
   const products = (
     await db.query(
       "SELECT id FROM products WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY id",
@@ -140,7 +161,8 @@ export async function generateForecasts(
     409,
     "NO_FORECAST_PRODUCTS",
   );
-  const inputHistory = (await history(db, dataMode, { closedOnly: true }))
+  const training = await dataset(db, products, cohort, dataMode === "mixed");
+  const inputHistory = training.rows
     .filter((h) => products.includes(h.product_id))
     .map((h) => ({
       date: h.date,
@@ -159,8 +181,11 @@ export async function generateForecasts(
         product_id: null,
         product_ids: products,
         history: inputHistory,
+        pipeline: "v4",
+        cohort: training.cohort,
+        method_policy: methodPolicy,
       }),
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(60_000),
     });
     if (response.status === 422) {
       const error = (await response.json().catch(() => null)) as {
@@ -178,6 +203,40 @@ export async function generateForecasts(
   const parsed = z.array(forecastRow).max(30000).safeParse(result);
   fail(parsed.success, 502, "FORECAST_INVALID_RESPONSE");
   const rows = parsed.data;
+  const expectedPipeline =
+    methodPolicy === "auto"
+      ? "coffee-demand-v4"
+      : "coffee-demand-v4-" + methodPolicy;
+  fail(
+    rows.every(
+      (row) =>
+        row.diagnostics?.pipeline === expectedPipeline &&
+        (!row.diagnostics.training_cohort ||
+          row.diagnostics.training_cohort === training.cohort),
+    ),
+    502,
+    "FORECAST_INVALID_RESPONSE",
+  );
+  const closedTargets = new Set(
+    (
+      await db.query(
+        "SELECT date::text,product_id FROM forecast_day_quality WHERE kind='closed' AND date BETWEEN $1::date AND $2::date",
+        [from, to],
+      )
+    ).rows.map((r) => r.date + ":" + r.product_id),
+  );
+  for (const row of rows)
+    if (closedTargets.has(row.date + ":" + row.product_id)) {
+      row.predicted_qty = 0;
+      row.lower = null;
+      row.upper = null;
+      row.model_version = "scheduled-closure-v1";
+      if (row.diagnostics) {
+        row.diagnostics.reason = "scheduled_closure";
+        row.diagnostics.interval_kind = "unavailable";
+        row.diagnostics.calibration = null;
+      }
+    }
   const expected =
     products.length * ((Date.parse(to) - Date.parse(from)) / 86400000 + 1);
   const keys = new Set(rows.map((r) => `${r.date}:${r.product_id}`));
@@ -217,7 +276,7 @@ export async function generateForecasts(
     await sql.query("SELECT pg_advisory_xact_lock(7301004)");
     const snapshot = serializeForecastHistory(inputHistory);
     await sql.query(
-      "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history,created_by,contains_simulated_sales) VALUES($1,$2,$3,$4,$5,'fulfilled_v1',$6,$7,$8,$9)",
+      "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history,created_by,contains_simulated_sales,training_cohort,input_quality) VALUES($1,$2,$3,$4,$5,'fulfilled_v1',$6,$7,$8,$9,$10,$11)",
       [
         runId,
         generatedAt.toISOString(),
@@ -228,6 +287,16 @@ export async function generateForecasts(
         snapshot,
         actor ?? null,
         simulated,
+        training.cohort,
+        JSON.stringify({
+          pipeline:
+            methodPolicy === "auto"
+              ? "coffee-demand-v4"
+              : "coffee-demand-v4-" + methodPolicy,
+          method_policy: methodPolicy,
+          excluded: training.excluded,
+          window_days: 180,
+        }),
       ],
     );
     for (const row of rows) {
@@ -294,6 +363,7 @@ export function forecastsRouter(
     const input = z
       .object({
         product_id: idSchema.optional(),
+        data_mode: z.enum(["actual", "mixed"]).default("actual"),
         cohort: z
           .enum(["auto", "genuine", "simulation", "demo"])
           .default("auto"),
@@ -309,7 +379,7 @@ export function forecastsRouter(
       db,
       products.map((p) => p.id),
       input.cohort,
-      input.cohort === "demo",
+      input.cohort === "demo" || input.data_mode === "mixed",
     );
     const flags = (
       await db.query(
@@ -373,6 +443,10 @@ export function forecastsRouter(
       .safeExtend({
         product_id: idSchema.optional(),
         data_mode: z.enum(["actual", "mixed"]).default("actual"),
+        method_policy: z.enum(["auto", "mean28", "weekly"]).default("mean28"),
+        cohort: z
+          .enum(["auto", "genuine", "simulation", "demo"])
+          .default("auto"),
       })
       .parse(req.body);
     fail(input.date_from > businessDate(), 400, "FORECAST_MUST_BE_FUTURE");
@@ -385,6 +459,8 @@ export function forecastsRouter(
         res.locals.user.id,
         input.product_id,
         input.data_mode,
+        input.cohort,
+        input.method_policy,
       ),
     );
   });
@@ -400,7 +476,7 @@ export function forecastsRouter(
     const params = [input.date_from, input.date_to, input.product_id ?? null];
     const runs = (
       await db.query(
-        `SELECT r.id,r.generated_at,r.date_from::text,r.date_to::text,r.data_mode,r.target_basis,r.history_sha256,r.contains_simulated_sales,
+        `SELECT r.id,r.generated_at,r.date_from::text,r.date_to::text,r.data_mode,r.target_basis,r.history_sha256,r.contains_simulated_sales,r.training_cohort,r.input_quality,
       (SELECT count(DISTINCT product_id)::int FROM forecast_run_points WHERE run_id=r.id) AS product_count
       FROM forecast_runs r WHERE r.date_from <= $2::date AND r.date_to >= $1::date
       AND ($3::uuid IS NULL OR EXISTS(SELECT 1 FROM forecast_run_points p WHERE p.run_id=r.id AND p.product_id=$3))
@@ -418,7 +494,7 @@ export function forecastsRouter(
     if (input.run_id && !displayedRun)
       displayedRun = (
         await db.query(
-          "SELECT id,generated_at,date_from::text,date_to::text,data_mode,contains_simulated_sales FROM forecast_runs WHERE id=$1",
+          "SELECT id,generated_at,date_from::text,date_to::text,data_mode,contains_simulated_sales,training_cohort,input_quality FROM forecast_runs WHERE id=$1",
           [input.run_id],
         )
       ).rows[0];
@@ -483,15 +559,25 @@ export function forecastsRouter(
       to: input.date_to,
       closedOnly: true,
     });
+    const excludedTargets = new Set(
+      (
+        await db.query(
+          "SELECT date::text,product_id FROM forecast_day_quality WHERE kind<>'normal' AND date BETWEEN $1::date AND $2::date",
+          params.slice(0, 2),
+        )
+      ).rows.map((r) => r.date + ":" + r.product_id),
+    );
     const lookup = new Map(
-      sales.map((a) => [`${a.date}:${a.product_id}`, Number(a.qty)]),
+      sales
+        .filter((a) => !excludedTargets.has(a.date + ":" + a.product_id))
+        .map((a) => [`${a.date}:${a.product_id}`, Number(a.qty)]),
     );
     // One fixed, earliest issued forecast per target/menu/lead/source. Repeated
     // generation cannot multiply evaluation samples or cherry-pick a later run.
     const archived = (
       await db.query(
         `WITH ranked AS (
-      SELECT p.*,r.generated_at,r.data_mode,r.contains_simulated_sales,row_number() OVER(PARTITION BY p.forecast_date,p.product_id,p.lead_days,p.history_source,r.data_mode,r.contains_simulated_sales
+      SELECT p.*,r.generated_at,r.data_mode,r.contains_simulated_sales,r.training_cohort,coalesce(p.diagnostics->>'pipeline','legacy') AS pipeline,row_number() OVER(PARTITION BY p.forecast_date,p.product_id,p.lead_days,p.history_source,CASE WHEN r.training_cohort='legacy' THEN r.data_mode ELSE r.training_cohort END,r.contains_simulated_sales,coalesce(p.diagnostics->>'pipeline','legacy'),r.training_cohort
         ORDER BY r.generated_at,r.id) AS rank
       FROM forecast_run_points p JOIN forecast_runs r ON r.id=p.run_id
       WHERE p.forecast_date BETWEEN $1::date AND $2::date AND ($3::uuid IS NULL OR p.product_id=$3)
@@ -534,21 +620,72 @@ export function forecastsRouter(
         ] as const;
       }),
     );
-    const comparisons = archived
+    const evaluatedProducts = [
+      ...new Set(archived.map((p) => p.product_id as string)),
+    ];
+    const [genuineData, simulationData] = evaluatedProducts.length
+      ? await Promise.all([
+          dataset(db, evaluatedProducts, "genuine", false, {
+            from: input.date_from,
+            to: input.date_to,
+          }),
+          dataset(db, evaluatedProducts, "simulation", false, {
+            from: input.date_from,
+            to: input.date_to,
+          }),
+        ])
+      : [null, null];
+    const genuineLookup = new Map(
+      genuineData?.rows.map((r) => [r.date + ":" + r.product_id, r.qty]) ?? [],
+    );
+    const simulationLookup = new Map(
+      simulationData?.rows.map((r) => [r.date + ":" + r.product_id, r.qty]) ??
+        [],
+    );
+    const targetLookup = (p: (typeof archived)[number]) =>
+      p.training_cohort === "legacy"
+        ? lookup
+        : p.training_cohort === "simulation"
+          ? simulationLookup
+          : genuineLookup;
+    const allComparisons = archived
       .filter(
         (p) =>
           p.date < businessDate() &&
           businessDate(new Date(p.generated_at)) < p.date &&
-          lookup.has(`${p.date}:${p.product_id}`),
+          targetLookup(p).has(`${p.date}:${p.product_id}`),
       )
       .map((p) => ({
-        actual: lookup.get(`${p.date}:${p.product_id}`)!,
+        actual: targetLookup(p).get(`${p.date}:${p.product_id}`)!,
         predicted: Number(p.predicted_qty),
         product_id: p.product_id,
         lead_days: Number(p.lead_days),
         history_source: p.history_source,
         data_mode: p.data_mode,
         simulated: p.contains_simulated_sales === true,
+        source:
+          p.training_cohort === "genuine"
+            ? "actual"
+            : p.training_cohort === "simulation"
+              ? "simulation"
+              : p.training_cohort === "demo"
+                ? "demo"
+                : p.contains_simulated_sales
+                  ? "simulation"
+                  : p.history_source === "actual" && p.data_mode !== "actual"
+                    ? "mixed"
+                    : p.history_source,
+        pipeline: p.pipeline as string,
+        lower:
+          p.diagnostics?.interval_kind !== "empirical_absolute_80" ||
+          p.lower_qty === null
+            ? null
+            : Number(p.lower_qty),
+        upper:
+          p.diagnostics?.interval_kind !== "empirical_absolute_80" ||
+          p.upper_qty === null
+            ? null
+            : Number(p.upper_qty),
         baseline: (() => {
           const snapshot = snapshots.get(p.run_id);
           const origin = p.diagnostics?.origin ?? snapshot?.origin;
@@ -563,44 +700,48 @@ export function forecastsRouter(
           return snapshot.values.get(date + ":" + p.product_id);
         })(),
       }));
-    const genuine = comparisons.filter(
-      (p) =>
-        p.history_source === "actual" &&
-        p.data_mode === "actual" &&
-        !p.simulated,
+    const evaluationPipeline = displayedRun
+      ? (displayedRun.input_quality?.pipeline ?? "legacy")
+      : allComparisons.some((p) => p.pipeline === "coffee-demand-v4")
+        ? "coffee-demand-v4"
+        : "legacy";
+    const comparisons = allComparisons.filter(
+      (p) => p.pipeline === evaluationPipeline,
     );
+    const pipelineComparison = [
+      ...new Set(allComparisons.map((p) => p.pipeline)),
+    ].flatMap((pipeline) =>
+      ["actual", "simulation", "demo", "mixed"].map((source) => {
+        const pairs = allComparisons.filter(
+          (p) => p.pipeline === pipeline && p.source === source,
+        );
+        return {
+          pipeline,
+          source,
+          ...metrics(pairs),
+          interval: intervalMetrics(pairs),
+        };
+      }),
+    );
+    const genuine = comparisons.filter((p) => p.source === "actual");
     const accuracy = metrics(genuine);
     const bySource = ["actual", "demo", "mixed", "unknown", "simulation"].map(
       (source) => ({
         source,
-        ...metrics(
-          comparisons.filter(
-            (p) =>
-              (p.simulated
-                ? "simulation"
-                : p.history_source === "actual" && p.data_mode !== "actual"
-                  ? "mixed"
-                  : p.history_source) === source,
-          ),
-        ),
+        ...metrics(comparisons.filter((p) => p.source === source)),
       }),
     );
     const byHorizon = bySource.flatMap(({ source }) =>
       [1, 7, 30].map((horizon) => {
         const pairs = comparisons.filter(
-          (p) =>
-            p.lead_days <= horizon &&
-            (p.simulated
-              ? "simulation"
-              : p.history_source === "actual" && p.data_mode !== "actual"
-                ? "mixed"
-                : p.history_source) === source,
+          (p) => p.lead_days <= horizon && p.source === source,
         );
         const paired = pairs.filter((p) => p.baseline !== undefined);
         return {
           source,
           horizon,
           ...metrics(pairs),
+          interval: intervalMetrics(pairs),
           paired_model: metrics(paired),
           baseline: metrics(
             paired.map((p) => ({ actual: p.actual, predicted: p.baseline! })),
@@ -618,6 +759,7 @@ export function forecastsRouter(
         product_id: pairs[0]!.product_id,
         lead_days: pairs[0]!.lead_days,
         ...metrics(pairs),
+        interval: intervalMetrics(pairs),
       };
     });
     const catalog = (
@@ -683,6 +825,8 @@ export function forecastsRouter(
         by_horizon: byHorizon,
         by_product_lead: groups,
         latest_test: latestTest,
+        pipeline: evaluationPipeline,
+        by_pipeline: pipelineComparison,
       },
       runs,
       coverage,
@@ -696,7 +840,7 @@ export function forecastsRouter(
       recommendation_basis: "base_recipe",
       model_mode: points.length
         ? points.every((p) =>
-            /^(projecta-xgb-|coffee-xgb-|ses-v1$|damped-holt-v1$|mean-28-v1$|mean-7-v1$|weekday-mean-v1$|weekly-naive-v1$)/.test(
+            /^(projecta-xgb-|coffee-xgb-|coffee-direct-v4-|scheduled-closure-v1$|ses-v1$|damped-holt-v1$|mean-28-v1$|mean-7-v1$|weekday-mean-v1$|weekly-naive-v1$)/.test(
               p.model_version,
             ),
           )

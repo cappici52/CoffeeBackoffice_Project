@@ -98,3 +98,7 @@ Tables are semantic, paginated and aligned. KDS order cards show status, time, i
 - Do not add decorative animation or financial/forecast figures that imply real data.
 
 Forecast history supports calendar-month navigation and CSV export using the same native Input, Form and Submit components. Unclosed or incomplete daily totals are isolated warning-colored dots rather than part of the completed-day line. CSV preserves unknown quantities as empty cells and labels simulation provenance. Viewing history is independent of the 120-day training window.
+
+## Active forecasting redesign
+
+The new source-quality controls and monitoring use shared native Form/Input/Select/Textarea and Notice components. Source selection is independent of archived-round selection. Quality flags are reversible audited annotations, not sales edits. Per-menu empirical ranges and observed coverage use explicit labels; the aggregated chart never claims calibrated shop-total coverage. The declared mean28 default and automatic candidate selection remain visible choices rather than silently forcing a complex model. The 180-day input window supersedes the earlier 120-day training limit for new v4 rounds; monthly viewing/export still covers up to 367 days.

@@ -261,6 +261,98 @@ try {
   checks.push(
     "Monthly history beyond 120 days, previous/next months, UTF-8 CSV with missing-day/source metadata, 1/7/30-day options and mobile layout",
   );
+  const available = await (
+    await context.request.get(
+      `${base}/api/forecasts?date_from=${report.future_dates.from}&date_to=${report.future_dates.to}`,
+    )
+  ).json();
+  const newest = available.runs.find(
+    (r) =>
+      r.input_quality?.pipeline === "coffee-demand-v4-mean28" &&
+      (Date.parse(r.date_to) - Date.parse(r.date_from)) / 86400000 === 29,
+  );
+  assert(
+    newest,
+    "Generate a new v4 mean28 30-day round before running this main-shop check",
+  );
+  const fresh = await (
+    await context.request.get(base + "/api/forecasts/runs/" + newest.id)
+  ).json();
+  assert(
+    fresh.points.every((p) => p.lower_qty !== null && p.upper_qty !== null),
+  );
+  const targets = fresh.points.map((p) => p.date).sort();
+  const v4url = `${base}/forecast?from=${targets[0]}&to=${targets.at(-1)}&run=${newest.id}&cohort=simulation`;
+  await page.goto(v4url);
+  await expect(
+    page.getByLabel("วิธีสำหรับรอบใหม่", { exact: true }),
+  ).toHaveValue("mean28");
+  await expect(
+    page.getByRole("heading", { name: "ติดตามผลหลังออกพยากรณ์", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/ไม่ยืมคะแนนของรุ่นเดิมมาแสดง/)).toBeVisible();
+  await expect(page.getByLabel("ชุดข้อมูลฝึก", { exact: true })).toHaveValue(
+    "simulation",
+  );
+  await page
+    .getByText("จำนวนเตรียมรายเมนูและเวอร์ชันโมเดล", { exact: true })
+    .click();
+  await expect(
+    page.getByText("ค่าเฉลี่ย 28 วัน", { exact: true }).first(),
+  ).toBeVisible();
+  for (const width of [1536, 390]) {
+    await page.setViewportSize({ width, height: 960 });
+    await expect(
+      page.getByRole("button", {
+        name: "ส่งออก CSV ตามช่วงที่เลือก",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const violations = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+      .analyze();
+    assert.deepEqual(
+      violations.violations.map((v) => ({ id: v.id, nodes: v.nodes.length })),
+      [],
+    );
+    assert(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    );
+    await page.screenshot({
+      path: resolve(output, `forecast-v4-${width}.png`),
+      fullPage: true,
+    });
+    await page
+      .locator(".chart-panel")
+      .screenshot({ path: resolve(output, `forecast-v4-chart-${width}.png`) });
+  }
+  await page
+    .getByLabel("ชุดข้อมูลฝึก", { exact: true })
+    .selectOption("genuine");
+  await expect(
+    page
+      .getByText("ต้องมี 28 วันใช้ได้ใน 56 วันล่าสุด และข้อมูลไม่เกิน 6 วัน")
+      .first(),
+  ).toBeVisible();
+  const rejected = page.waitForResponse((r) =>
+    r.url().endsWith("/api/forecasts/generate"),
+  );
+  await page
+    .getByRole("button", { name: "สร้างพยากรณ์ใหม่", exact: true })
+    .click();
+  assert.equal(
+    (await rejected).status(),
+    409,
+    "Explicit genuine request never falls back to generated sales",
+  );
+  await expect(
+    page.getByText(/บางเมนูมีวันใช้ได้ไม่ครบ 28 วันใน 56 วันล่าสุด/),
+  ).toBeVisible();
+  checks.push(
+    "V4 default baseline, source-cohort controls, calibrated bounds, prospective monitor, desktop/mobile accessibility and explicit genuine-data failure",
+  );
   for (const route of ["/orders", "/inventory", "/reports"]) {
     await page.goto(base + route);
     await expect(

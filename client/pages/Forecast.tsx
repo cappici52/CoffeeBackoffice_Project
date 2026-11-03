@@ -31,6 +31,8 @@ import {
   usePagedRows,
 } from "../ui";
 import type { Catalog, Forecasts } from "../types";
+import ForecastData, { cohortLabel } from "../components/ForecastData";
+import ForecastMonitor from "../components/ForecastMonitor";
 import {
   forecastChart,
   forecastCsv,
@@ -38,6 +40,9 @@ import {
   monthRange,
 } from "../forecast-view";
 function methodLabel(version: string) {
+  if (version.startsWith("coffee-direct-v4-"))
+    return "XGBoost รายระยะจากยอดร้าน";
+  if (version === "scheduled-closure-v1") return "วันหยุดขายที่บันทึกไว้";
   if (version.startsWith("coffee-xgb-")) return "XGBoost ประวัติร้าน";
   if (version.startsWith("projecta-xgb-")) return "XGBoost ProjectA";
   if (version === "weekly-naive-v1") return "ยอดสัปดาห์ก่อน";
@@ -54,6 +59,13 @@ export default function Forecast() {
   const to = params.get("to") ?? addDays(today(), 7);
   const product = params.get("product") ?? "";
   const mode = params.get("mode") === "mixed" ? "mixed" : "actual";
+  const cohort =
+    ["auto", "genuine", "simulation", "demo"].includes(
+      params.get("cohort") ?? "",
+    ) &&
+    (mode === "mixed" || params.get("cohort") !== "demo")
+      ? params.get("cohort")!
+      : "auto";
   const run = params.get("run") ?? "";
   const [runDraft, setRunDraft] = useState(run);
   useEffect(() => setRunDraft(run), [run]);
@@ -70,6 +82,7 @@ export default function Forecast() {
     ? requestedScore
     : "auto";
   const [days, setDays] = useState("7");
+  const [methodPolicy, setMethodPolicy] = useState("mean28");
   const catalog = useResource<Catalog>("/catalog");
   const resource = useResource<Forecasts>(
     `/forecasts?date_from=${from}&date_to=${to}&data_mode=${mode}${product ? "&product_id=" + product : ""}${run ? "&run_id=" + run : ""}${lead ? "&lead_days=" + lead : ""}`,
@@ -86,7 +99,6 @@ export default function Forecast() {
     from + to + product,
   );
   const forecastRows = usePagedRows(data?.forecasts ?? [], from + to + product);
-  const coverage = usePagedRows(data?.coverage ?? [], product + mode);
   const evaluationRows = usePagedRows(
     data?.evaluation.by_product_lead ?? [],
     from + to + product + lead,
@@ -134,12 +146,12 @@ export default function Forecast() {
   return (
     <>
       <Notice>
-        ใช้ XGBoost จาก ProjectA เทียบกับโมเดลที่เทรนจากประวัติร้าน
-        ยอดสัปดาห์ก่อน และค่าเฉลี่ยหลายวิธี เลือกวิธีรายเมนูตามระยะ 1, 7 หรือ 30
-        วัน ทดสอบย้อนหลังหลายจุดเวลาโดยช่วงคำตอบไม่ซ้อนกัน
-        และใช้เฉพาะข้อมูลก่อนคำตอบ หากประวัติสั้นจะใช้ยอดสัปดาห์ก่อน
-        ต้องมีข้อมูลอย่างน้อย 28 วันติดต่อกันที่ปิดยอดแล้ว
-        ผลนี้ยังไม่ผ่านการยืนยันความแม่นยำกับร้านกาแฟ และไม่มีช่วงความเชื่อมั่น
+        เลือกใช้วิธีพื้นฐานหรือทดลองเลือกโมเดลรายเมนูสำหรับระยะ 1, 7 หรือ 30 วัน
+        โดยเทียบยอดสัปดาห์ก่อน ค่าเฉลี่ย การปรับเรียบ และ XGBoost จากยอดร้าน
+        ใช้วันปิดยอดที่คุณภาพผ่านอย่างน้อย 28 วันใน 56 วันล่าสุด
+        โดยไม่เติมวันที่ขาดเป็นศูนย์
+        กันข้อมูลช่วงถัดจากการเลือกโมเดลไว้ประเมินช่วงคาดการณ์
+        ผลเก่ายังเปิดดูได้จากรอบที่บันทึก
       </Notice>
       <Notice>
         ยอดสำหรับเตรียมสินค้าใช้วันส่งมอบ รวมรายการเสิร์ฟแล้วที่ยังไม่จ่าย
@@ -152,6 +164,19 @@ export default function Forecast() {
           คะแนนส่วนนี้ไม่ใช่หลักฐานความแม่นยำกับร้านจริง
         </Notice>
       )}
+      <ForecastData
+        cohort={cohort}
+        mode={mode}
+        product={product}
+        onCohort={(value) =>
+          setParams((previous) => {
+            const next = new URLSearchParams(previous);
+            next.set("cohort", value);
+            return next;
+          })
+        }
+        onSaved={resource.reload}
+      />
       {hasLegacy && (
         <Notice tone="warning">
           ช่วงวันที่นี้ยังมีผลจากโมเดลจำลองเดิม
@@ -172,6 +197,8 @@ export default function Forecast() {
               date_from: addDays(today(), 1),
               date_to: addDays(today(), Number(days)),
               data_mode: mode,
+              cohort,
+              method_policy: methodPolicy,
               ...(product ? { product_id: product } : {}),
             });
             resource.reload();
@@ -186,6 +213,19 @@ export default function Forecast() {
             <option value="1">1 วัน</option>
             <option value="7">7 วัน</option>
             <option value="30">30 วัน</option>
+          </Select>
+          <Select
+            label="วิธีสำหรับรอบใหม่"
+            value={methodPolicy}
+            onChange={(e) => setMethodPolicy(e.target.value)}
+          >
+            <option value="mean28">
+              ค่าเฉลี่ย 28 วัน · ค่าเริ่มต้นจากผลทดลองชุดจำลอง
+            </option>
+            <option value="auto">
+              ทดลองเลือกวิธีรายเมนูจากการทดสอบย้อนหลัง
+            </option>
+            <option value="weekly">ยอดวันเดียวกันสัปดาห์ก่อน</option>
           </Select>
           <Submit>สร้างพยากรณ์ใหม่</Submit>
           <p className="muted forecast-scope">
@@ -206,6 +246,7 @@ export default function Forecast() {
               run: String(fd.get("run")),
               lead: String(fd.get("lead")),
               score: scoreScope,
+              cohort,
             })
           }
         >
@@ -356,7 +397,7 @@ export default function Forecast() {
           <Submit>ส่งออก CSV ตามช่วงที่เลือก</Submit>
           <p className="caption muted">
             ประวัติดูและส่งออกตามช่วงวันที่ได้สูงสุด 367 วัน ·
-            โมเดลใช้ประวัติล่าสุดสูงสุด 120 วัน · ช่องว่างหมายถึงไม่ทราบยอด
+            ระบบใหม่ใช้ประวัติล่าสุดสูงสุด 180 วัน · ช่องว่างหมายถึงไม่ทราบยอด
             ไม่ใช่ศูนย์
           </p>
         </Form>
@@ -384,54 +425,6 @@ export default function Forecast() {
       )}
       {data && (
         <>
-          <details className="section-details" open>
-            <summary>ความพร้อมของประวัติรายเมนู</summary>
-            <div
-              className="table-scroll"
-              tabIndex={0}
-              role="region"
-              aria-label="เลื่อนตารางความพร้อมพยากรณ์"
-            >
-              <table>
-                <caption className="sr-only">
-                  ประวัติที่ใช้ได้ในโหมดที่เลือก
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">เมนู</th>
-                    <th scope="col">วันล่าสุด</th>
-                    <th scope="col">ต่อเนื่อง</th>
-                    <th scope="col">วันที่มีข้อมูลส่งมอบ</th>
-                    <th scope="col">สถานะ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {coverage.items.map((c) => (
-                    <tr key={c.product_id}>
-                      <th scope="row">{c.name}</th>
-                      <td>
-                        {c.latest_date
-                          ? dateText(c.latest_date)
-                          : "ไม่มีข้อมูล"}
-                      </td>
-                      <td>{c.consecutive_days} วัน</td>
-                      <td>{c.actual_days} วัน</td>
-                      <td>
-                        {c.ready
-                          ? "พร้อมรายเมนู"
-                          : "ต้องมี 28 วันต่อเนื่องและข้อมูลล่าสุดไม่เก่า"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {coverage.controls}
-            <p className="muted caption">
-              สร้างทั้งชุดต้องมีวันสิ้นสุดประวัติร่วมกันครบด้วย
-              เมนูที่ยังไม่พร้อมสามารถเลือกสร้างทีละเมนูได้
-            </p>
-          </details>
           <section className="chart-panel">
             <div className="section-head">
               <h2>ยอดส่งมอบและพยากรณ์</h2>
@@ -443,6 +436,10 @@ export default function Forecast() {
               <p className="caption muted">
                 แสดงรอบเดียว: {dateText(data.displayed_run.generated_at, true)}{" "}
                 · {data.displayed_run.id.slice(0, 8)}
+                {" · "}
+                {data.displayed_run.input_quality?.pipeline ?? "ระบบเดิม"}
+                {" · "}
+                {cohortLabel(data.displayed_run.training_cohort ?? "legacy")}
               </p>
             )}
             {known.length ? (
@@ -571,6 +568,11 @@ export default function Forecast() {
               เส้นยอดส่งมอบจบเมื่อสิ้นสุดประวัติที่บันทึก
               ส่วนเส้นพยากรณ์แสดงเฉพาะวันเป้าหมายของรอบที่เลือก
             </p>
+            <p className="caption muted">
+              แถบช่วงค่ามาจากความคลาดเคลื่อนย้อนหลังที่กันไว้ ตั้งเป้าครอบคลุม
+              80% รายเมนู ต้องตรวจผลที่เกิดขึ้นจริงเพิ่มเติม
+              การรวมขอบหลายเมนูในกราฟไม่ใช่ช่วง 80% ของยอดรวมร้าน
+            </p>
           </section>
           <Select
             label="คะแนนที่แสดง"
@@ -597,9 +599,15 @@ export default function Forecast() {
                 </option>
               ))}
           </Select>
+          <ForecastMonitor
+            data={data}
+            source={selectedScore?.source ?? "actual"}
+          />
           <p className="caption muted">
             กำลังแสดงคะแนน: {sourceLabel(selectedScore?.source ?? "actual")} ·
             ช่วงวันที่ เมนู และระยะล่วงหน้าที่เลือก
+            {" · รุ่น "}
+            {data.evaluation.pipeline ?? "legacy"}
           </p>
           <div className="metrics">
             <div>

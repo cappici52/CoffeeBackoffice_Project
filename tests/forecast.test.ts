@@ -6,6 +6,7 @@ import { readConfig } from "../src/config.js";
 import { migrate } from "../src/migrate.js";
 import { seedOwner } from "../src/seed.js";
 import { history } from "../src/shop/forecasts.js";
+import { dataset } from "../src/shop/forecast-data.js";
 import { businessDate } from "../src/shop/shared.js";
 import { testDatabase } from "./database.js";
 
@@ -27,6 +28,25 @@ const generate = () =>
     .set("Origin", origin)
     .set("Cookie", cookie)
     .send({ date_from: day(1), date_to: day(1), data_mode: "mixed" });
+
+// Forecast-controller fixtures satisfy the active service protocol by default.
+function forecastResponse(body: string, init?: ResponseInit) {
+  const parsed = JSON.parse(body);
+  const normalized = Array.isArray(parsed)
+    ? parsed.map((row) => ({
+        ...row,
+        diagnostics: {
+          origin: day(-1),
+          history_days: 28,
+          reason: "controller-fixture",
+          selection: {},
+          pipeline: "coffee-demand-v4-mean28",
+          ...row.diagnostics,
+        },
+      }))
+    : parsed;
+  return new Response(JSON.stringify(normalized), init);
+}
 
 beforeAll(async () => {
   fixture = await testDatabase();
@@ -119,7 +139,7 @@ test("zero sales are inferred only on closed days for an existing menu; they ove
 
 test("insufficient model history is actionable and does not store fabricated predictions", async () => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(
+    forecastResponse(
       JSON.stringify({ detail: { code: "FORECAST_INSUFFICIENT_HISTORY" } }),
       { status: 422 },
     ),
@@ -142,7 +162,7 @@ test("real point forecasts persist without fake intervals and half-null bounds a
   }));
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockResolvedValue(new Response(JSON.stringify(rows), { status: 200 }));
+    .mockResolvedValue(forecastResponse(JSON.stringify(rows), { status: 200 }));
   await generate().expect(200);
   const payload = JSON.parse(fetch.mock.calls[0]![1]!.body as string);
   expect(
@@ -168,7 +188,7 @@ test("real point forecasts persist without fake intervals and half-null bounds a
     ),
   ).toBe(true);
   fetch.mockResolvedValue(
-    new Response(JSON.stringify([{ ...rows[0], lower: 0 }, rows[1]]), {
+    forecastResponse(JSON.stringify([{ ...rows[0], lower: 0 }, rows[1]]), {
       status: 200,
     }),
   );
@@ -200,7 +220,9 @@ test("a selected menu can be forecast independently of a new menu with no histor
   };
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockResolvedValue(new Response(JSON.stringify([row]), { status: 200 }));
+    .mockResolvedValue(
+      forecastResponse(JSON.stringify([row]), { status: 200 }),
+    );
   const submit = (product_id: string) =>
     request(app)
       .post("/api/forecasts/generate")
@@ -217,9 +239,12 @@ test("a selected menu can be forecast independently of a new menu with no histor
     JSON.parse(fetch.mock.calls[0]![1]!.body as string).product_ids,
   ).toEqual([product]);
   fetch.mockResolvedValue(
-    new Response(JSON.stringify([row, { ...row, product_id: newProduct }]), {
-      status: 200,
-    }),
+    forecastResponse(
+      JSON.stringify([row, { ...row, product_id: newProduct }]),
+      {
+        status: 200,
+      },
+    ),
   );
   await submit(product).expect(502);
   await submit(randomUUID()).expect(409, { error: "NO_FORECAST_PRODUCTS" });
@@ -283,7 +308,9 @@ test("new generations append immutable runs, keep snapshots and allow selecting 
   };
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockResolvedValue(new Response(JSON.stringify([row]), { status: 200 }));
+    .mockResolvedValue(
+      forecastResponse(JSON.stringify([row]), { status: 200 }),
+    );
   const submit = () =>
     request(app)
       .post("/api/forecasts/generate")
@@ -297,7 +324,7 @@ test("new generations append immutable runs, keep snapshots and allow selecting 
       });
   const first = await submit().expect(200);
   fetch.mockResolvedValue(
-    new Response(JSON.stringify([{ ...row, predicted_qty: 15 }]), {
+    forecastResponse(JSON.stringify([{ ...row, predicted_qty: 15 }]), {
       status: 200,
     }),
   );
@@ -385,8 +412,8 @@ test("reissuing the same lead does not replace or multiply genuine accuracy samp
 });
 
 test("production history mode cannot silently accept demo-trained results", async () => {
-  vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(
+  const service = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    forecastResponse(
       JSON.stringify([
         {
           date: day(1),
@@ -396,6 +423,29 @@ test("production history mode cannot silently accept demo-trained results", asyn
           upper: null,
           model_version: "weekly-naive-v1",
           history_source: "demo",
+        },
+      ]),
+      { status: 200 },
+    ),
+  );
+  await request(app)
+    .post("/api/forecasts/generate")
+    .set("Origin", origin)
+    .set("Cookie", cookie)
+    .send({ date_from: day(1), date_to: day(1), product_id: product })
+    .expect(502);
+  service.mockResolvedValue(
+    forecastResponse(
+      JSON.stringify([
+        {
+          date: day(1),
+          product_id: product,
+          predicted_qty: 8,
+          lower: null,
+          upper: null,
+          model_version: "weekly-naive-v1",
+          history_source: "actual",
+          diagnostics: { pipeline: "coffee-selection-v3" },
         },
       ]),
       { status: 200 },
@@ -430,7 +480,7 @@ test("forecasts derived from replay orders retain provenance and are scored sepa
     order,
   ]);
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(
+    forecastResponse(
       JSON.stringify([
         {
           date: day(1),
@@ -449,7 +499,12 @@ test("forecasts derived from replay orders retain provenance and are scored sepa
     .post("/api/forecasts/generate")
     .set("Origin", origin)
     .set("Cookie", cookie)
-    .send({ date_from: day(1), date_to: day(1), product_id: menu })
+    .send({
+      date_from: day(1),
+      date_to: day(1),
+      product_id: menu,
+      cohort: "simulation",
+    })
     .expect(200);
   const exported = await request(app)
     .get("/api/forecasts/runs/" + generated.body.run_id)
@@ -563,6 +618,18 @@ test("browsing reaches beyond training history and unclosed observations stay ou
   const closed = await history(fixture.db, "actual", { closedOnly: true });
   expect(closed.some((h) => h.product_id === menu)).toBe(false);
   expect(response.body.accuracy.samples).toBe(0);
+  await fixture.db.query(
+    "INSERT INTO day_closings(date,closed_by,summary) VALUES($1,$2,'{}')",
+    [day(-200), owner],
+  );
+  expect(
+    (
+      await dataset(fixture.db, [menu], "genuine", false, {
+        from: day(-210),
+        to: day(-190),
+      })
+    ).rows,
+  ).toEqual([expect.objectContaining({ date: day(-200), qty: 12 })]);
 });
 
 test("horizon comparisons use the frozen weekly baseline and match identical evaluation pairs", async () => {
@@ -661,4 +728,172 @@ test("source-separated dataset honors audited quality exclusions without changin
       )
     ).rows,
   ).toHaveLength(1);
+});
+
+test("v4 evaluation stays separate from legacy forecasts and measures realized interval coverage", async () => {
+  const menu = randomUUID(),
+    legacy = randomUUID(),
+    current = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO products(id,category_id,name,price_satang,station) SELECT $1,category_id,'Pipeline separation',7500,'bar' FROM products WHERE id=$2",
+    [menu, product],
+  );
+  await delivered(menu, day(-8), 5);
+  await fixture.db.query(
+    "INSERT INTO day_closings(date,closed_by,summary) VALUES($1,$2,'{}')",
+    [day(-8), owner],
+  );
+  const input = Array.from({ length: 28 }, (_, i) => ({
+    date: day(-37 + i),
+    product_id: menu,
+    qty: 5,
+    unit_price: 75,
+    source: "actual",
+  }));
+  for (const [id, pipeline, qty] of [
+    [legacy, "legacy", 100],
+    [current, "coffee-demand-v4", 4],
+  ] as const) {
+    await fixture.db.query(
+      "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history,training_cohort,input_quality) VALUES($1,$2,$3,$3,'actual','fulfilled_v1',$4,$5,$6,$7)",
+      [
+        id,
+        day(-9) + "T08:00:00+07:00",
+        day(-8),
+        "c".repeat(64),
+        JSON.stringify(input),
+        pipeline === "legacy" ? "legacy" : "genuine",
+        JSON.stringify({ pipeline }),
+      ],
+    );
+    await fixture.db.query(
+      "INSERT INTO forecast_run_points(run_id,forecast_date,product_id,predicted_qty,model_version,history_source,lead_days,lower_qty,upper_qty,diagnostics) VALUES($1,$2,$3,$4,'mean-7-v1','actual',1,$5,$6,$7)",
+      [
+        id,
+        day(-8),
+        menu,
+        qty,
+        pipeline === "legacy" ? null : 3,
+        pipeline === "legacy" ? null : 6,
+        JSON.stringify({
+          origin: day(-10),
+          pipeline,
+          interval_kind:
+            pipeline === "legacy" ? "unavailable" : "empirical_absolute_80",
+        }),
+      ],
+    );
+  }
+  const response = await request(app)
+    .get(
+      `/api/forecasts?date_from=${day(-8)}&date_to=${day(-8)}&run_id=${current}&product_id=${menu}`,
+    )
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(response.body.evaluation.pipeline).toBe("coffee-demand-v4");
+  expect(response.body.accuracy).toMatchObject({ samples: 1, mae: 1 });
+  expect(
+    response.body.evaluation.by_pipeline.find(
+      (r: { pipeline: string; source: string }) =>
+        r.pipeline === "legacy" && r.source === "actual",
+    ),
+  ).toMatchObject({ samples: 1, mae: 95 });
+  expect(
+    response.body.evaluation.by_horizon.find(
+      (r: { source: string; horizon: number }) =>
+        r.source === "actual" && r.horizon === 1,
+    ).interval,
+  ).toMatchObject({ samples: 1, coverage: 100 });
+  const oldView = await request(app)
+    .get(
+      `/api/forecasts?date_from=${day(-8)}&date_to=${day(-8)}&run_id=${legacy}&product_id=${menu}`,
+    )
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(oldView.body.evaluation.pipeline).toBe("legacy");
+  expect(oldView.body.accuracy).toMatchObject({ samples: 1, mae: 95 });
+  await request(app)
+    .put("/api/forecasts/quality")
+    .set("Cookie", cookie)
+    .set("Origin", origin)
+    .send({
+      date: day(-8),
+      product_id: menu,
+      kind: "incomplete",
+      note: "Incomplete test input",
+    })
+    .expect(200);
+  const excluded = await request(app)
+    .get(
+      `/api/forecasts?date_from=${day(-8)}&date_to=${day(-8)}&run_id=${current}`,
+    )
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(excluded.body.accuracy.samples).toBe(0);
+  expect(
+    Number(
+      (
+        await fixture.db.query(
+          "SELECT predicted_qty FROM forecast_run_points WHERE run_id=$1",
+          [legacy],
+        )
+      ).rows[0]?.predicted_qty,
+    ),
+  ).toBe(100);
+});
+
+test("an explicitly closed future menu day records a scheduled zero without changing old forecasts", async () => {
+  const menu = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO products(id,category_id,name,price_satang,station) SELECT $1,category_id,'Scheduled closure',7500,'bar' FROM products WHERE id=$2",
+    [menu, product],
+  );
+  await request(app)
+    .put("/api/forecasts/quality")
+    .set("Cookie", cookie)
+    .set("Origin", origin)
+    .send({
+      date: day(1),
+      product_id: menu,
+      kind: "closed",
+      note: "Planned menu closure",
+    })
+    .expect(200);
+  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    forecastResponse(
+      JSON.stringify([
+        {
+          date: day(1),
+          product_id: menu,
+          predicted_qty: 12,
+          lower: null,
+          upper: null,
+          model_version: "mean-28-v1",
+          history_source: "actual",
+        },
+      ]),
+      { status: 200 },
+    ),
+  );
+  const created = await request(app)
+    .post("/api/forecasts/generate")
+    .set("Cookie", cookie)
+    .set("Origin", origin)
+    .send({
+      date_from: day(1),
+      date_to: day(1),
+      product_id: menu,
+      cohort: "genuine",
+    })
+    .expect(200);
+  expect(
+    JSON.parse(fetch.mock.calls[0]![1]!.body as string).method_policy,
+  ).toBe("mean28");
+  const run = await request(app)
+    .get("/api/forecasts/runs/" + created.body.run_id)
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(Number(run.body.points[0].predicted_qty)).toBe(0);
+  expect(run.body.points[0].model_version).toBe("scheduled-closure-v1");
+  expect(run.body.run.input_quality.method_policy).toBe("mean28");
 });

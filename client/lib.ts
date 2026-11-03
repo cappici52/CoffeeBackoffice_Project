@@ -42,6 +42,8 @@ export const roleLabels = {
   kitchen: "ครัว / บาร์",
 };
 const errors: Record<string, string> = {
+  FORECAST_SOURCE_CONFLICT:
+    "ข้อมูลตัวอย่างใช้ได้เฉพาะโหมดทดลอง กรุณาเลือกชุดข้อมูลหรือโหมดให้ตรงกัน",
   INVALID_IMAGE:
     "กรุณาเลือกรูป JPG, PNG หรือ WebP ที่เปิดได้ ขนาดไม่เกิน 5 MB และ 25 ล้านพิกเซล (ไม่รองรับภาพเคลื่อนไหว)",
   IMAGE_TOO_LARGE: "รูปนี้มีขนาดใหญ่เกินไป กรุณาลดขนาดรูปแล้วลองอีกครั้ง",
@@ -77,7 +79,7 @@ const errors: Record<string, string> = {
     "บริการพยากรณ์ยังไม่พร้อม กรุณาเปิดบริการแล้วลองอีกครั้ง",
   FORECAST_INVALID_RESPONSE: "ข้อมูลจากบริการพยากรณ์ไม่ครบหรือไม่ถูกต้อง",
   FORECAST_INSUFFICIENT_HISTORY:
-    "ข้อมูลบางเมนูยังไม่ครบ 28 วันติดต่อกัน หรือประวัติเก่าเกิน 7 วัน กรุณาตรวจประวัติยอดขายและการปิดวันก่อนสร้างพยากรณ์",
+    "บางเมนูมีวันใช้ได้ไม่ครบ 28 วันใน 56 วันล่าสุด หรือข้อมูลเก่าเกิน 6 วัน กรุณาตรวจชุดข้อมูล คุณภาพข้อมูล และการปิดวัน",
   NO_FORECAST_PRODUCTS: "ยังไม่มีเมนูสำหรับพยากรณ์",
   TOO_MANY_ATTEMPTS: "ลองเข้าสู่ระบบหลายครั้งเกินไป กรุณารอ 15 นาที",
   TABLE_UNAVAILABLE:
@@ -106,13 +108,14 @@ export async function api<T>(
   options: RequestInit = {},
 ): Promise<T> {
   try {
+    const timeout = path === "/forecasts/generate" ? 70_000 : 25_000;
     const response = await fetch("/api" + path, {
       ...options,
       credentials: "same-origin",
       headers: { "Content-Type": "application/json", ...options.headers },
       signal: options.signal
-        ? AbortSignal.any([options.signal, AbortSignal.timeout(25_000)])
-        : AbortSignal.timeout(25_000),
+        ? AbortSignal.any([options.signal, AbortSignal.timeout(timeout)])
+        : AbortSignal.timeout(timeout),
     });
     if (!response.ok) {
       const body = await response.json().catch(() => ({ error: "UNKNOWN" }));

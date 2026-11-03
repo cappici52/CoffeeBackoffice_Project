@@ -1,4 +1,22 @@
 type Pair = { actual: number; predicted: number };
+export function intervalMetrics(
+  pairs: { actual: number; lower: number | null; upper: number | null }[],
+) {
+  const bounded = pairs.filter((p) => p.lower !== null && p.upper !== null);
+  return {
+    samples: bounded.length,
+    nominal: 80,
+    coverage: bounded.length
+      ? (100 *
+          bounded.filter((p) => p.actual >= p.lower! && p.actual <= p.upper!)
+            .length) /
+        bounded.length
+      : null,
+    mean_width: bounded.length
+      ? bounded.reduce((s, p) => s + p.upper! - p.lower!, 0) / bounded.length
+      : null,
+  };
+}
 export function metrics(pairs: Pair[]) {
   const n = pairs.length;
   const actual = pairs.reduce((s, p) => s + p.actual, 0);

@@ -11,6 +11,7 @@ from statistics import mean
 
 import numpy as np
 from xgboost import Booster, DMatrix
+from forecast_errors import InsufficientHistory
 
 ARTIFACTS = Path(__file__).parent / "artifacts"
 MANIFEST = json.loads((ARTIFACTS / "manifest.json").read_text(encoding="utf-8"))
@@ -25,10 +26,6 @@ MODEL.load_model(bytearray((ARTIFACTS / "model.json").read_bytes()))
 MODEL.set_param({"nthread": 2})
 if MODEL.feature_names != FEATURES:
     raise RuntimeError("Forecast model features do not match manifest")
-
-
-class InsufficientHistory(ValueError):
-    pass
 
 
 def recursive_forecast(histories, prices, origin, days, model=MODEL):

@@ -106,6 +106,11 @@ export function forecastCsv(from: string, to: string, data: Forecasts) {
       "model_version",
       "forecast_run_id",
       "forecast_contains_simulation",
+      "lower_qty",
+      "upper_qty",
+      "pipeline",
+      "training_cohort",
+      "interval_kind",
     ],
   ];
   for (const day of forecastChart(from, to, [], []))
@@ -123,6 +128,11 @@ export function forecastCsv(from: string, to: string, data: Forecasts) {
         f?.model_version,
         f ? data.selected_run_id : "",
         f ? data.displayed_run?.contains_simulated_sales : "",
+        f?.lower_qty,
+        f?.upper_qty,
+        f?.diagnostics?.pipeline,
+        f ? data.displayed_run?.training_cohort : "",
+        f?.diagnostics?.interval_kind,
       ]);
     }
   return (
@@ -150,7 +160,13 @@ export function forecastScore(
   const allowed = ["actual", "simulation", "demo", "mixed", "unknown"];
   let source = allowed.includes(requested) ? requested : "actual";
   if (!allowed.includes(requested)) {
-    if (data.displayed_run?.contains_simulated_sales) source = "simulation";
+    if (data.displayed_run?.training_cohort === "genuine") source = "actual";
+    else if (data.displayed_run?.training_cohort === "demo") source = "demo";
+    else if (
+      data.displayed_run?.contains_simulated_sales ||
+      data.displayed_run?.training_cohort === "simulation"
+    )
+      source = "simulation";
     else if (data.displayed_run?.data_mode === "mixed")
       source =
         [...groups]

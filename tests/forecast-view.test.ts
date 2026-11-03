@@ -144,3 +144,13 @@ test("CSV keeps unknown days blank, explicit zeroes and provenance, and quotes f
     '"2026-11-02","a","\'=Coffee,""test""","","unknown","unknown"',
   );
 });
+
+test("new cohort metadata controls automatic score source even in a legacy mixed-mode URL", () => {
+  const data = scoreData();
+  data.displayed_run!.contains_simulated_sales = false;
+  data.displayed_run!.data_mode = "mixed";
+  data.displayed_run!.training_cohort = "genuine";
+  expect(forecastScore(data, "auto").source).toBe("actual");
+  data.displayed_run!.training_cohort = "demo";
+  expect(forecastScore(data, "auto").source).toBe("demo");
+});

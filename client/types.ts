@@ -225,6 +225,15 @@ export interface Forecasts {
       horizon?: 1 | 7 | 30;
       validation_origins?: number;
       gap_days?: number;
+      pipeline?: string;
+      method_policy?: string;
+      training_cohort?: string;
+      interval_kind?: string;
+      calibration?: {
+        samples: number;
+        date_from: string;
+        date_to: string;
+      } | null;
       selection: Record<
         string,
         { mae: number; rmse: number; wape: number | null; samples: number }
@@ -258,6 +267,8 @@ export interface Forecasts {
     target_basis: string;
     history_sha256: string;
     contains_simulated_sales: boolean;
+    training_cohort?: string;
+    input_quality?: { pipeline?: string };
   }[];
   coverage: {
     product_id: string;
@@ -268,6 +279,12 @@ export interface Forecasts {
     ready: boolean;
   }[];
   evaluation: {
+    pipeline?: string;
+    by_pipeline?: (ForecastMetrics & {
+      pipeline: string;
+      source: string;
+      interval: ForecastIntervalMetrics;
+    })[];
     basis: string;
     policy: string;
     by_source: (ForecastMetrics & { source: string })[];
@@ -276,6 +293,7 @@ export interface Forecasts {
       horizon: number;
       paired_model: ForecastMetrics;
       baseline: ForecastMetrics;
+      interval?: ForecastIntervalMetrics;
     })[];
     by_product_lead: (ForecastMetrics & {
       product_id: string;
@@ -288,6 +306,8 @@ export interface Forecasts {
     generated_at: string;
     data_mode: "actual" | "mixed";
     contains_simulated_sales: boolean;
+    training_cohort?: string;
+    input_quality?: { pipeline?: string };
   } | null;
   selected_run_id: string | null;
   contains_demo_history: boolean;
@@ -302,4 +322,10 @@ export interface ForecastMetrics {
   mape: number | null;
   bias: number | null;
   zero_actual_samples: number;
+}
+export interface ForecastIntervalMetrics {
+  samples: number;
+  nominal: number;
+  coverage: number | null;
+  mean_width: number | null;
 }

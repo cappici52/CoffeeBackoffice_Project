@@ -155,6 +155,13 @@ test("forecast response is validated and replenishment uses recipe minus current
           upper: 48,
           model_version: "mock-test",
           history_source: "actual",
+          diagnostics: {
+            origin: date,
+            history_days: 28,
+            reason: "report-fixture",
+            selection: {},
+            pipeline: "coffee-demand-v4-mean28",
+          },
         },
       ]),
       { status: 200 },

@@ -52,3 +52,5 @@ Coffee-shop accuracy still needs enough real daily history and future observatio
 ### Local activation result
 
 The existing shop has 84 explicitly labeled demo-history days for eight menus, ending 2026-11-01. Activation generated and persisted 56 daily predictions for 2026-11-03 through 2026-11-09. All eight selected the weekly method. The mean of per-menu **selection MAE on this synthetic history** was 0.000000 units for weekly repetition, 91.079863 for transferred ProjectA XGBoost, and 0.699845 for the newly trained local candidate. These numbers describe the seeded periodic pattern, not coffee-shop business accuracy or an independent holdout. The real shop's order count, payment count, stock-ledger count and total stock balance were verified unchanged before/after generation.
+
+The active engine is now [Forecast v4](forecast-v4.md): one disclosed cohort per run, audited data-quality exclusions, explicit baseline/auto policies, direct shop-history candidates, reserved calibration and measured interval coverage. Earlier ProjectA integration/parity details above remain historical reference rather than the active production estimator.

@@ -38,3 +38,19 @@ test("metrics retain bias direction and MAPE denominator excludes zero targets",
     zero_actual_samples: 1,
   });
 });
+
+test("interval coverage is measured only for issued ranges with observations", async () => {
+  const { intervalMetrics } = await import("../src/shop/forecast-metrics.js");
+  expect(
+    intervalMetrics([
+      { actual: 4, lower: 2, upper: 5 },
+      { actual: 9, lower: 2, upper: 5 },
+      { actual: 1, lower: null, upper: null },
+    ]),
+  ).toEqual({ samples: 2, nominal: 80, coverage: 50, mean_width: 3 });
+  expect(intervalMetrics([])).toMatchObject({
+    samples: 0,
+    coverage: null,
+    mean_width: null,
+  });
+});
