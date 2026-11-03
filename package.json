@@ -35,7 +35,8 @@
     "network:prepare": "node scripts/prepare-network.mjs",
     "test:postgres": "node scripts/test-postgres.mjs",
     "dataset:prepare": "python forecast-service/public_dataset.py",
-    "dataset:import": "tsx src/research-dataset.ts"
+    "dataset:import": "tsx src/research-dataset.ts",
+    "test:public-replay-ui": "node scripts/check-public-replay.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",

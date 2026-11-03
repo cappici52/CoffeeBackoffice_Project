@@ -51,6 +51,7 @@ const Menu = lazy(() => import("./pages/Menu"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Forecast = lazy(() => import("./pages/Forecast"));
+const HistoricalReplay = lazy(() => import("./pages/HistoricalReplay"));
 const UserAdmin = lazy(() => import("./pages/Users"));
 const Account = lazy(() => import("./pages/Account"));
 const Receipt = lazy(() => import("./pages/Receipt"));
@@ -300,7 +301,7 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
           {shopContext.data?.contains_simulation && (
             <Notice tone="warning">
               <details>
-                <summary>ข้อมูลสาธิต</summary>
+                <summary>ข้อมูลร้านมีรายการจำลอง</summary>
                 <p>
                   ฐานข้อมูลนี้มีรายการจำลองการขาย
                   รายงานยอดขายและสต็อกรวมรายการจำลองด้วย
@@ -381,6 +382,14 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
                 element={
                   <Only roles={["owner", "manager"]}>
                     <Forecast />
+                  </Only>
+                }
+              />
+              <Route
+                path="/forecast/replay"
+                element={
+                  <Only roles={["owner", "manager"]}>
+                    <HistoricalReplay />
                   </Only>
                 }
               />

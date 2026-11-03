@@ -192,7 +192,12 @@ export default function Forecast() {
           ประวัติที่ใช้พยากรณ์มีข้อมูลตัวอย่าง แยกจากยอดขายจริงในหน้ารายงาน
         </Notice>
       )}
-      <h2 className="section-title">สร้างพยากรณ์</h2>
+      <div className="section-head">
+        <h2 className="section-title">สร้างพยากรณ์</h2>
+        <Link className="button" to="/forecast/replay">
+          Historical Replay · ข้อมูลสาธารณะ
+        </Link>
+      </div>
       <div className="forecast-controls">
         <Form
           noValidate

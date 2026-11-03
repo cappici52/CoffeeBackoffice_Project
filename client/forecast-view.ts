@@ -3,8 +3,16 @@ import type { Forecasts, ForecastMetrics } from "./types.js";
 export function forecastChart(
   from: string,
   to: string,
-  forecasts: Forecasts["forecasts"],
-  actual: Forecasts["actual"],
+  forecasts: Pick<
+    Forecasts["forecasts"][number],
+    "date" | "product_id" | "predicted_qty" | "lower_qty" | "upper_qty"
+  >[],
+  actual: {
+    date: string;
+    product_id: string;
+    qty: number | string;
+    is_closed?: boolean;
+  }[],
   expectedMenus = 0,
 ) {
   const rows = new Map<
