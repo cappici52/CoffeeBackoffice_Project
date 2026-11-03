@@ -22,6 +22,7 @@ export const pagination = z.object({
 export const imageUrl = z.union([
   z.literal(""),
   z.string().regex(/^\/menu\/[a-z0-9-]+\.jpg$/),
+  z.string().regex(/^\/api\/menu-images\/[a-f0-9]{64}\.webp$/),
   z
     .url()
     .refine(

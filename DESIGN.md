@@ -65,6 +65,8 @@ Customer routes `/table/:token` and `/track/:token` have their own compact shell
 
 Menu photography uses real photographs only, as requested by the user. The eight supplied menu pictures are locally hosted CC0/public-domain photos; source records live in `docs/menu-photo-sources.json`. There are no on-screen source/license/credit links. `client/components/MenuPhoto.tsx` owns 4:3 reserved framing, the compact admin thumbnail and an image-error/empty placeholder. Catalog photos are decorative alongside visible product names; product/item previews retain the full photograph inside the frame. No AI-generated menu assets are bundled.
 
+Menu editors accept a single real photograph from the device through the shared native Input. Preview uses the same reserved MenuPhoto frame. Upload and menu save share the canonical Form busy/error/dirty behavior; no extra upload dialog or new visual tokens are introduced.
+
 ## Elevation & Depth
 
 Convey hierarchy with tonal surfaces and borders. Static panels have no shadows. Reserve a subtle shadow for overlays. Do not use glass or background blur to decorate operational screens.

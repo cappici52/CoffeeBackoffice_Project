@@ -4,12 +4,17 @@ import { useState } from "react";
 export function MenuPhoto({
   src,
   compact = false,
+  preview = false,
 }: {
   src: string;
   compact?: boolean;
+  preview?: boolean;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
-  let supported = /^\/menu\/[a-z0-9-]+\.jpg$/.test(src);
+  let supported =
+    /^\/menu\/[a-z0-9-]+\.jpg$/.test(src) ||
+    /^\/api\/menu-images\/[a-f0-9]{64}\.webp$/.test(src) ||
+    (preview && src.startsWith("blob:"));
   if (!supported && src) {
     try {
       supported = new URL(src).protocol === "https:";

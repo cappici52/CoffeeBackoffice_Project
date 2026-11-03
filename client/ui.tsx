@@ -10,6 +10,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
   type FormEvent,
+  type Ref,
 } from "react";
 import { useBlocker } from "react-router-dom";
 import {
@@ -98,11 +99,16 @@ export function Field({
 }
 export function Input({
   label,
+  error: providedError,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+}: InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  ref?: Ref<HTMLInputElement>;
+  error?: string;
+}) {
   const id = useId();
   const { errors } = useContext(FormContext);
-  const error = props.name ? errors[props.name] : undefined;
+  const error = providedError ?? (props.name ? errors[props.name] : undefined);
   return (
     <Field id={id} label={label} error={error}>
       <input

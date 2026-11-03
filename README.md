@@ -5,7 +5,7 @@
 ## สิ่งที่ใช้งานได้
 
 - เข้าสู่ระบบ ออกจากระบบ เปลี่ยนรหัสผ่าน จัดการผู้ใช้และสิทธิ์
-- หมวดหมู่ เมนู ราคา รูปภาพ สถานี เวลาเตรียม ตัวเลือกเสริม และเปิด/ปิดขาย
+- หมวดหมู่ เมนู ราคา อัปโหลดรูปถ่ายจากเครื่อง/ลิงก์รูป สถานี เวลาเตรียม ตัวเลือกเสริม และเปิด/ปิดขาย
 - POS ทานที่ร้าน/กลับบ้าน ตัวเลือก/หมายเหตุ พักออเดอร์ รับเงินสด/บันทึก PromptPay และใบเสร็จพิมพ์ผ่าน browser
 - QR ประจำโต๊ะ หน้าลูกค้าไม่ต้องล็อกอิน เลือกเมนู/ตัวเลือก/หมายเหตุ ส่งออเดอร์ และติดตามสถานะเฉพาะออเดอร์ของตัวเอง
 - KDS สามคอลัมน์ ตัวจับเวลาจากเวลา server สีเตือนเกินเป้าหมาย สูตรตามตัวเลือก กรองสถานี เสียงแจ้งเตือน และ SSE reconnect
@@ -98,9 +98,9 @@ npm run build
 npm run test:e2e
 ```
 
-- 51 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย และ LAN/production security headers
+- 55 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย, LAN/production security headers และอัปโหลด/ตรวจไฟล์รูป
 - Python model/selection tests 22 กรณี รวมตรวจผลตรงกับโมเดล ProjectA กันข้อมูลอนาคตรั่ว และทำซ้ำผลเทรน Coffee Sales จริง
-- Browser test ครอบคลุม 22 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
+- Browser test ครอบคลุม 23 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, อัปโหลดรูป/พรีวิวบนมือถือ, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
 - Tests บน PostgreSQL และ browser ใช้ schema สุ่มแล้วลบ ไม่เขียน test orders ลงตารางร้านจริง ต้องใช้ development database ที่อนุญาตสร้าง schema
 - Browser plugin ไม่พร้อมใน session นี้ จึงใช้ Playwright/Edge; CI ใช้ Chromium ภาพ QA อยู่ใน OS temp หรือ `QA_OUTPUT_DIR` ไม่ commit รูปทดสอบ
 - CI ตรวจ typecheck, PGlite, PostgreSQL 18, Python, browser, production build และเปิด Docker stack เพื่อ smoke test

@@ -42,6 +42,10 @@ export const roleLabels = {
   kitchen: "ครัว / บาร์",
 };
 const errors: Record<string, string> = {
+  INVALID_IMAGE:
+    "กรุณาเลือกรูป JPG, PNG หรือ WebP ที่เปิดได้ ขนาดไม่เกิน 5 MB และ 25 ล้านพิกเซล (ไม่รองรับภาพเคลื่อนไหว)",
+  IMAGE_TOO_LARGE: "รูปนี้มีขนาดใหญ่เกินไป กรุณาลดขนาดรูปแล้วลองอีกครั้ง",
+  BODY_TOO_LARGE: "ไฟล์หรือข้อมูลมีขนาดใหญ่เกินไป กรุณาใช้รูปไม่เกิน 5 MB",
   UNAUTHENTICATED: "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่",
   INVALID_CREDENTIALS: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
   FORBIDDEN: "บัญชีนี้ไม่มีสิทธิ์ใช้งานส่วนนี้",

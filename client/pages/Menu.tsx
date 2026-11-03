@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
-import { money, mutate, useDebounced, useResource } from "../lib";
+import { api, money, mutate, useDebounced, useResource } from "../lib";
 import {
   CheckField,
   Form,
@@ -354,6 +354,19 @@ function ProductEditor({
   onSaved: () => void;
 }) {
   const [image, setImage] = useState(product?.image_url ?? "");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [photoError, setPhotoError] = useState("");
+  const photoInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!photo) {
+      setPhotoPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(photo);
+    setPhotoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photo]);
   const previewImage = useDebounced(image);
   const [groups, setGroups] = useState<GroupDraft[]>(
     product?.option_groups.map((g) => ({
@@ -406,12 +419,24 @@ function ProductEditor({
         noValidate
         onSave={async (data) => {
           if (!categories.length) throw new Error("กรุณาเพิ่มหมวดหมู่ก่อน");
+          if (photoError) throw new Error(photoError);
+          let savedImage = image;
+          if (photo) {
+            const uploaded = await api<{ image_url: string }>("/menu-images", {
+              method: "POST",
+              headers: { "Content-Type": photo.type },
+              body: photo,
+            });
+            savedImage = uploaded.image_url;
+            setImage(savedImage);
+            setPhoto(null);
+          }
           const body = {
             name: String(data.get("name")),
             category_id: String(data.get("category_id")),
             description: String(data.get("description")),
             price_satang: Math.round(Number(data.get("price")) * 100),
-            image_url: String(data.get("image_url")),
+            image_url: savedImage,
             is_available: !!data.get("is_available"),
             station: String(data.get("station")),
             target_prep_seconds: Number(data.get("target_prep_seconds")),
@@ -474,15 +499,60 @@ function ProductEditor({
             defaultValue={product?.target_prep_seconds ?? 180}
           />
           <Input
-            label="รูปภาพ (ลิงก์ HTTPS หรือ /menu/... .jpg)"
+            label="ลิงก์รูปภาพ (ไม่จำเป็นเมื่อเลือกรูปจากเครื่อง)"
             name="image_url"
             inputMode="url"
             value={image}
-            onChange={(event) => setImage(event.target.value)}
+            onChange={(event) => {
+              setImage(event.target.value);
+              setPhoto(null);
+              setPhotoError("");
+              if (photoInput.current) photoInput.current.value = "";
+            }}
           />
         </div>
+        <Input
+          label="เลือกรูปจากเครื่อง"
+          name="photo"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          ref={photoInput}
+          error={photoError}
+          onChange={(event) => {
+            const file = event.target.files?.[0] ?? null;
+            if (
+              file &&
+              (!["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+                file.size > 5 * 1024 * 1024)
+            ) {
+              setPhoto(null);
+              setPhotoError(
+                "กรุณาเลือกรูป JPG, PNG หรือ WebP ขนาดไม่เกิน 5 MB",
+              );
+            } else {
+              setPhoto(file);
+              setPhotoError("");
+            }
+          }}
+        />
+        <p className="muted">
+          JPG, PNG หรือ WebP ไม่เกิน 5 MB · รูปจะเปลี่ยนเมื่อกดบันทึกเมนู
+        </p>
+        {photoError && <Notice tone="danger">{photoError}</Notice>}
+        {(photo || photoError) && (
+          <button
+            type="button"
+            onClick={() => {
+              setPhoto(null);
+              setPhotoError("");
+              if (photoInput.current) photoInput.current.value = "";
+            }}
+          >
+            ยกเลิกรูปที่เลือก
+          </button>
+        )}
         <div className="menu-photo-preview">
-          <MenuPhoto src={previewImage} />
+          <MenuPhoto src={photoPreview || previewImage} preview />
         </div>
         <Textarea
           className="resize-none"

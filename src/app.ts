@@ -15,6 +15,7 @@ import { resolve } from "node:path";
 import { existsSync } from "node:fs";
 import { guestRouter } from "./shop/guest.js";
 import { tablesRouter } from "./shop/tables.js";
+import { imagesRouter } from "./shop/images.js";
 
 export function createApp(db: Database, config: Config) {
   const app = express();
@@ -26,7 +27,7 @@ export function createApp(db: Database, config: Config) {
       originAgentCluster: config.NODE_ENV === "production",
       contentSecurityPolicy: {
         directives: {
-          imgSrc: ["'self'", "data:", "https:"],
+          imgSrc: ["'self'", "data:", "blob:", "https:"],
           upgradeInsecureRequests: config.NODE_ENV === "production" ? [] : null,
         },
       },
@@ -44,6 +45,10 @@ export function createApp(db: Database, config: Config) {
   const auth = authentication(db, config);
   app.use("/api/guest", guestRouter(db, config));
   app.use("/api", auth.router);
+  app.use(
+    "/api",
+    imagesRouter(db, auth.authenticate, auth.requireRoles("owner", "manager")),
+  );
   app.use(
     "/api",
     tablesRouter(
@@ -125,15 +130,13 @@ export function createApp(db: Database, config: Config) {
       return;
     }
     if (error instanceof z.ZodError) {
-      res
-        .status(400)
-        .json({
-          error: "VALIDATION_ERROR",
-          issues: error.issues.map((i) => ({
-            path: i.path,
-            message: i.message,
-          })),
-        });
+      res.status(400).json({
+        error: "VALIDATION_ERROR",
+        issues: error.issues.map((i) => ({
+          path: i.path,
+          message: i.message,
+        })),
+      });
       return;
     }
     if (typeof error === "object" && error !== null) {

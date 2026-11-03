@@ -30,6 +30,7 @@ DESIGN.md explains intent. `client/styles.css :root` is the canonical runtime to
 | Menu browser | client/components/ProductBrowser.tsx | DESIGN.md | POS / anonymous customer | browser ordering checks |
 | Menu item editor | client/components/ItemEditor.tsx | Shared form contract | staff / customer action labels | browser options + keyboard |
 | Menu photograph | client/components/MenuPhoto.tsx | DESIGN.md | catalog / item preview / compact admin | local image loading, failed-image fallback and mobile browser checks |
+| Menu photo upload | Menu ProductEditor + shared Input/Form | docs/menu-photographs.md | single image, saved with menu | image API security tests + mobile upload browser check |
 | Cart rows | client/components/CartLines.tsx | docs/table-ordering.md | staff / customer | quantity, notes and recovery checks |
 
 Native select/calendar popup geometry and platform language are intentionally accepted. Labels and app-owned messages remain Thai; no authored calendar/listbox is required. There is no bulk table selection in this release.
@@ -55,6 +56,8 @@ Native select/calendar popup geometry and platform language are intentionally ac
 - Errors, loading, empty and no-results states use shared primitives. Notifications use one polite live region. No browser alert/confirm/prompt flows.
 
 ## Async and recovery
+
+- A selected menu photo is previewed locally and uploaded only on save. Canceling selection restores the existing image; unsaved editor dismissal uses the shared guard. Upload/save failures retain the form and allow retry; content hashing deduplicates an uncertain upload response. Only owner/manager can upload. Photos are public catalog content, never private documents. JPEG/PNG/WebP only, 5 MiB and 25 million input pixels; stored WebP has no original EXIF/GPS metadata. Uploaded photos are stored in PostgreSQL and included in database backups.
 
 - Mutations are pessimistic; no automatic retry for money or stock writes. Duplicate submit is disabled. After a network error on stock entry, inspect movement history before retrying.
 - POS draft/request key is kept in sessionStorage per user. No password or session token is stored there. A lost checkout response locks the draft until an identical idempotent retry resolves the result.

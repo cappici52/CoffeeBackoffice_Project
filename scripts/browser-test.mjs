@@ -330,11 +330,9 @@ try {
   await expect(
     page.getByRole("rowheader", { name: "เมนู QA", exact: true }),
   ).toBeVisible();
-  const photoRow = page
-    .getByRole("row")
-    .filter({
-      has: page.getByRole("rowheader", { name: "ลาเต้", exact: true }),
-    });
+  const photoRow = page.getByRole("row").filter({
+    has: page.getByRole("rowheader", { name: "ลาเต้", exact: true }),
+  });
   await photoRow.getByRole("button", { name: "แก้ไข", exact: true }).click();
   await expect(page.locator(".menu-photo-preview img")).toHaveAttribute(
     "src",
@@ -342,6 +340,43 @@ try {
   );
   await page.getByRole("button", { name: "บันทึกเมนู", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  // Upload against the disposable schema, keeping shop records untouched.
+  await photoRow.getByRole("button", { name: "แก้ไข", exact: true }).click();
+  await page
+    .getByLabel("เลือกรูปจากเครื่อง", { exact: true })
+    .setInputFiles("client/public/menu/latte.jpg");
+  await expect(page.locator(".menu-photo-preview img")).toHaveAttribute(
+    "src",
+    /^blob:/,
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: join(output, "menu-photo-upload-mobile.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1536, height: 960 });
+  const imageUpload = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/menu-images") && r.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "บันทึกเมนู", exact: true }).click();
+  assert.equal((await imageUpload).status(), 201);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(photoRow.locator("img")).toHaveAttribute(
+    "src",
+    /^\/api\/menu-images\/[a-f0-9]{64}\.webp$/,
+  );
+  await photoRow.locator("img").evaluate((img) => img.decode());
+  // Restore bundled fixture photo so later exact public-menu assertions remain useful.
+  await photoRow.getByRole("button", { name: "แก้ไข", exact: true }).click();
+  await page
+    .getByLabel("ลิงก์รูปภาพ", { exact: false })
+    .fill("/menu/latte.jpg");
+  await page.getByRole("button", { name: "บันทึกเมนู", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  checks.push(
+    "Local photo selection, mobile preview, safe upload and saved menu thumbnail",
+  );
   checks.push("Category and product CRUD forms");
   await go("/inventory?tab=recipes");
   await page
