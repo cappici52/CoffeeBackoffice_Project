@@ -103,14 +103,19 @@ def predict(date_from, date_to, product_ids, history):
         sources.append(sorted({row.get("source", "unknown") for row in window}))
     # Predict unobserved days before the requested range, too. Never relabel a
     # day-ahead result as a later day or fill missing historical days with zero.
-    from selection import selected_forecasts
+    from selection import selected_forecasts, choose
     predictions, versions = selected_forecasts(histories, prices, price_histories, origin, (end - origin).days, product_ids, sources)
+    snapshot = json.dumps({"origin": origin.isoformat(), "histories": histories, "price_histories": price_histories, "product_ids": product_ids, "sources": sources}, sort_keys=True)
+    selection_scores = {row["product_id"]: row for row in choose(snapshot)[2]}
     def source_label(index, version):
         used = {s for group in sources for s in group} if version.startswith("coffee-xgb-") else set(sources[index])
         return next(iter(used)) if len(used) == 1 and used <= {"actual", "demo"} else "mixed"
     return [dict(date=(origin + timedelta(days=offset + 1)).isoformat(), product_id=product_id,
                  predicted_qty=round(quantity, 3), lower=None, upper=None, model_version=version,
-                 history_source=source_label(index, version))
+                 history_source=source_label(index, version),
+                 diagnostics={"origin": origin.isoformat(), "history_days": len(histories[index]),
+                   "reason": "rolling_validation_2_origins" if product_id in selection_scores else "short_history_weekly",
+                   "selection": selection_scores.get(product_id, {}).get("selection_metrics", {})})
             for index, (product_id, quantities, version) in enumerate(zip(product_ids, predictions, versions))
             for offset, quantity in enumerate(quantities)
             if origin + timedelta(days=offset + 1) >= start]

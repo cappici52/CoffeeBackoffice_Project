@@ -1,5 +1,7 @@
 # Forecast integration and model selection
 
+**Current contract:** [forecast-v2.md](forecast-v2.md) supersedes the original paid-sales history, single-origin selection and overwritten-only evaluation behavior described below. V2 adds delivery-day actual-only history, statistical alternatives, rolling validation and append-only archived rounds. The original integration/activation numbers below are historical evidence, not the current evaluation policy.
+
 ## Uneven observations and new menus
 
 Forecast batches use the latest **common observed date** across requested products. The common origin must be within seven days of the requested start and each product still needs 28 consecutive observations ending there. Newer observations for only some products are excluded from that batch rather than silently filling unknown days with zero. Close actual operating days to record zero sales for existing menus correctly. Tests cover uneven ends, stale common origins and insufficient overlapping history.

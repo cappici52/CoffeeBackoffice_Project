@@ -154,6 +154,7 @@ test("forecast response is validated and replenishment uses recipe minus current
           lower: 32,
           upper: 48,
           model_version: "mock-test",
+          history_source: "actual",
         },
       ]),
       { status: 200 },

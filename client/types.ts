@@ -218,6 +218,15 @@ export interface Forecasts {
     model_version: string;
     history_source: "actual" | "demo" | "mixed" | "unknown";
     generated_at: string;
+    diagnostics?: {
+      origin: string;
+      history_days: number;
+      reason: string;
+      selection: Record<
+        string,
+        { mae: number; rmse: number; wape: number | null; samples: number }
+      >;
+    } | null;
   }[];
   actual: { date: string; product_id: string; qty: Decimal }[];
   recommendations: {
@@ -228,7 +237,43 @@ export interface Forecasts {
     required_qty: Decimal;
     order_qty: Decimal;
   }[];
-  accuracy: { samples: number; mape: number | null; rmse: number | null };
+  accuracy: ForecastMetrics;
+  runs: {
+    id: string;
+    generated_at: string;
+    date_from: string;
+    date_to: string;
+    data_mode: "actual" | "mixed";
+    target_basis: string;
+    history_sha256: string;
+  }[];
+  coverage: {
+    product_id: string;
+    name: string;
+    latest_date: string | null;
+    consecutive_days: number;
+    actual_days: number;
+    ready: boolean;
+  }[];
+  evaluation: {
+    basis: string;
+    policy: string;
+    by_source: (ForecastMetrics & { source: string })[];
+    by_product_lead: (ForecastMetrics & {
+      product_id: string;
+      lead_days: number;
+    })[];
+  };
+  selected_run_id: string | null;
   contains_demo_history: boolean;
   model_mode: "adaptive" | "mock" | "mixed" | "empty";
+}
+export interface ForecastMetrics {
+  samples: number;
+  mae: number | null;
+  rmse: number | null;
+  wape: number | null;
+  mape: number | null;
+  bias: number | null;
+  zero_actual_samples: number;
 }

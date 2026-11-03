@@ -1,0 +1,291 @@
+{
+  "protocol": "coffee-external-rolling-v1",
+  "source": "https://www.kaggle.com/datasets/ihelon/coffee-sales",
+  "prepared_sha256": "76f019bb07d48dccdaad53a60e8d6ca03089ba672cd178f457ec9bb12f62186f",
+  "origins": [
+    "2024-06-26",
+    "2024-07-24",
+    "2024-08-21",
+    "2024-09-18",
+    "2024-10-16"
+  ],
+  "skipped_unknown_calendar_windows": [
+    "2024-05-29",
+    "2024-11-13",
+    "2024-12-11",
+    "2025-01-08"
+  ],
+  "horizons": [
+    1,
+    7,
+    14,
+    28
+  ],
+  "evaluation_kind": "reanalysis_not_new_blind_holdout",
+  "deployment_approved": false,
+  "protocol_note": "Horizons are cumulative windows 1..h; 28-day folds do not overlap. Statistical state uses up to 120 consecutive prior days, matching the app. Fixed SES alpha=.2; Holt alpha=.3, beta=.1, phi=.9. No parameter search on the old holdout.",
+  "environment": {
+    "python": "3.12.10",
+    "numpy": "2.2.5",
+    "xgboost": "3.0.0",
+    "platform": "Windows"
+  },
+  "metrics": [
+    {
+      "horizon": 1,
+      "method": "damped-holt-v1",
+      "mae": 0.8737516545164112,
+      "rmse": 1.350350180241921,
+      "wape": 72.8126378763676,
+      "samples": 40
+    },
+    {
+      "horizon": 1,
+      "method": "mean-28-v1",
+      "mae": 0.8794642857142858,
+      "rmse": 1.4703164139541043,
+      "wape": 73.28869047619048,
+      "samples": 40
+    },
+    {
+      "horizon": 1,
+      "method": "mean-7-v1",
+      "mae": 0.825,
+      "rmse": 1.3357333841262589,
+      "wape": 68.75,
+      "samples": 40
+    },
+    {
+      "horizon": 1,
+      "method": "relative-xgb-count:poisson",
+      "mae": 0.9495772651263646,
+      "rmse": 1.3992649502876608,
+      "wape": 79.13143876053039,
+      "samples": 40
+    },
+    {
+      "horizon": 1,
+      "method": "relative-xgb-reg:absoluteerror",
+      "mae": 0.8030741553263333,
+      "rmse": 1.5777623072391165,
+      "wape": 66.92284627719444,
+      "samples": 40
+    },
+    {
+      "horizon": 1,
+      "method": "ses-v1",
+      "mae": 0.8374837656861949,
+      "rmse": 1.349233240156866,
+      "wape": 69.79031380718291,
+      "samples": 40
+    },
+    {
+      "horizon": 1,
+      "method": "weekday-mean-v1",
+      "mae": 0.99375,
+      "rmse": 1.6369751067135994,
+      "wape": 82.8125,
+      "samples": 40
+    },
+    {
+      "horizon": 1,
+      "method": "weekly-naive-v1",
+      "mae": 1.05,
+      "rmse": 1.6431676725154984,
+      "wape": 87.5,
+      "samples": 40
+    },
+    {
+      "horizon": 7,
+      "method": "damped-holt-v1",
+      "mae": 1.046989813878707,
+      "rmse": 1.5786823281579045,
+      "wape": 78.1752394362768,
+      "samples": 280
+    },
+    {
+      "horizon": 7,
+      "method": "mean-28-v1",
+      "mae": 1.0886479591836735,
+      "rmse": 1.6880715207548742,
+      "wape": 81.28571428571428,
+      "samples": 280
+    },
+    {
+      "horizon": 7,
+      "method": "mean-7-v1",
+      "mae": 1.0387755102040817,
+      "rmse": 1.6067459827431418,
+      "wape": 77.56190476190477,
+      "samples": 280
+    },
+    {
+      "horizon": 7,
+      "method": "relative-xgb-count:poisson",
+      "mae": 1.1133337065376043,
+      "rmse": 1.6242814308181481,
+      "wape": 83.12891675480779,
+      "samples": 280
+    },
+    {
+      "horizon": 7,
+      "method": "relative-xgb-reg:absoluteerror",
+      "mae": 1.0475321524319874,
+      "rmse": 1.7835040145162555,
+      "wape": 78.21573404825507,
+      "samples": 280
+    },
+    {
+      "horizon": 7,
+      "method": "ses-v1",
+      "mae": 1.0381585601736845,
+      "rmse": 1.5944439406785431,
+      "wape": 77.5158391596351,
+      "samples": 280
+    },
+    {
+      "horizon": 7,
+      "method": "weekday-mean-v1",
+      "mae": 1.1669642857142857,
+      "rmse": 1.810620947157553,
+      "wape": 87.13333333333333,
+      "samples": 280
+    },
+    {
+      "horizon": 7,
+      "method": "weekly-naive-v1",
+      "mae": 1.292857142857143,
+      "rmse": 1.994635663115304,
+      "wape": 96.53333333333333,
+      "samples": 280
+    },
+    {
+      "horizon": 14,
+      "method": "damped-holt-v1",
+      "mae": 1.0282783054403868,
+      "rmse": 1.5200647357598016,
+      "wape": 79.09833118772207,
+      "samples": 560
+    },
+    {
+      "horizon": 14,
+      "method": "mean-28-v1",
+      "mae": 1.0576530612244897,
+      "rmse": 1.5558378378066977,
+      "wape": 81.3579277864992,
+      "samples": 560
+    },
+    {
+      "horizon": 14,
+      "method": "mean-7-v1",
+      "mae": 1.0214285714285714,
+      "rmse": 1.5147236563485897,
+      "wape": 78.57142857142857,
+      "samples": 560
+    },
+    {
+      "horizon": 14,
+      "method": "relative-xgb-count:poisson",
+      "mae": 1.0882753688182056,
+      "rmse": 1.5287435626166468,
+      "wape": 83.71348990909273,
+      "samples": 560
+    },
+    {
+      "horizon": 14,
+      "method": "relative-xgb-reg:absoluteerror",
+      "mae": 0.9986820032299172,
+      "rmse": 1.646846177533952,
+      "wape": 76.82169255614748,
+      "samples": 560
+    },
+    {
+      "horizon": 14,
+      "method": "ses-v1",
+      "mae": 1.0133539221752796,
+      "rmse": 1.4911359919437832,
+      "wape": 77.95030170579074,
+      "samples": 560
+    },
+    {
+      "horizon": 14,
+      "method": "weekday-mean-v1",
+      "mae": 1.1258928571428573,
+      "rmse": 1.6695139369631766,
+      "wape": 86.60714285714286,
+      "samples": 560
+    },
+    {
+      "horizon": 14,
+      "method": "weekly-naive-v1",
+      "mae": 1.2428571428571429,
+      "rmse": 1.915165043242264,
+      "wape": 95.6043956043956,
+      "samples": 560
+    },
+    {
+      "horizon": 28,
+      "method": "damped-holt-v1",
+      "mae": 1.1021625165573177,
+      "rmse": 1.5933313762312271,
+      "wape": 86.44411894567197,
+      "samples": 1120
+    },
+    {
+      "horizon": 28,
+      "method": "mean-28-v1",
+      "mae": 1.0801658163265306,
+      "rmse": 1.52741737142492,
+      "wape": 84.71888755502201,
+      "samples": 1120
+    },
+    {
+      "horizon": 28,
+      "method": "mean-7-v1",
+      "mae": 1.0655612244897958,
+      "rmse": 1.5228698739751945,
+      "wape": 83.5734293717487,
+      "samples": 1120
+    },
+    {
+      "horizon": 28,
+      "method": "relative-xgb-count:poisson",
+      "mae": 1.205019394862393,
+      "rmse": 1.6806993628732614,
+      "wape": 94.51132508724652,
+      "samples": 1120
+    },
+    {
+      "horizon": 28,
+      "method": "relative-xgb-reg:absoluteerror",
+      "mae": 1.0398910817086504,
+      "rmse": 1.6436811902656896,
+      "wape": 81.56008483989416,
+      "samples": 1120
+    },
+    {
+      "horizon": 28,
+      "method": "ses-v1",
+      "mae": 1.0568892407296282,
+      "rmse": 1.4975199538608852,
+      "wape": 82.89327378271592,
+      "samples": 1120
+    },
+    {
+      "horizon": 28,
+      "method": "weekday-mean-v1",
+      "mae": 1.1196428571428572,
+      "rmse": 1.6126591837264137,
+      "wape": 87.81512605042016,
+      "samples": 1120
+    },
+    {
+      "horizon": 28,
+      "method": "weekly-naive-v1",
+      "mae": 1.2767857142857142,
+      "rmse": 1.9240025245008683,
+      "wape": 100.14005602240897,
+      "samples": 1120
+    }
+  ]
+}

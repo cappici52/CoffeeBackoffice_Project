@@ -4,14 +4,14 @@ Thai operational product for a single coffee shop: owner/manager desktops, cashi
 
 ## Business-context sources
 
-| Domain | Source | Reviewed |
-|---|---|---|
-| Roles and product workflows | docs/coffee-shop-backoffice-spec.md sections 3–7 | 2026-11-02 |
-| Price snapshots, payments, refunds, inventory and day close | docs/domain-decisions.md | 2026-11-02 |
-| Dark-only minimal appearance | User request; DESIGN.md | 2026-11-02 |
-| Manual PromptPay and browser receipts | Initial development recommendation; docs/roadmap.md | 2026-11-02 |
-| Account authorization | src/security.ts, src/users.ts; tests/auth.test.ts | 2026-11-02 |
-| Table QR / customer ordering | User request; docs/table-ordering.md | 2026-11-02 |
+| Domain                                                      | Source                                              | Reviewed   |
+| ----------------------------------------------------------- | --------------------------------------------------- | ---------- |
+| Roles and product workflows                                 | docs/coffee-shop-backoffice-spec.md sections 3–7    | 2026-11-02 |
+| Price snapshots, payments, refunds, inventory and day close | docs/domain-decisions.md                            | 2026-11-02 |
+| Dark-only minimal appearance                                | User request; DESIGN.md                             | 2026-11-02 |
+| Manual PromptPay and browser receipts                       | Initial development recommendation; docs/roadmap.md | 2026-11-02 |
+| Account authorization                                       | src/security.ts, src/users.ts; tests/auth.test.ts   | 2026-11-02 |
+| Table QR / customer ordering                                | User request; docs/table-ordering.md                | 2026-11-02 |
 
 ## Visual contract
 
@@ -19,32 +19,32 @@ DESIGN.md explains intent. `client/styles.css :root` is the canonical runtime to
 
 ## Canonical UI Map
 
-| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
-|---|---|---|---|---|
-| Select/Listbox | client/ui.tsx Select | This contract | native | browser selection + keyboard |
-| Date | client/ui.tsx Input type=date | This contract | native | browser range forms |
-| Form | client/ui.tsx Form, Input, Secret, Textarea | This contract | create/edit/filter | browser CRUD + validation |
-| Scrollbar | client/styles.css global rules | DESIGN.md | geometry exceptions | computed style + responsive QA |
-| Toast | client/ui.tsx ToastProvider, Notice | This contract | status/error/warning | browser live-region checks |
-| CRUD | feature routes + client/lib.ts | Domain decisions | modal save returns to owning list | scripts/browser-test.mjs |
-| Menu browser | client/components/ProductBrowser.tsx | DESIGN.md | POS / anonymous customer | browser ordering checks |
-| Menu item editor | client/components/ItemEditor.tsx | Shared form contract | staff / customer action labels | browser options + keyboard |
-| Menu photograph | client/components/MenuPhoto.tsx | DESIGN.md | catalog / item preview / compact admin | local image loading, failed-image fallback and mobile browser checks |
-| Menu photo upload | Menu ProductEditor + shared Input/Form | docs/menu-photographs.md | single image, saved with menu | image API security tests + mobile upload browser check |
-| Cart rows | client/components/CartLines.tsx | docs/table-ordering.md | staff / customer | quantity, notes and recovery checks |
+| Capability        | Canonical owner                             | Source of truth          | Allowed variants                       | Verification                                                         |
+| ----------------- | ------------------------------------------- | ------------------------ | -------------------------------------- | -------------------------------------------------------------------- |
+| Select/Listbox    | client/ui.tsx Select                        | This contract            | native                                 | browser selection + keyboard                                         |
+| Date              | client/ui.tsx Input type=date               | This contract            | native                                 | browser range forms                                                  |
+| Form              | client/ui.tsx Form, Input, Secret, Textarea | This contract            | create/edit/filter                     | browser CRUD + validation                                            |
+| Scrollbar         | client/styles.css global rules              | DESIGN.md                | geometry exceptions                    | computed style + responsive QA                                       |
+| Toast             | client/ui.tsx ToastProvider, Notice         | This contract            | status/error/warning                   | browser live-region checks                                           |
+| CRUD              | feature routes + client/lib.ts              | Domain decisions         | modal save returns to owning list      | scripts/browser-test.mjs                                             |
+| Menu browser      | client/components/ProductBrowser.tsx        | DESIGN.md                | POS / anonymous customer               | browser ordering checks                                              |
+| Menu item editor  | client/components/ItemEditor.tsx            | Shared form contract     | staff / customer action labels         | browser options + keyboard                                           |
+| Menu photograph   | client/components/MenuPhoto.tsx             | DESIGN.md                | catalog / item preview / compact admin | local image loading, failed-image fallback and mobile browser checks |
+| Menu photo upload | Menu ProductEditor + shared Input/Form      | docs/menu-photographs.md | single image, saved with menu          | image API security tests + mobile upload browser check               |
+| Cart rows         | client/components/CartLines.tsx             | docs/table-ordering.md   | staff / customer                       | quantity, notes and recovery checks                                  |
 
 Native select/calendar popup geometry and platform language are intentionally accepted. Labels and app-owned messages remain Thai; no authored calendar/listbox is required. There is no bulk table selection in this release.
 
 ## Flow ledger
 
-| Operation | Pending | Success | Failure/recovery | Focus/source |
-|---|---|---|---|---|
-| Create/edit menu, category, stock or user | disable form; fixed-size busy action | close modal, reload owning list, shared toast | retain values and inline error | return to trigger; source specification modules |
-| Change permission/deactivate | explicit confirmation naming consequence | invalidate affected account sessions | keep editor | src/users.ts |
-| Remove/archive | explicit dialog with object and consequence | refresh same list | retain current context | domain-decisions.md |
-| POS checkout | confirm actual payment; disable duplicate submit | clear cart, show order number and receipt link | preserve exact request key/body if result uncertain; retry same request | domain-decisions.md payment contract |
-| KDS action | disable transition until response | refresh board and keep oldest first | inline error and reload latest state | specification KDS module |
-| Close day | explicit final form and warning | immutable closing summary | show pending-order/already-closed reason | domain-decisions.md |
+| Operation                                 | Pending                                          | Success                                        | Failure/recovery                                                        | Focus/source                                    |
+| ----------------------------------------- | ------------------------------------------------ | ---------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------- |
+| Create/edit menu, category, stock or user | disable form; fixed-size busy action             | close modal, reload owning list, shared toast  | retain values and inline error                                          | return to trigger; source specification modules |
+| Change permission/deactivate              | explicit confirmation naming consequence         | invalidate affected account sessions           | keep editor                                                             | src/users.ts                                    |
+| Remove/archive                            | explicit dialog with object and consequence      | refresh same list                              | retain current context                                                  | domain-decisions.md                             |
+| POS checkout                              | confirm actual payment; disable duplicate submit | clear cart, show order number and receipt link | preserve exact request key/body if result uncertain; retry same request | domain-decisions.md payment contract            |
+| KDS action                                | disable transition until response                | refresh board and keep oldest first            | inline error and reload latest state                                    | specification KDS module                        |
+| Close day                                 | explicit final form and warning                  | immutable closing summary                      | show pending-order/already-closed reason                                | domain-decisions.md                             |
 
 ## Forms, navigation and feedback
 
@@ -80,3 +80,7 @@ Native select/calendar popup geometry and platform language are intentionally ac
 
 - Forecast generation evaluates the imported ProjectA XGBoost model, a newly trained shop-history XGBoost candidate and weekly seasonal demand. With 84 consecutive observed days, selection uses a strictly earlier training window and a 28-day recursive validation window; 28–83 observed days use the explicitly labeled weekly method. Missing/old observations show an actionable error. Each stored forecast retains its method/version and actual/demo/mixed history provenance. New point forecasts have no invented interval; legacy mock ranges are labeled separately. Accuracy uses real observations matched to forecasts generated before the target day, never demo data or backcasts.
 - Forecast generation follows the applied menu filter (one menu or all menus), stated beside the action. A batch uses the latest date observed for every requested product; newer partial-menu observations are not zero-filled. The common origin must remain recent and its full 28-day window complete. Chart containers clip transient oversized SVGs while ResizeObserver responds to viewport changes; tables retain their own scroll region.
+
+## Forecast v2 evaluation contract
+
+See docs/forecast-v2.md for the current contract, superseding the earlier single-origin/paid-sales description above. Default generation uses actual delivery history only. Explicit experimental mode allows demo data with persistent disclosure. Applied filters own mode/run/lead state in URL parameters; generation follows the menu/mode filter. Older-run selection stays selected after a new run is generated. JSON export and errors use the shared Form/Submit. Readiness and actual-only per-menu/lead scores use semantic scrollable tables/shared pagination; model selection diagnostics are labeled overlapping rolling validation, never independent accuracy. Every run is immutable with input snapshot/hash; financial reports retain payment dates. No confidence ranges are invented.

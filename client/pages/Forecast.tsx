@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Area,
@@ -10,7 +10,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { addDays, dateText, mutate, number, today, useResource } from "../lib";
+import {
+  addDays,
+  api,
+  dateText,
+  mutate,
+  number,
+  today,
+  useResource,
+} from "../lib";
 import {
   Form,
   Input,
@@ -26,6 +34,11 @@ function methodLabel(version: string) {
   if (version.startsWith("coffee-xgb-")) return "XGBoost ประวัติร้าน";
   if (version.startsWith("projecta-xgb-")) return "XGBoost ProjectA";
   if (version === "weekly-naive-v1") return "ยอดสัปดาห์ก่อน";
+  if (version === "mean-28-v1") return "ค่าเฉลี่ย 28 วัน";
+  if (version === "mean-7-v1") return "ค่าเฉลี่ย 7 วัน";
+  if (version === "weekday-mean-v1") return "ค่าเฉลี่ยวันเดียวกัน 4 สัปดาห์";
+  if (version === "ses-v1") return "ปรับเรียบเอ็กซ์โพเนนเชียล";
+  if (version === "damped-holt-v1") return "Holt แนวโน้มชะลอ";
   return version.startsWith("mock-") ? "โมเดลจำลองเดิม" : "ไม่ทราบวิธี";
 }
 export default function Forecast() {
@@ -33,10 +46,15 @@ export default function Forecast() {
   const from = params.get("from") ?? addDays(today(), -7);
   const to = params.get("to") ?? addDays(today(), 7);
   const product = params.get("product") ?? "";
+  const mode = params.get("mode") === "mixed" ? "mixed" : "actual";
+  const run = params.get("run") ?? "";
+  const [runDraft, setRunDraft] = useState(run);
+  useEffect(() => setRunDraft(run), [run]);
+  const lead = params.get("lead") ?? "";
   const [days, setDays] = useState("7");
   const catalog = useResource<Catalog>("/catalog");
   const resource = useResource<Forecasts>(
-    `/forecasts?date_from=${from}&date_to=${to}${product ? "&product_id=" + product : ""}`,
+    `/forecasts?date_from=${from}&date_to=${to}&data_mode=${mode}${product ? "&product_id=" + product : ""}${run ? "&run_id=" + run : ""}${lead ? "&lead_days=" + lead : ""}`,
   );
   const toast = useToast();
   const data = resource.data;
@@ -46,6 +64,19 @@ export default function Forecast() {
     from + to + product,
   );
   const forecastRows = usePagedRows(data?.forecasts ?? [], from + to + product);
+  const coverage = usePagedRows(data?.coverage ?? [], product + mode);
+  const evaluationRows = usePagedRows(
+    data?.evaluation.by_product_lead ?? [],
+    from + to + product + lead,
+  );
+  const sourceLabel = (source: string) =>
+    source === "actual"
+      ? "ข้อมูลจริงล้วน"
+      : source === "demo"
+        ? "ข้อมูลตัวอย่าง"
+        : source === "mixed"
+          ? "ข้อมูลผสม"
+          : "ไม่ทราบที่มา";
   const chartMap = new Map<
     string,
     {
@@ -85,12 +116,23 @@ export default function Forecast() {
   return (
     <>
       <Notice>
-        ใช้ XGBoost จาก ProjectA
-        เทียบกับโมเดลที่เทรนจากประวัติร้านและวิธียอดสัปดาห์ก่อน
-        เลือกวิธีรายเมนูจากผลย้อนหลัง 28 วันเมื่อมีข้อมูลครบ 84 วัน
+        ใช้ XGBoost จาก ProjectA เทียบกับโมเดลที่เทรนจากประวัติร้าน
+        ยอดสัปดาห์ก่อน และค่าเฉลี่ยหลายวิธี เลือกวิธีรายเมนูจากการทดสอบย้อนหลัง
+        28 วันสองจุดเวลาเมื่อมีข้อมูลครบ 84 วัน
         หากประวัติสั้นจะใช้ยอดสัปดาห์ก่อน ต้องมีข้อมูลอย่างน้อย 28 วันติดต่อกัน
         ผลนี้ยังไม่ผ่านการยืนยันความแม่นยำกับร้านกาแฟ และไม่มีช่วงความเชื่อมั่น
       </Notice>
+      <Notice>
+        ยอดสำหรับเตรียมสินค้าใช้วันส่งมอบ รวมรายการเสิร์ฟแล้วที่ยังไม่จ่าย
+        ส่วนรายงานการเงินยังใช้วันรับเงิน
+        ผลเก่าก่อนเปลี่ยนวิธีนับจะไม่นำมาคิดคะแนนความแม่นยำใหม่
+      </Notice>
+      {mode === "mixed" && (
+        <Notice tone="warning">
+          โหมดทดลอง: อนุญาตข้อมูลตัวอย่างร่วมด้วย
+          คะแนนส่วนนี้ไม่ใช่หลักฐานความแม่นยำกับร้านจริง
+        </Notice>
+      )}
       {hasLegacy && (
         <Notice tone="warning">
           ช่วงวันที่นี้ยังมีผลจากโมเดลจำลองเดิม
@@ -110,6 +152,7 @@ export default function Forecast() {
             await mutate("/forecasts/generate", "POST", {
               date_from: addDays(today(), 1),
               date_to: addDays(today(), Number(days)),
+              data_mode: mode,
               ...(product ? { product_id: product } : {}),
             });
             resource.reload();
@@ -140,6 +183,9 @@ export default function Forecast() {
               from: String(fd.get("from")),
               to: String(fd.get("to")),
               product: String(fd.get("product")),
+              mode: String(fd.get("mode")),
+              run: String(fd.get("run")),
+              lead: String(fd.get("lead")),
             })
           }
         >
@@ -166,9 +212,57 @@ export default function Forecast() {
             defaultValue={product}
           >
             <option value="">ทุกเมนู</option>
+            {product &&
+              !catalog.data?.products.some((p) => p.id === product) && (
+                <option key={product} value={product}>
+                  เมนูที่เลือก · {product.slice(0, 8)}
+                </option>
+              )}
             {catalog.data?.products.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="ข้อมูลที่ใช้สร้าง"
+            name="mode"
+            key={"mode" + mode}
+            defaultValue={mode}
+          >
+            <option value="actual">ข้อมูลจริงเท่านั้น</option>
+            <option value="mixed">ทดลอง: ใช้ข้อมูลตัวอย่างร่วมด้วย</option>
+          </Select>
+          <Select
+            label="รอบพยากรณ์ที่แสดง"
+            name="run"
+            key={"run" + run}
+            value={runDraft}
+            onChange={(event) => setRunDraft(event.target.value)}
+          >
+            <option value="">ผลล่าสุดแต่ละเมนู</option>
+            {runDraft && !data?.runs.some((r) => r.id === runDraft) && (
+              <option key={runDraft} value={runDraft}>
+                รอบที่เลือก · {runDraft.slice(0, 8)}
+              </option>
+            )}
+            {data?.runs.map((r) => (
+              <option key={r.id} value={r.id}>
+                {dateText(r.generated_at, true)} · {r.id.slice(0, 8)} ·{" "}
+                {r.data_mode === "actual" ? "จริง" : "ทดลอง"}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="ระยะล่วงหน้าที่วัดผล"
+            name="lead"
+            key={"lead" + lead}
+            defaultValue={lead}
+          >
+            <option value="">ทุกระยะ (แยกในตาราง)</option>
+            {[1, 7, 14, 28].map((n) => (
+              <option key={n} value={n}>
+                {n} วัน
               </option>
             ))}
           </Select>
@@ -176,8 +270,77 @@ export default function Forecast() {
         </Form>
       </div>
       <QueryState {...resource} retry={resource.reload} />
+      {run && (
+        <Form
+          noValidate
+          guard={false}
+          onSave={async () => {
+            const snapshot = await api<object>("/forecasts/runs/" + run);
+            const url = URL.createObjectURL(
+              new Blob([JSON.stringify(snapshot, null, 2)], {
+                type: "application/json",
+              }),
+            );
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "forecast-" + run + ".json";
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }}
+        >
+          <Submit>ดาวน์โหลดรอบนี้ (JSON)</Submit>
+        </Form>
+      )}
       {data && (
         <>
+          <details className="section-details" open>
+            <summary>ความพร้อมของประวัติรายเมนู</summary>
+            <div
+              className="table-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="เลื่อนตารางความพร้อมพยากรณ์"
+            >
+              <table>
+                <caption className="sr-only">
+                  ประวัติที่ใช้ได้ในโหมดที่เลือก
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">เมนู</th>
+                    <th scope="col">วันล่าสุด</th>
+                    <th scope="col">ต่อเนื่อง</th>
+                    <th scope="col">วันที่มียอดจริง</th>
+                    <th scope="col">สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {coverage.items.map((c) => (
+                    <tr key={c.product_id}>
+                      <th scope="row">{c.name}</th>
+                      <td>
+                        {c.latest_date
+                          ? dateText(c.latest_date)
+                          : "ไม่มีข้อมูล"}
+                      </td>
+                      <td>{c.consecutive_days} วัน</td>
+                      <td>{c.actual_days} วัน</td>
+                      <td>
+                        {c.ready
+                          ? "พร้อมรายเมนู"
+                          : "ต้องมี 28 วันต่อเนื่องและข้อมูลล่าสุดไม่เก่า"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {coverage.controls}
+            <p className="muted caption">
+              สร้างทั้งชุดต้องมีวันสิ้นสุดประวัติร่วมกันครบด้วย
+              เมนูที่ยังไม่พร้อมสามารถเลือกสร้างทีละเมนูได้
+            </p>
+          </details>
           <section className="chart-panel">
             <div className="section-head">
               <h2>ยอดขายจริงและพยากรณ์</h2>
@@ -289,7 +452,86 @@ export default function Forecast() {
                 เทียบได้ {data.accuracy.samples} ตัวอย่าง · ไม่มีข้อมูลจะแสดง —
               </small>
             </div>
+            <div>
+              <span>MAE</span>
+              <strong>
+                {data.accuracy.mae === null ? "—" : number(data.accuracy.mae)}
+              </strong>
+              <small>จำนวนหน่วยที่คลาดเคลื่อนเฉลี่ย</small>
+            </div>
+            <div>
+              <span>WAPE</span>
+              <strong>
+                {data.accuracy.wape === null
+                  ? "—"
+                  : number(data.accuracy.wape) + "%"}
+              </strong>
+              <small>ไม่กำหนดเมื่อยอดจริงรวมเป็นศูนย์</small>
+            </div>
           </div>
+          <p className="muted caption">
+            คะแนนหลักใช้รอบข้อมูลจริงล้วนที่ออกก่อนวันเป้าหมาย
+            เลือกรอบแรกของแต่ละเมนู/วัน/ระยะล่วงหน้า
+            จึงไม่เพิ่มจำนวนตัวอย่างเมื่อกดสร้างซ้ำ
+          </p>
+          <details className="section-details">
+            <summary>ผลวัดจริงแยกเมนูและระยะล่วงหน้า</summary>
+            <div
+              className="table-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="เลื่อนตารางวัดผลพยากรณ์"
+            >
+              <table>
+                <caption>คะแนนจากยอดส่งมอบจริง</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">เมนู</th>
+                    <th scope="col">ล่วงหน้า</th>
+                    <th scope="col">ตัวอย่าง</th>
+                    <th scope="col">MAE</th>
+                    <th scope="col">WAPE</th>
+                    <th scope="col">Bias</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {evaluationRows.items.map((e) => (
+                    <tr key={e.product_id + e.lead_days}>
+                      <th scope="row">
+                        {catalog.data?.products.find(
+                          (p) => p.id === e.product_id,
+                        )?.name ?? e.product_id}
+                      </th>
+                      <td>{e.lead_days} วัน</td>
+                      <td>{e.samples}</td>
+                      <td>{e.mae === null ? "—" : number(e.mae)}</td>
+                      <td>{e.wape === null ? "—" : number(e.wape) + "%"}</td>
+                      <td>{e.bias === null ? "—" : number(e.bias)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!evaluationRows.items.length && (
+                <p className="empty">
+                  ยังไม่มีผลล่วงหน้าข้อมูลจริงล้วนที่เทียบกับยอดส่งมอบได้
+                </p>
+              )}
+            </div>
+            {evaluationRows.controls}
+            <p className="muted caption">
+              Bias บวก = พยากรณ์สูงไป · ลบ = ต่ำไป
+              ข้อมูลตัวอย่างและผสมแสดงแยกจากคะแนนหลัก
+            </p>
+            <ul>
+              {data.evaluation.by_source.map((e) => (
+                <li key={e.source}>
+                  {sourceLabel(e.source)}: {e.samples} ตัวอย่าง · MAE{" "}
+                  {e.mae === null ? "—" : number(e.mae)} · WAPE{" "}
+                  {e.wape === null ? "—" : number(e.wape) + "%"}
+                </li>
+              ))}
+            </ul>
+          </details>
           <h2 className="section-title">วัตถุดิบที่ควรสั่งเพิ่ม</h2>
           <p className="muted caption">
             พยากรณ์ × สูตรพื้นฐาน − สต็อกคงเหลือ ·
@@ -360,6 +602,7 @@ export default function Forecast() {
                     <th scope="col">วิธีพยากรณ์</th>
                     <th scope="col">ประวัติที่ใช้</th>
                     <th scope="col">โมเดล</th>
+                    <th scope="col">ข้อมูลและเหตุผล</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -384,6 +627,37 @@ export default function Forecast() {
                               : "ไม่ได้บันทึกที่มา"}
                       </td>
                       <td>{f.model_version}</td>
+                      <td>
+                        {f.diagnostics?.origin ? (
+                          <details>
+                            <summary>
+                              {f.diagnostics.history_days} วัน · ถึง{" "}
+                              {dateText(f.diagnostics.origin)}
+                            </summary>
+                            <p>
+                              {f.diagnostics.reason === "short_history_weekly"
+                                ? "ประวัติยังไม่ครบ 84 วัน จึงใช้ยอดสัปดาห์ก่อน"
+                                : "เลือก MAE ต่ำสุดจากการทดสอบย้อนหลังสองจุดเวลา (ไม่ใช่คะแนนทดสอบอิสระ)"}
+                            </p>
+                            <ul>
+                              {Object.entries(f.diagnostics.selection).map(
+                                ([method, score]) => (
+                                  <li key={method}>
+                                    {methodLabel(method)}: MAE{" "}
+                                    {number(score.mae)} · WAPE{" "}
+                                    {score.wape === null
+                                      ? "—"
+                                      : number(score.wape) + "%"}{" "}
+                                    · {score.samples} คู่ทดสอบ
+                                  </li>
+                                ),
+                              )}
+                            </ul>
+                          </details>
+                        ) : (
+                          "ผลเดิมไม่มีรายละเอียด"
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -108,15 +108,17 @@ class ForecastTests(unittest.TestCase):
         history = observations([15.0] * 85 + [60, 0, 60, 0, 60, 0, 60] + [15.0] * 28)
         result = predict("2026-11-03", "2026-11-09", ["p1"], history)
         versions = {row["model_version"] for row in result}
-        self.assertTrue(all(v.startswith(("coffee-xgb-", "projecta-xgb-", "weekly-naive-v1")) for v in versions))
+        self.assertTrue(all(v.startswith(("coffee-xgb-", "projecta-xgb-", "weekly-naive-v1", "mean-28-v1", "mean-7-v1", "weekday-mean-v1", "ses-v1", "damped-holt-v1")) for v in versions))
         self.assertTrue(all(row["predicted_qty"] >= 0 for row in result))
-        # This reproducible series favors a learned average over copying noise.
-        self.assertTrue(any(v.startswith("coffee-xgb-") for v in versions))
+        # A simpler mean can now beat XGBoost; inspect candidates rather than forcing a model win.
         from pathlib import Path
         metadata = json.loads(next(Path(self.directory.name).glob("*.metadata.json")).read_text())
         self.assertEqual(metadata["history_sources"], [["demo"]])
         self.assertIn("not an independent", metadata["evaluation_note"])
         self.assertIn(MODEL_VERSION, metadata["selection"][0]["selection_mae"])
+        self.assertTrue(any(k.startswith("coffee-xgb-") for k in metadata["selection"][0]["selection_mae"]))
+        self.assertEqual(metadata["selection"][0]["origins"], 2)
+        self.assertTrue(all(m["samples"] == 56 for m in metadata["selection"][0]["selection_metrics"].values()))
 
     def test_api_requires_price_and_source_and_rejects_nonfinite_sales(self):
         payload = dict(date_from="2026-11-03", date_to="2026-11-09", product_ids=["00000000-0000-4000-8000-000000000001"], history=[])

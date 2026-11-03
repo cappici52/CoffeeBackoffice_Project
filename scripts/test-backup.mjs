@@ -48,6 +48,18 @@ try {
     "INSERT INTO sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",
     ["b".repeat(64), actor],
   );
+  const runId = randomUUID();
+  const menu = (
+    await source.query("SELECT id FROM products ORDER BY id LIMIT 1")
+  ).rows[0].id;
+  await source.query(
+    "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history,created_by) VALUES($1,now(),current_date+1,current_date+1,'actual','fulfilled_v1',$2,'[]',$3)",
+    [runId, "c".repeat(64), actor],
+  );
+  await source.query(
+    "INSERT INTO forecast_run_points(run_id,forecast_date,product_id,predicted_qty,model_version,history_source,lead_days) VALUES($1,current_date+1,$2,12,'ses-v1','actual',1)",
+    [runId, menu],
+  );
   const directory = await mkdtemp(join(tmpdir(), "coffee-backup-check-"));
   const { file, manifest } = await backupDatabase(
     sourceUrl.toString(),
@@ -55,12 +67,28 @@ try {
   );
   assert.equal(manifest.tables.menu_images, "1");
   assert.equal(manifest.tables.products, "8");
+  assert.equal(manifest.tables.forecast_runs, "1");
   const result = await restoreDatabase(sourceUrl.toString(), file, targetName);
   assert.equal(result.sessions_revoked, true);
   const targetUrl = new URL(sourceUrl);
   targetUrl.pathname = "/" + targetName;
   target = new pg.Client({ connectionString: targetUrl.toString() });
   await target.connect();
+  assert.equal(
+    (
+      await target.query(
+        "SELECT predicted_qty FROM forecast_run_points WHERE run_id=$1",
+        [runId],
+      )
+    ).rows[0].predicted_qty,
+    "12.000",
+  );
+  await assert.rejects(
+    target.query(
+      "UPDATE forecast_run_points SET predicted_qty=0 WHERE run_id=$1",
+      [runId],
+    ),
+  );
   assert.deepEqual(
     Buffer.from(
       (await target.query("SELECT data FROM menu_images")).rows[0].data,

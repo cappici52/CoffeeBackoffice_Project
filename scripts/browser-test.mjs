@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { randomBytes, randomUUID } from "node:crypto";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
@@ -256,6 +256,13 @@ try {
   });
   checks.push("Reports reflect the real paid order");
   await go("/forecast");
+  await expect(
+    page.getByText("ต้องมี 28 วันต่อเนื่องและข้อมูลล่าสุดไม่เก่า").first(),
+  ).toBeVisible();
+  await page
+    .getByLabel("ข้อมูลที่ใช้สร้าง", { exact: true })
+    .selectOption("mixed");
+  await page.getByRole("button", { name: "แสดงผล", exact: true }).click();
   await page
     .getByRole("button", { name: "สร้างพยากรณ์ใหม่", exact: true })
     .click();
@@ -263,7 +270,11 @@ try {
     page.getByRole("status").filter({ hasText: "สร้างผลพยากรณ์แล้ว" }),
   ).toBeVisible({ timeout: 20000 });
   await expect(
-    page.getByText(/^(weekly-naive-v1|projecta-xgb-|coffee-xgb-)/).first(),
+    page
+      .getByText(
+        /^(weekly-naive-v1|projecta-xgb-|coffee-xgb-|mean-|weekday-mean-)/,
+      )
+      .first(),
   ).toBeAttached();
   await expect(
     page.getByText("ไม่มีช่วงค่า", { exact: true }).first(),
@@ -272,6 +283,44 @@ try {
     0,
   );
   checks.push("Live FastAPI forecast and replenishment UI");
+  const availableRuns = page
+    .getByLabel("รอบพยากรณ์ที่แสดง", { exact: true })
+    .locator('option[value]:not([value=""])');
+  await expect(availableRuns).toHaveCount(1);
+  const savedRun = await availableRuns.first().getAttribute("value");
+  assert(savedRun);
+  await page
+    .getByLabel("รอบพยากรณ์ที่แสดง", { exact: true })
+    .selectOption(savedRun);
+  await page.getByRole("button", { name: "แสดงผล", exact: true }).click();
+  const downloadEvent = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "ดาวน์โหลดรอบนี้ (JSON)", exact: true })
+    .click();
+  const downloaded = await downloadEvent;
+  const roundFile = join(output, "forecast-round.json");
+  await downloaded.saveAs(roundFile);
+  const archivedRound = JSON.parse(await readFile(roundFile, "utf8"));
+  assert.equal(archivedRound.run.id, savedRun);
+  assert.equal(archivedRound.run.target_basis, "fulfilled_v1");
+  assert.equal(archivedRound.run.data_mode, "mixed");
+  assert.equal(archivedRound.points.length, 56);
+  assert(archivedRound.run.input_history.length > 0);
+  assert.match(archivedRound.run.history_sha256, /^[a-f0-9]{64}$/);
+  await page
+    .getByRole("button", { name: "สร้างพยากรณ์ใหม่", exact: true })
+    .click();
+  await expect(
+    page
+      .getByLabel("รอบพยากรณ์ที่แสดง", { exact: true })
+      .locator('option[value]:not([value=""])'),
+  ).toHaveCount(2);
+  await expect(
+    page.getByLabel("รอบพยากรณ์ที่แสดง", { exact: true }),
+  ).toHaveValue(savedRun);
+  checks.push(
+    "Immutable forecast rounds, explicit demo mode, JSON snapshot export and preserved old selection",
+  );
   await page
     .getByText("จำนวนเตรียมรายเมนูและเวอร์ชันโมเดล", { exact: true })
     .click();
@@ -379,7 +428,7 @@ try {
     "Local photo selection, mobile preview, safe upload and saved menu thumbnail",
   );
   checks.push("Category and product CRUD forms");
-  await go("/forecast");
+  await go("/forecast?mode=mixed");
   await page
     .getByLabel("เมนู", { exact: true })
     .selectOption({ label: "ลาเต้" });

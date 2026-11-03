@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { Router, type RequestHandler } from "express";
 import { z } from "zod";
 import type { Config } from "../config.js";
@@ -12,7 +12,8 @@ import {
   idSchema,
   record,
 } from "./shared.js";
-import { refreshSales } from "./reports.js";
+import { metrics } from "./forecast-metrics.js";
+import { serializeForecastHistory } from "./forecast-snapshot.js";
 
 const forecastRow = z
   .object({
@@ -25,6 +26,22 @@ const forecastRow = z
     history_source: z
       .enum(["actual", "demo", "mixed", "unknown"])
       .default("unknown"),
+    diagnostics: z
+      .object({
+        origin: dateSchema,
+        history_days: z.number().int().min(28).max(120),
+        reason: z.string().max(200),
+        selection: z.record(
+          z.string().max(100),
+          z.object({
+            mae: z.number().nonnegative(),
+            rmse: z.number().nonnegative(),
+            wape: z.number().nonnegative().nullable(),
+            samples: z.number().int().nonnegative(),
+          }),
+        ),
+      })
+      .optional(),
   })
   .strict()
   .refine(
@@ -35,19 +52,29 @@ const forecastRow = z
         v.lower <= v.predicted_qty &&
         v.predicted_qty <= v.upper),
   );
-export async function history(sql: Sql) {
+export async function history(sql: Sql, mode: "actual" | "mixed" = "mixed") {
   return (
     await sql.query(
-      `WITH observations AS (
-        SELECT date,product_id,qty,revenue_satang,source FROM sales_daily
+      `WITH fulfilled AS (
+        SELECT (o.completed_at AT TIME ZONE 'Asia/Bangkok')::date AS date,i.product_id,
+          sum(i.qty) AS qty,sum(i.qty::bigint*i.unit_price_satang) AS revenue_satang,'actual' AS source
+        FROM orders o JOIN order_items i ON i.order_id=o.id
+        WHERE o.completed_at IS NOT NULL GROUP BY 1,2
+      ), observations AS (
+        SELECT date,product_id,qty,revenue_satang,source FROM fulfilled
         WHERE date >= (now() AT TIME ZONE 'Asia/Bangkok')::date - 120
+          AND date < (now() AT TIME ZONE 'Asia/Bangkok')::date
+        UNION ALL
+        SELECT date,product_id,qty,revenue_satang,source FROM sales_daily
+        WHERE source='demo' AND $1='mixed'
+          AND date >= (now() AT TIME ZONE 'Asia/Bangkok')::date - 120
           AND date < (now() AT TIME ZONE 'Asia/Bangkok')::date
         UNION ALL
         SELECT c.date,p.id,0,0,'actual' FROM day_closings c CROSS JOIN products p
         WHERE c.date >= (now() AT TIME ZONE 'Asia/Bangkok')::date - 120
           AND c.date < (now() AT TIME ZONE 'Asia/Bangkok')::date
           AND p.forecast_since <= c.date
-          AND NOT EXISTS (SELECT 1 FROM sales_daily s WHERE s.date=c.date AND s.product_id=p.id AND s.source='actual')
+          AND NOT EXISTS (SELECT 1 FROM fulfilled s WHERE s.date=c.date AND s.product_id=p.id)
       ), daily AS (
         SELECT date,product_id,
           coalesce(sum(qty) FILTER(WHERE source='actual'),sum(qty) FILTER(WHERE source='demo')) AS qty,
@@ -57,6 +84,7 @@ export async function history(sql: Sql) {
       ) SELECT d.date::text,d.product_id,d.qty,d.source,
         CASE WHEN d.qty>0 THEN d.revenue/d.qty/100.0 ELSE p.price_satang/100.0 END AS unit_price
         FROM daily d JOIN products p ON p.id=d.product_id ORDER BY d.date,d.product_id`,
+      [mode],
     )
   ).rows;
 }
@@ -67,6 +95,7 @@ export async function generateForecasts(
   to: string,
   actor?: string,
   productId?: string,
+  dataMode: "actual" | "mixed" = "actual",
 ) {
   const range = dateRange.parse({ date_from: from, date_to: to });
   fail(
@@ -74,10 +103,7 @@ export async function generateForecasts(
     400,
     "FORECAST_RANGE_TOO_LONG",
   );
-  await db.transaction(async (sql) => {
-    await sql.query("SELECT pg_advisory_xact_lock(7301003)");
-    await refreshSales(sql);
-  });
+  const generatedAt = new Date();
   const products = (
     await db.query(
       "SELECT id FROM products WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY id",
@@ -89,6 +115,15 @@ export async function generateForecasts(
     409,
     "NO_FORECAST_PRODUCTS",
   );
+  const inputHistory = (await history(db, dataMode))
+    .filter((h) => products.includes(h.product_id))
+    .map((h) => ({
+      date: h.date,
+      product_id: h.product_id,
+      qty: Number(h.qty),
+      unit_price: Number(h.unit_price),
+      source: h.source,
+    }));
   let result: unknown;
   try {
     const response = await fetch(`${config.FORECAST_SERVICE_URL}/forecast`, {
@@ -98,13 +133,7 @@ export async function generateForecasts(
         ...range,
         product_id: null,
         product_ids: products,
-        history: (await history(db)).map((h) => ({
-          date: h.date,
-          product_id: h.product_id,
-          qty: Number(h.qty),
-          unit_price: Number(h.unit_price),
-          source: h.source,
-        })),
+        history: inputHistory,
       }),
       signal: AbortSignal.timeout(15_000),
     });
@@ -138,9 +167,47 @@ export async function generateForecasts(
     502,
     "FORECAST_INVALID_RESPONSE",
   );
+  fail(
+    dataMode !== "actual" || rows.every((r) => r.history_source === "actual"),
+    502,
+    "FORECAST_INVALID_RESPONSE",
+  );
+  const runId = randomUUID();
   await db.transaction(async (sql) => {
     await sql.query("SELECT pg_advisory_xact_lock(7301004)");
-    for (const row of rows)
+    const snapshot = serializeForecastHistory(inputHistory);
+    await sql.query(
+      "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history,created_by) VALUES($1,$2,$3,$4,$5,'fulfilled_v1',$6,$7,$8)",
+      [
+        runId,
+        generatedAt.toISOString(),
+        from,
+        to,
+        dataMode,
+        createHash("sha256").update(snapshot).digest("hex"),
+        snapshot,
+        actor ?? null,
+      ],
+    );
+    for (const row of rows) {
+      const lead =
+        (Date.parse(row.date) - Date.parse(businessDate(generatedAt))) /
+        86400000;
+      await sql.query(
+        "INSERT INTO forecast_run_points(run_id,forecast_date,product_id,predicted_qty,model_version,history_source,lead_days,diagnostics,lower_qty,upper_qty) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+        [
+          runId,
+          row.date,
+          row.product_id,
+          row.predicted_qty,
+          row.model_version,
+          row.history_source,
+          lead,
+          JSON.stringify(row.diagnostics ?? {}),
+          row.lower,
+          row.upper,
+        ],
+      );
       await sql.query(
         "INSERT INTO forecasts (id,forecast_date,product_id,predicted_qty,lower_qty,upper_qty,model_version,history_source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (forecast_date,product_id) DO UPDATE SET predicted_qty=excluded.predicted_qty,lower_qty=excluded.lower_qty,upper_qty=excluded.upper_qty,model_version=excluded.model_version,history_source=excluded.history_source,generated_at=now()",
         [
@@ -154,15 +221,20 @@ export async function generateForecasts(
           row.history_source,
         ],
       );
+    }
     if (actor)
       await record(sql, actor, "forecast.generated", "forecast", randomUUID(), {
         from,
         to,
         rows: rows.length,
         model_versions: versions,
+        run_id: runId,
+        data_mode: dataMode,
+        target_basis: "fulfilled_v1",
       });
   });
   return {
+    run_id: runId,
     count: rows.length,
     model_version:
       versions.length === 1 ? versions[0] : "coffee-selection-v1-mixed",
@@ -179,7 +251,10 @@ export function forecastsRouter(
   r.use("/forecasts", auth, manage);
   r.post("/forecasts/generate", async (req, res) => {
     const input = dateRange
-      .safeExtend({ product_id: idSchema.optional() })
+      .safeExtend({
+        product_id: idSchema.optional(),
+        data_mode: z.enum(["actual", "mixed"]).default("actual"),
+      })
       .parse(req.body);
     fail(input.date_from > businessDate(), 400, "FORECAST_MUST_BE_FUTURE");
     res.json(
@@ -190,21 +265,51 @@ export function forecastsRouter(
         input.date_to,
         res.locals.user.id,
         input.product_id,
+        input.data_mode,
       ),
     );
   });
   r.get("/forecasts", async (req, res) => {
     const input = dateRange
-      .safeExtend({ product_id: idSchema.optional() })
+      .safeExtend({
+        product_id: idSchema.optional(),
+        run_id: idSchema.optional(),
+        data_mode: z.enum(["actual", "mixed"]).default("actual"),
+        lead_days: z.coerce.number().int().min(1).max(30).optional(),
+      })
       .parse(req.query);
     const params = [input.date_from, input.date_to, input.product_id ?? null];
-    const points = (
+    const runs = (
       await db.query(
-        "SELECT f.*,f.forecast_date::text AS date,p.name AS product_name FROM forecasts f JOIN products p ON p.id=f.product_id WHERE f.forecast_date BETWEEN $1::date AND $2::date AND ($3::uuid IS NULL OR product_id=$3) ORDER BY f.forecast_date,p.name",
+        `SELECT r.id,r.generated_at,r.date_from::text,r.date_to::text,r.data_mode,r.target_basis,r.history_sha256
+      FROM forecast_runs r WHERE r.date_from <= $2::date AND r.date_to >= $1::date
+      AND ($3::uuid IS NULL OR EXISTS(SELECT 1 FROM forecast_run_points p WHERE p.run_id=r.id AND p.product_id=$3))
+      ORDER BY r.generated_at DESC,r.id DESC LIMIT 50`,
         params,
       )
     ).rows;
-    const actual = (await history(db)).filter(
+    const points = input.run_id
+      ? (
+          await db.query(
+            `SELECT p.*,p.forecast_date::text AS date,m.name AS product_name,
+      r.generated_at
+      FROM forecast_run_points p JOIN forecast_runs r ON r.id=p.run_id JOIN products m ON m.id=p.product_id
+      WHERE p.run_id=$4 AND p.forecast_date BETWEEN $1::date AND $2::date AND ($3::uuid IS NULL OR p.product_id=$3)
+      ORDER BY p.forecast_date,m.name`,
+            [...params, input.run_id],
+          )
+        ).rows
+      : (
+          await db.query(
+            `SELECT f.*,f.forecast_date::text AS date,p.name AS product_name,
+      (SELECT x.diagnostics FROM forecast_run_points x JOIN forecast_runs r ON r.id=x.run_id
+       WHERE x.product_id=f.product_id AND x.forecast_date=f.forecast_date ORDER BY r.generated_at DESC,r.id DESC LIMIT 1) AS diagnostics
+      FROM forecasts f JOIN products p ON p.id=f.product_id WHERE f.forecast_date BETWEEN $1::date AND $2::date
+      AND ($3::uuid IS NULL OR product_id=$3) ORDER BY f.forecast_date,p.name`,
+            params,
+          )
+        ).rows;
+    const actual = (await history(db, input.data_mode)).filter(
       (h) =>
         h.date >= input.date_from &&
         h.date <= input.date_to &&
@@ -212,17 +317,38 @@ export function forecastsRouter(
     );
     const recommendations = (
       await db.query(
-        `SELECT i.id,i.name,i.unit,i.current_stock,sum(f.predicted_qty*ri.qty) AS required_qty,greatest(0,sum(f.predicted_qty*ri.qty)-i.current_stock) AS order_qty FROM forecasts f JOIN recipe_ingredients ri ON ri.product_id=f.product_id JOIN ingredients i ON i.id=ri.ingredient_id WHERE f.forecast_date BETWEEN $1::date AND $2::date AND ($3::uuid IS NULL OR f.product_id=$3) AND i.is_active GROUP BY i.id,i.name,i.unit,i.current_stock ORDER BY order_qty DESC,i.name`,
-        params,
+        `WITH selected AS (
+      SELECT product_id,predicted_qty FROM forecasts WHERE forecast_date BETWEEN $1::date AND $2::date
+       AND ($3::uuid IS NULL OR product_id=$3) AND $4::uuid IS NULL
+      UNION ALL
+      SELECT product_id,predicted_qty FROM forecast_run_points WHERE forecast_date BETWEEN $1::date AND $2::date
+       AND ($3::uuid IS NULL OR product_id=$3) AND run_id=$4
+    ) SELECT i.id,i.name,i.unit,i.current_stock,sum(f.predicted_qty*ri.qty) AS required_qty,
+      greatest(0,sum(f.predicted_qty*ri.qty)-i.current_stock) AS order_qty FROM selected f
+      JOIN recipe_ingredients ri ON ri.product_id=f.product_id JOIN ingredients i ON i.id=ri.ingredient_id
+      WHERE i.is_active GROUP BY i.id,i.name,i.unit,i.current_stock ORDER BY order_qty DESC,i.name`,
+        [...params, input.run_id ?? null],
       )
     ).rows;
-    const sales = await history(db);
+    const sales = await history(db, "actual");
     const lookup = new Map(
-      sales
-        .filter((a) => a.source === "actual")
-        .map((a) => [`${a.date}:${a.product_id}`, Number(a.qty)]),
+      sales.map((a) => [`${a.date}:${a.product_id}`, Number(a.qty)]),
     );
-    const comparisons = points
+    // One fixed, earliest issued forecast per target/menu/lead/source. Repeated
+    // generation cannot multiply evaluation samples or cherry-pick a later run.
+    const archived = (
+      await db.query(
+        `WITH ranked AS (
+      SELECT p.*,r.generated_at,r.data_mode,row_number() OVER(PARTITION BY p.forecast_date,p.product_id,p.lead_days,p.history_source,r.data_mode
+        ORDER BY r.generated_at,r.id) AS rank
+      FROM forecast_run_points p JOIN forecast_runs r ON r.id=p.run_id
+      WHERE p.forecast_date BETWEEN $1::date AND $2::date AND ($3::uuid IS NULL OR p.product_id=$3)
+       AND r.target_basis='fulfilled_v1' AND ($4::int IS NULL OR p.lead_days=$4)
+    ) SELECT *,forecast_date::text AS date FROM ranked WHERE rank=1`,
+        [...params, input.lead_days ?? null],
+      )
+    ).rows;
+    const comparisons = archived
       .filter(
         (p) =>
           p.date < businessDate() &&
@@ -232,25 +358,70 @@ export function forecastsRouter(
       .map((p) => ({
         actual: lookup.get(`${p.date}:${p.product_id}`)!,
         predicted: Number(p.predicted_qty),
+        product_id: p.product_id,
+        lead_days: Number(p.lead_days),
+        history_source: p.history_source,
+        data_mode: p.data_mode,
       }));
-    const nonzero = comparisons.filter((p) => p.actual > 0);
-    const accuracy = {
-      samples: comparisons.length,
-      mape: nonzero.length
-        ? (nonzero.reduce(
-            (s, p) => s + Math.abs((p.actual - p.predicted) / p.actual),
-            0,
-          ) /
-            nonzero.length) *
-          100
-        : null,
-      rmse: comparisons.length
-        ? Math.sqrt(
-            comparisons.reduce((s, p) => s + (p.actual - p.predicted) ** 2, 0) /
-              comparisons.length,
-          )
-        : null,
-    };
+    const genuine = comparisons.filter(
+      (p) => p.history_source === "actual" && p.data_mode === "actual",
+    );
+    const accuracy = metrics(genuine);
+    const bySource = ["actual", "demo", "mixed", "unknown"].map((source) => ({
+      source,
+      ...metrics(
+        comparisons.filter(
+          (p) =>
+            (p.history_source === "actual" && p.data_mode !== "actual"
+              ? "mixed"
+              : p.history_source) === source,
+        ),
+      ),
+    }));
+    const groups = [
+      ...new Set(genuine.map((p) => `${p.product_id}:${p.lead_days}`)),
+    ].map((key) => {
+      const pairs = genuine.filter(
+        (p) => `${p.product_id}:${p.lead_days}` === key,
+      );
+      return {
+        product_id: pairs[0]!.product_id,
+        lead_days: pairs[0]!.lead_days,
+        ...metrics(pairs),
+      };
+    });
+    const catalog = (
+      await db.query(
+        "SELECT id,name FROM products WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY name",
+        [input.product_id ?? null],
+      )
+    ).rows;
+    const availableHistory = await history(db, input.data_mode);
+    const coverage = catalog.map((product) => {
+      const observations = availableHistory.filter(
+        (h) => h.product_id === product.id,
+      );
+      const dates = new Set(observations.map((h) => h.date as string));
+      const latest = observations.at(-1)?.date as string | undefined;
+      let consecutive = 0;
+      for (
+        let day = latest;
+        day && dates.has(day);
+        day = new Date(Date.parse(day) - 86400000).toISOString().slice(0, 10)
+      )
+        consecutive++;
+      const recent = latest
+        ? (Date.parse(businessDate()) - Date.parse(latest)) / 86400000 <= 6
+        : false;
+      return {
+        product_id: product.id,
+        name: product.name,
+        latest_date: latest ?? null,
+        consecutive_days: consecutive,
+        actual_days: observations.filter((h) => h.source === "actual").length,
+        ready: consecutive >= 28 && recent,
+      };
+    });
     const demo =
       (await db.query("SELECT 1 FROM sales_daily WHERE source='demo' LIMIT 1"))
         .rows.length > 0;
@@ -259,13 +430,23 @@ export function forecastsRouter(
       actual,
       recommendations,
       accuracy,
+      evaluation: {
+        basis: "fulfilled_v1",
+        policy: "earliest-issued-per-target-menu-lead",
+        by_source: bySource,
+        by_product_lead: groups,
+      },
+      runs,
+      coverage,
+      selected_run_id: input.run_id ?? null,
+      target_basis: "fulfilled_v1",
       contains_demo_history:
         demo ||
         points.some((p) => ["demo", "mixed"].includes(p.history_source)),
       recommendation_basis: "base_recipe",
       model_mode: points.length
         ? points.every((p) =>
-            /^(projecta-xgb-|coffee-xgb-|weekly-naive-v1$)/.test(
+            /^(projecta-xgb-|coffee-xgb-|ses-v1$|damped-holt-v1$|mean-28-v1$|mean-7-v1$|weekday-mean-v1$|weekly-naive-v1$)/.test(
               p.model_version,
             ),
           )
@@ -274,6 +455,26 @@ export function forecastsRouter(
             ? "mock"
             : "mixed"
         : "empty",
+    });
+  });
+  r.get("/forecasts/runs/:id", async (req, res) => {
+    const id = idSchema.parse(req.params.id);
+    const run = (
+      await db.query("SELECT * FROM forecast_runs WHERE id=$1", [id])
+    ).rows[0];
+    fail(run, 404, "NOT_FOUND");
+    const points = (
+      await db.query(
+        "SELECT *,forecast_date::text AS date FROM forecast_run_points WHERE run_id=$1 ORDER BY forecast_date,product_id",
+        [id],
+      )
+    ).rows;
+    res.json({
+      format: "coffee-forecast-run-v1",
+      run,
+      points,
+      checksum_encoding: "sha256-of-input_history_serialized-utf8",
+      input_history_serialized: serializeForecastHistory(run.input_history),
     });
   });
   return r;

@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, afterEach, beforeAll, expect, test, vi } from "vitest";
 import { createApp } from "../src/app.js";
@@ -26,7 +26,7 @@ const generate = () =>
     .post("/api/forecasts/generate")
     .set("Origin", origin)
     .set("Cookie", cookie)
-    .send({ date_from: day(1), date_to: day(1) });
+    .send({ date_from: day(1), date_to: day(1), data_mode: "mixed" });
 
 beforeAll(async () => {
   fixture = await testDatabase();
@@ -61,6 +61,19 @@ beforeAll(async () => {
 afterEach(() => vi.restoreAllMocks());
 afterAll(async () => fixture?.close());
 
+async function delivered(productId: string, date: string, qty: number) {
+  const id = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO orders(id,request_key,request_hash,type,status,total_satang,created_by,completed_at) VALUES($1,$2,$3,'dine-in','completed',$4,$5,$6)",
+    [id, randomUUID(), "test", qty * 7500, owner, date + "T23:55:00+07:00"],
+  );
+  await fixture.db.query(
+    "INSERT INTO order_items(id,order_id,product_id,product_name,qty,unit_price_satang,unit_cost_satang,station,target_prep_seconds,status) VALUES($1,$2,$3,'Coffee',$4,7500,1000,'bar',180,'completed')",
+    [randomUUID(), id, productId, qty],
+  );
+  return id;
+}
+
 test("history supplies prices in baht, prefers actual observations, and excludes partial current days", async () => {
   for (const [date, qty, revenue, source] of [
     [day(-3), 10, 65000, "demo"],
@@ -71,6 +84,12 @@ test("history supplies prices in baht, prefers actual observations, and excludes
       "INSERT INTO sales_daily(date,product_id,qty,revenue_satang,source) VALUES($1,$2,$3,$4,$5)",
       [date, product, qty, revenue, source],
     );
+  const order = await delivered(product, day(-3), 2);
+  // Money arrives on another day: demand must stay on the delivery day.
+  await fixture.db.query(
+    "INSERT INTO payments(order_id,method,amount_satang,status,confirmed_by,paid_at) VALUES($1,'cash',15000,'paid',$2,$3)",
+    [order, owner, day(-2) + "T00:05:00+07:00"],
+  );
   const rows = await history(fixture.db);
   expect(rows).toHaveLength(1);
   expect(rows[0]!.date).toBe(day(-3));
@@ -187,7 +206,12 @@ test("a selected menu can be forecast independently of a new menu with no histor
       .post("/api/forecasts/generate")
       .set("Origin", origin)
       .set("Cookie", cookie)
-      .send({ date_from: day(1), date_to: day(1), product_id });
+      .send({
+        date_from: day(1),
+        date_to: day(1),
+        product_id,
+        data_mode: "mixed",
+      });
   await submit(product).expect(200);
   expect(
     JSON.parse(fetch.mock.calls[0]![1]!.body as string).product_ids,
@@ -201,31 +225,182 @@ test("a selected menu can be forecast independently of a new menu with no histor
   await submit(randomUUID()).expect(409, { error: "NO_FORECAST_PRODUCTS" });
 });
 
-test("accuracy uses real observations and predictions made before the target day, excluding demo and backcasts", async () => {
-  for (const [id, offset, source] of [
-    [product, -3, "actual"],
-    [newProduct, -3, "actual"],
-    [product, -1, "demo"],
+test("accuracy evaluates immutable actual-only delivery forecasts, excludes demo inputs and backcasts", async () => {
+  for (const [id, source, issued] of [
+    [product, "actual", day(-5)],
+    [newProduct, "actual", date],
+    [product, "demo", day(-5)],
   ] as const) {
+    if (source === "actual") await delivered(id, day(-4), 4);
+    const runId = randomUUID();
     await fixture.db.query(
-      "INSERT INTO sales_daily(date,product_id,qty,revenue_satang,source) VALUES($1,$2,4,30000,$3) ON CONFLICT(date,product_id,source) DO UPDATE SET qty=4,revenue_satang=30000",
-      [day(offset), id, source],
-    );
-    await fixture.db.query(
-      "INSERT INTO forecasts(id,forecast_date,product_id,predicted_qty,lower_qty,upper_qty,model_version,generated_at) VALUES($1,$2,$3,3,NULL,NULL,'coffee-xgb-v1-test',$4)",
+      "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history) VALUES($1,$2,$3,$3,$4,'fulfilled_v1',$5,'[]')",
       [
-        randomUUID(),
-        day(offset),
-        id,
-        id === newProduct
-          ? date + "T12:00:00+07:00"
-          : day(offset - 1) + "T12:00:00+07:00",
+        runId,
+        issued + "T12:00:00+07:00",
+        day(-4),
+        source === "actual" ? "actual" : "mixed",
+        "a".repeat(64),
       ],
     );
+    await fixture.db.query(
+      "INSERT INTO forecast_run_points(run_id,forecast_date,product_id,predicted_qty,model_version,history_source,lead_days) VALUES($1,$2,$3,3,'weekly-naive-v1',$4,1)",
+      [runId, day(-4), id, source],
+    );
   }
-  const result = await request(app)
+  const response = await request(app)
     .get(`/api/forecasts?date_from=${day(-4)}&date_to=${day(-1)}`)
     .set("Cookie", cookie)
     .expect(200);
-  expect(result.body.accuracy).toEqual({ samples: 1, mape: 25, rmse: 1 });
+  expect(response.body.accuracy).toMatchObject({
+    samples: 1,
+    mae: 1,
+    mape: 25,
+    rmse: 1,
+    wape: 25,
+    bias: -1,
+  });
+  expect(
+    response.body.evaluation.by_source.find(
+      (g: { source: string }) => g.source === "demo",
+    ).samples,
+  ).toBe(1);
+});
+
+test("new generations append immutable runs, keep snapshots and allow selecting an earlier run", async () => {
+  const row = {
+    date: day(1),
+    product_id: product,
+    predicted_qty: 8,
+    lower: null,
+    upper: null,
+    model_version: "weekly-naive-v1",
+    history_source: "demo",
+  };
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(new Response(JSON.stringify([row]), { status: 200 }));
+  const submit = () =>
+    request(app)
+      .post("/api/forecasts/generate")
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({
+        date_from: day(1),
+        date_to: day(1),
+        product_id: product,
+        data_mode: "mixed",
+      });
+  const first = await submit().expect(200);
+  fetch.mockResolvedValue(
+    new Response(JSON.stringify([{ ...row, predicted_qty: 15 }]), {
+      status: 200,
+    }),
+  );
+  const second = await submit().expect(200);
+  expect(second.body.run_id).not.toBe(first.body.run_id);
+  const old = await request(app)
+    .get(
+      `/api/forecasts?date_from=${day(1)}&date_to=${day(1)}&run_id=${first.body.run_id}`,
+    )
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(Number(old.body.forecasts[0].predicted_qty)).toBe(8);
+  await request(app)
+    .get(`/api/forecasts/runs/${first.body.run_id}`)
+    .expect(401);
+  const exported = await request(app)
+    .get(`/api/forecasts/runs/${first.body.run_id}`)
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(exported.body.run.id).toBe(first.body.run_id);
+  expect(
+    createHash("sha256")
+      .update(exported.body.input_history_serialized, "utf8")
+      .digest("hex"),
+  ).toBe(exported.body.run.history_sha256);
+  expect(Number(exported.body.points[0].predicted_qty)).toBe(8);
+  const snapshot = (
+    await fixture.db.query(
+      "SELECT input_history,history_sha256 FROM forecast_runs WHERE id=$1",
+      [first.body.run_id],
+    )
+  ).rows[0]!;
+  expect(Array.isArray(snapshot.input_history)).toBe(true);
+  expect(snapshot.history_sha256).toMatch(/^[a-f0-9]{64}$/);
+  await expect(
+    fixture.db.query(
+      "UPDATE forecast_run_points SET predicted_qty=99 WHERE run_id=$1",
+      [first.body.run_id],
+    ),
+  ).rejects.toThrow();
+  await expect(
+    fixture.db.query("DELETE FROM forecast_runs WHERE id=$1", [
+      first.body.run_id,
+    ]),
+  ).rejects.toThrow();
+});
+
+test("delivered unpaid goods and later refunds remain demand on the delivery day", async () => {
+  const order = await delivered(newProduct, day(-5), 3);
+  const before = (await history(fixture.db, "actual")).find(
+    (h) => h.product_id === newProduct && h.date === day(-5),
+  );
+  expect(Number(before?.qty)).toBe(3);
+  await fixture.db.query(
+    "INSERT INTO payments(order_id,method,amount_satang,status,confirmed_by,paid_at,refunded_at) VALUES($1,'cash',22500,'refunded',$2,$3,now())",
+    [order, owner, day(-5) + "T23:56:00+07:00"],
+  );
+  await fixture.db.query("UPDATE orders SET status='cancelled' WHERE id=$1", [
+    order,
+  ]);
+  expect(
+    Number(
+      (await history(fixture.db, "actual")).find(
+        (h) => h.product_id === newProduct && h.date === day(-5),
+      )?.qty,
+    ),
+  ).toBe(3);
+});
+
+test("reissuing the same lead does not replace or multiply genuine accuracy samples", async () => {
+  const run = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history) VALUES($1,$2,$3,$3,'actual','fulfilled_v1',$4,'[]')",
+    [run, day(-5) + "T23:00:00+07:00", day(-4), "b".repeat(64)],
+  );
+  await fixture.db.query(
+    "INSERT INTO forecast_run_points(run_id,forecast_date,product_id,predicted_qty,model_version,history_source,lead_days) VALUES($1,$2,$3,99,'weekly-naive-v1','actual',1)",
+    [run, day(-4), product],
+  );
+  const result = await request(app)
+    .get(`/api/forecasts?date_from=${day(-4)}&date_to=${day(-4)}&lead_days=1`)
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(result.body.accuracy).toMatchObject({ samples: 1, mae: 1, wape: 25 });
+});
+
+test("production history mode cannot silently accept demo-trained results", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    new Response(
+      JSON.stringify([
+        {
+          date: day(1),
+          product_id: product,
+          predicted_qty: 8,
+          lower: null,
+          upper: null,
+          model_version: "weekly-naive-v1",
+          history_source: "demo",
+        },
+      ]),
+      { status: 200 },
+    ),
+  );
+  await request(app)
+    .post("/api/forecasts/generate")
+    .set("Origin", origin)
+    .set("Cookie", cookie)
+    .send({ date_from: day(1), date_to: day(1), product_id: product })
+    .expect(502);
 });

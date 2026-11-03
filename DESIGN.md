@@ -67,6 +67,8 @@ Menu photography uses real photographs only, as requested by the user. The eight
 
 Menu editors accept a single real photograph from the device through the shared native Input. Preview uses the same reserved MenuPhoto frame. Upload and menu save share the canonical Form busy/error/dirty behavior; no extra upload dialog or new visual tokens are introduced.
 
+Forecast v2 uses the same shared filter Form/Select controls and scrollable tables for actual/demo mode, saved runs, data readiness and per-menu/lead evaluation. Source/selection diagnostics use plain disclosure text rather than decorative confidence indicators. Existing charcoal/sage tokens remain unchanged.
+
 ## Elevation & Depth
 
 Convey hierarchy with tonal surfaces and borders. Static panels have no shadows. Reserve a subtle shadow for overlays. Do not use glass or background blur to decorate operational screens.

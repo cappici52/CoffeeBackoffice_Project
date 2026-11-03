@@ -11,11 +11,11 @@
 - KDS สามคอลัมน์ ตัวจับเวลาจากเวลา server สีเตือนเกินเป้าหมาย สูตรตามตัวเลือก กรองสถานี เสียงแจ้งเตือน และ SSE reconnect
 - สูตร/ขั้นตอน วัตถุดิบ รับเข้า ของเสีย แจ้งสต็อกต่ำ และตัดสต็อกครั้งเดียวตอนยืนยันออเดอร์หรือรับชำระล่วงหน้าด้วย DB transaction
 - ยอดขายรายวัน/ช่วงวันที่ เมนูและช่วงเวลาขายดี กำไรขั้นต้นเฉพาะ owner เวลาเตรียมเฉลี่ย และปิดวัน
-- FastAPI forecast แยกบริการ บันทึกผลพยากรณ์ กราฟ ปริมาณเตรียม แนะนำวัตถุดิบ และ MAPE/RMSE เมื่อมีข้อมูลเทียบ
+- FastAPI forecast แยกบริการ บันทึกผลพยากรณ์ กราฟ ปริมาณเตรียม แนะนำวัตถุดิบ และ MAE/WAPE/MAPE/RMSE/Bias เมื่อมีข้อมูลเทียบ
 - worker พยากรณ์หลัง 02:00 Asia/Bangkok วันละหนึ่งครั้ง พร้อม catch-up/retry
 - Audit logs, version conflict checks และป้องกันออเดอร์/ตัดสต็อกซ้ำเมื่อเครือข่ายขัดข้อง
 
-**ขอบเขตเริ่มต้น:** PromptPay เป็นการตรวจเงินและยืนยันโดยพนักงาน ไม่มี gateway/ตรวจสลิปอัตโนมัติ การคืนเงินเป็นการบันทึกหลังคืนเงินจริงด้วยพนักงาน Forecast เชื่อม XGBoost จาก ProjectA แล้ว พร้อมเทรน XGBoost จากประวัติร้านและเลือกเทียบกับยอดสัปดาห์ก่อน ผลใหม่ไม่มีช่วงความเชื่อมั่น และยังต้องประเมินความแม่นยำกับยอดจริงของร้าน ฟีเจอร์เสริมเฟส 8 เช่นสมาชิก/IoT/หลายสาขายังไม่รวมใน core release
+**ขอบเขตเริ่มต้น:** PromptPay เป็นการตรวจเงินและยืนยันโดยพนักงาน ไม่มี gateway/ตรวจสลิปอัตโนมัติ การคืนเงินเป็นการบันทึกหลังคืนเงินจริงด้วยพนักงาน Forecast v2 ใช้ประวัติส่งมอบจริงเป็นค่าเริ่มต้น เปรียบเทียบ XGBoost กับ weekly/means/SES/damped Holt ผ่าน rolling validation เก็บผลแยกทุกรอบพร้อม snapshot และคะแนนจริงแยก lead/เมนู โหมด demo ต้องเลือกทดลองอย่างชัดเจน ผลใหม่ไม่มีช่วงความเชื่อมั่น และยังต้องประเมินความแม่นยำกับยอดจริงของร้าน ฟีเจอร์เสริมเฟส 8 เช่นสมาชิก/IoT/หลายสาขายังไม่รวมใน core release
 
 ## เริ่มใช้งานกับ PostgreSQL ในเครื่อง (Windows)
 
@@ -102,9 +102,9 @@ npm run build
 npm run test:e2e
 ```
 
-- 62 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast ทั้งชุด/รายเมนู, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย, LAN/production security headers และอัปโหลด/ตรวจไฟล์รูป
-- Python model/selection tests 24 กรณี รวมตรวจผลตรงกับโมเดล ProjectA กันข้อมูลอนาคตรั่ว ประวัติสิ้นสุดต่างวัน และทำซ้ำผลเทรน Coffee Sales จริง
-- Browser test ครอบคลุม 24 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, อัปโหลดรูป/พรีวิวบนมือถือ, พยากรณ์เฉพาะเมนู, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
+- 69 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast ทั้งชุด/รายเมนู, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย, LAN/production security headers และอัปโหลด/ตรวจไฟล์รูป
+- Python model/selection tests 28 กรณี รวมตรวจผลตรงกับโมเดล ProjectA กันข้อมูลอนาคตรั่ว ประวัติสิ้นสุดต่างวัน และทำซ้ำผลเทรน Coffee Sales จริง
+- Browser test ครอบคลุม 25 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, อัปโหลดรูป/พรีวิวบนมือถือ, พยากรณ์เฉพาะเมนู, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
 - Tests บน PostgreSQL และ browser ใช้ schema สุ่มแล้วลบ ไม่เขียน test orders ลงตารางร้านจริง ต้องใช้ development database ที่อนุญาตสร้าง schema
 - Browser plugin ไม่พร้อมใน session นี้ จึงใช้ Playwright/Edge; CI ใช้ Chromium ภาพ QA อยู่ใน OS temp หรือ `QA_OUTPUT_DIR` ไม่ commit รูปทดสอบ
 - CI ตรวจ typecheck, PGlite, PostgreSQL 18, Python, browser, production build และเปิด Docker stack เพื่อ smoke test
@@ -118,6 +118,8 @@ Migration มี checksum ห้ามแก้ไฟล์ที่ใช้แ
 - [โครงสร้างระบบ Use Cases, ER และพจนานุกรมข้อมูล](docs/system-design.md)
 - [แผนทดสอบรับมอบ/ทดลองกับผู้ใช้และแนวทางสาธิต](docs/acceptance-plan.md)
 - [แผนเก็บข้อมูลจริงและประเมินพยากรณ์](docs/forecast-evaluation-plan.md)
+- [พยากรณ์ v2: ประวัติส่งมอบ รอบย้อนหลัง และการเลือกโมเดล](docs/forecast-v2.md)
+- [ตรวจแหล่งข้อมูลจริงและผลเปรียบเทียบหลายจุดเวลา](docs/forecast-data-review.md)
 - [คู่มือใช้งานร้าน สำรอง/กู้คืน และตรวจความพร้อม](docs/operations.md)
 - [ผลตรวจระบบและข้อจำกัดก่อนเปิดร้าน](docs/release-check.md)
 - [กติกา domain / การรับเงินและปิดวัน](docs/domain-decisions.md)
@@ -127,6 +129,6 @@ Migration มี checksum ห้ามแก้ไฟล์ที่ใช้แ
 
 API หลัก: `/api/auth/*`, `/api/users`, `/api/catalog`, `/api/categories`, `/api/products`, `/api/ingredients`, `/api/stock-movements`, `/api/recipes/:productId`, `/api/orders`, `/api/kds`, `/api/events`, `/api/reports`, `/api/reports/close`, `/api/forecasts`, `/api/forecasts/generate`, `/api/audit-logs`
 
-เชื่อมโมเดลจริงแล้ว ดู [การเชื่อมโมเดลและวิธีเลือกพยากรณ์](docs/forecast-integration.md) ต้องมีประวัติรายเมนูอย่างน้อย 28 วันติดต่อกัน; เมื่อครบ 84 วัน ระบบจะเทรนโมเดลจากประวัติร้านและเทียบย้อนหลัง 28 วันก่อนเลือกใช้ วันที่ไม่มีข้อมูลไม่ถูกเติมศูนย์อัตโนมัติ ผลจากข้อมูลตัวอย่างไม่ใช่หลักฐานความแม่นยำของร้านจริง เก็บโมเดลที่เทรนใหม่ใน `forecast-service/runtime/` หรือ Docker volume `coffee_forecast_models`
+เชื่อมโมเดลจริงแล้ว ดู [การเชื่อมโมเดลและวิธีเลือกพยากรณ์](docs/forecast-integration.md) ต้องมีประวัติรายเมนูอย่างน้อย 28 วันติดต่อกัน; เมื่อครบ 84 วัน ระบบจะเทรนโมเดลจากประวัติร้านและเทียบย้อนหลังสอง origins ช่วงละ 28 วันก่อนเลือกใช้ วันที่ไม่มีข้อมูลไม่ถูกเติมศูนย์อัตโนมัติ ผลจากข้อมูลตัวอย่างไม่ใช่หลักฐานความแม่นยำของร้านจริง เก็บโมเดลที่เทรนใหม่ใน `forecast-service/runtime/` หรือ Docker volume `coffee_forecast_models`
 
 ภาพถ่ายจริงประกอบครบ 8 เมนู แสดงใน POS/QR และพรีวิวตอนแก้ไข โดยไม่มีลิงก์เครดิตหรือข้อความ license บนหน้าจอ ดู [รายละเอียดภาพเมนู](docs/menu-photographs.md)
