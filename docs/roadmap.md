@@ -13,6 +13,8 @@ Requirements: [source specification](coffee-shop-backoffice-spec.md). Operationa
 - [x] Local PostgreSQL 18 connection and a separate coffee_backoffice database
 - [x] Table QR extension requested by user: printable/manageable QR, public menu, unpaid guest orders, private order tracking and staff queue badge
 - [x] Unit/integration/browser checks and CI including Docker runtime smoke checks
+- [x] Own-photo uploads with decoded/metadata-free WebP storage, permission checks and mobile preview
+- [x] Snapshot database backups, SHA-256 manifests, restore into new databases only, recovery drill and read-only operations check
 - [x] Original CC0 Coffee Sales data: reproducible offline training, chronological holdout, de-identified daily dataset and native model. Candidate was not promoted after losing to the validation-selected baseline; see coffee-sales-evaluation.md.
 
 ## External inputs still needed

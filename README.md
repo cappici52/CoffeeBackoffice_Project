@@ -37,6 +37,8 @@ npm run build
 npm run local
 ```
 
+ตรวจความพร้อมด้วย `npm run ops:check` สำรองข้อมูลด้วย `npm run db:backup` และทดสอบกู้คืนด้วย `npm run test:backup` (ต้อง build และใช้ development PostgreSQL ที่สร้างฐานทดลองได้) ดู [คู่มือเปิดร้าน ปิดวัน สำรองและกู้คืน](docs/operations.md) สำหรับขั้นตอนใช้งานจริง
+
 เปิด [http://localhost:3001](http://localhost:3001) แล้วใช้บัญชีตาม `.env` รหัสผ่านไม่ถูก commit ขึ้น Git `npm run local` เปิด API/หน้าเว็บ, FastAPI และ worker ใน terminal เดียว กด Ctrl+C เพื่อหยุด โปรแกรมจะไม่เปิด API ซ้ำหาก port นั้นมี Coffee Backoffice ทำงานอยู่แล้ว
 
 `db:seed` สร้าง owner เฉพาะฐานข้อมูลที่ยังไม่มีผู้ใช้ ไม่ reset รหัสผ่านเดิม `db:demo` ทำงานเฉพาะ development/test และเฉพาะเมื่อยังไม่มีสินค้า ข้อมูลตัวอย่างสร้าง manager@example.com, cashier@example.com, kitchen@example.com โดยใช้รหัสเริ่มต้นเดียวกับ owner สำหรับทดลองในเครื่อง ควรเปลี่ยนรหัส/ปิดบัญชีตัวอย่างก่อนใช้งานจริง
