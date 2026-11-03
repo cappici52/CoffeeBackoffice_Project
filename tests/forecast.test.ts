@@ -169,6 +169,38 @@ test("real point forecasts persist without fake intervals and half-null bounds a
   expect(result.body.contains_demo_history).toBe(true);
 });
 
+test("a selected menu can be forecast independently of a new menu with no history", async () => {
+  const row = {
+    date: day(1),
+    product_id: product,
+    predicted_qty: 8,
+    lower: null,
+    upper: null,
+    model_version: "weekly-naive-v1",
+    history_source: "demo",
+  };
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(new Response(JSON.stringify([row]), { status: 200 }));
+  const submit = (product_id: string) =>
+    request(app)
+      .post("/api/forecasts/generate")
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({ date_from: day(1), date_to: day(1), product_id });
+  await submit(product).expect(200);
+  expect(
+    JSON.parse(fetch.mock.calls[0]![1]!.body as string).product_ids,
+  ).toEqual([product]);
+  fetch.mockResolvedValue(
+    new Response(JSON.stringify([row, { ...row, product_id: newProduct }]), {
+      status: 200,
+    }),
+  );
+  await submit(product).expect(502);
+  await submit(randomUUID()).expect(409, { error: "NO_FORECAST_PRODUCTS" });
+});
+
 test("accuracy uses real observations and predictions made before the target day, excluding demo and backcasts", async () => {
   for (const [id, offset, source] of [
     [product, -3, "actual"],

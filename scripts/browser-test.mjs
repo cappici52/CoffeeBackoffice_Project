@@ -350,6 +350,7 @@ try {
     /^blob:/,
   );
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator(".menu-photo-preview").scrollIntoViewIfNeeded();
   await page.screenshot({
     path: join(output, "menu-photo-upload-mobile.png"),
     fullPage: true,
@@ -378,6 +379,29 @@ try {
     "Local photo selection, mobile preview, safe upload and saved menu thumbnail",
   );
   checks.push("Category and product CRUD forms");
+  await go("/forecast");
+  await page
+    .getByLabel("เมนู", { exact: true })
+    .selectOption({ label: "ลาเต้" });
+  await page.getByRole("button", { name: "แสดงผล", exact: true }).click();
+  await expect(
+    page.getByText("สร้างเฉพาะเมนูที่กรองอยู่", { exact: true }),
+  ).toBeVisible();
+  const selectedForecast = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/forecasts/generate") &&
+      r.request().method() === "POST",
+  );
+  await page
+    .getByRole("button", { name: "สร้างพยากรณ์ใหม่", exact: true })
+    .click();
+  const selectedResponse = await selectedForecast;
+  assert.equal(selectedResponse.status(), 200);
+  assert.equal((await selectedResponse.json()).count, 7);
+  assert(selectedResponse.request().postDataJSON().product_id);
+  checks.push(
+    "Selected-menu forecasting works while a new menu has no history",
+  );
   await go("/inventory?tab=recipes");
   await page
     .getByLabel("เลือกเมนูเพื่อจัดการสูตร", { exact: true })

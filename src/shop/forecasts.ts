@@ -66,6 +66,7 @@ export async function generateForecasts(
   from: string,
   to: string,
   actor?: string,
+  productId?: string,
 ) {
   const range = dateRange.parse({ date_from: from, date_to: to });
   fail(
@@ -78,7 +79,10 @@ export async function generateForecasts(
     await refreshSales(sql);
   });
   const products = (
-    await db.query("SELECT id FROM products WHERE NOT is_archived ORDER BY id")
+    await db.query(
+      "SELECT id FROM products WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY id",
+      [productId ?? null],
+    )
   ).rows.map((p) => p.id as string);
   fail(
     products.length > 0 && products.length <= 1000,
@@ -174,7 +178,9 @@ export function forecastsRouter(
   const r = Router();
   r.use("/forecasts", auth, manage);
   r.post("/forecasts/generate", async (req, res) => {
-    const input = dateRange.parse(req.body);
+    const input = dateRange
+      .safeExtend({ product_id: idSchema.optional() })
+      .parse(req.body);
     fail(input.date_from > businessDate(), 400, "FORECAST_MUST_BE_FUTURE");
     res.json(
       await generateForecasts(
@@ -183,6 +189,7 @@ export function forecastsRouter(
         input.date_from,
         input.date_to,
         res.locals.user.id,
+        input.product_id,
       ),
     );
   });

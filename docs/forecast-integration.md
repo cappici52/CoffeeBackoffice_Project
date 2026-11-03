@@ -1,5 +1,11 @@
 # Forecast integration and model selection
 
+## Uneven observations and new menus
+
+Forecast batches use the latest **common observed date** across requested products. The common origin must be within seven days of the requested start and each product still needs 28 consecutive observations ending there. Newer observations for only some products are excluded from that batch rather than silently filling unknown days with zero. Close actual operating days to record zero sales for existing menus correctly. Tests cover uneven ends, stale common origins and insufficient overlapping history.
+
+To avoid a new menu with no history blocking an established menu, filter **เมนู** on the forecast page and press **แสดงผล**, then **สร้างพยากรณ์ใหม่**. Generation uses that selected product only. With no menu filter it still explicitly requests all non-archived products and requires valid history for all of them. POST `/api/forecasts/generate` accepts optional `product_id`; server validation rejects extra products/dates from the model service. The nightly batch remains all-menu and reports insufficient history until all products qualify.
+
 Implemented on 2026-11-02 using the user's supplied `C:/ProjectA` project. Source documents were inspected as evidence; operational authorization came from the user's request to connect the model and, if unsuitable, build a replacement.
 
 ## Imported model

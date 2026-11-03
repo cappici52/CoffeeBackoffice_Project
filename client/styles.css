@@ -1195,6 +1195,7 @@ tbody tr:hover {
   height: 250px;
   width: 100%;
   min-width: 0;
+  overflow: clip;
   font-size: 11px;
 }
 .forecast-chart {
@@ -1236,6 +1237,11 @@ tbody tr:hover {
 }
 .forecast-controls button {
   margin-top: 26px;
+}
+.forecast-scope {
+  flex-basis: 100%;
+  grid-column: 1 / -1;
+  margin: 0;
 }
 .section-details {
   margin-top: 28px;

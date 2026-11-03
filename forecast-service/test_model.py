@@ -70,6 +70,23 @@ class ForecastTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             predict("2026-11-03", "2026-11-09", ["p1"], history + history[:1])
 
+    def test_uneven_latest_menu_sales_use_common_observed_origin_without_zero_filling(self):
+        first = observations([10 + i % 7 for i in range(35)], product="p1", end=date(2026, 11, 1))
+        second = observations([20 + i % 7 for i in range(35)], product="p2", end=date(2026, 11, 1))
+        expected = predict("2026-11-03", "2026-11-09", ["p1", "p2"], first + second)
+        # Partial newer observations must not cause an error or change the common-origin forecast.
+        extra = dict(date="2026-11-02", product_id="p1", qty=999, unit_price=999, source="actual")
+        self.assertEqual(predict("2026-11-03", "2026-11-09", ["p1", "p2"], first + second + [extra]), expected)
+
+    def test_common_origin_still_requires_recent_consecutive_history(self):
+        first = observations([10] * 35, product="p1", end=date(2026, 10, 20))
+        second = observations([20] * 35, product="p2", end=date(2026, 11, 2))
+        with self.assertRaises(InsufficientHistory):
+            predict("2026-11-03", "2026-11-09", ["p1", "p2"], first + second)
+        short = observations([10] * 27, product="p1", end=date(2026, 11, 1))
+        with self.assertRaises(InsufficientHistory):
+            predict("2026-11-03", "2026-11-09", ["p1", "p2"], short + second)
+
     def test_forecast_date_gap_is_recursed_without_shifting_the_prediction(self):
         history = observations([10 + i % 7 for i in range(28)])
         whole = predict("2026-11-03", "2026-11-10", ["p1"], history)

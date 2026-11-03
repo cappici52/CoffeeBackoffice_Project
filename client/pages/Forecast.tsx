@@ -110,6 +110,7 @@ export default function Forecast() {
             await mutate("/forecasts/generate", "POST", {
               date_from: addDays(today(), 1),
               date_to: addDays(today(), Number(days)),
+              ...(product ? { product_id: product } : {}),
             });
             resource.reload();
             toast("สร้างผลพยากรณ์แล้ว");
@@ -125,6 +126,11 @@ export default function Forecast() {
             <option value="30">30 วัน</option>
           </Select>
           <Submit>สร้างพยากรณ์ใหม่</Submit>
+          <p className="muted forecast-scope">
+            {product
+              ? "สร้างเฉพาะเมนูที่กรองอยู่"
+              : "สร้างทุกเมนู · เมนูใหม่ที่ประวัติไม่ครบสามารถกรองออกโดยเลือกสร้างทีละเมนู"}
+          </p>
         </Form>
         <Form
           noValidate

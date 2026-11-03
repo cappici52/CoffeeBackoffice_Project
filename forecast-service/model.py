@@ -74,7 +74,16 @@ def predict(date_from, date_to, product_ids, history):
         observed[key] = row
     if not observed:
         raise InsufficientHistory("At least 28 observed daily sales per product are required")
-    origin = max(day for day, _ in observed)
+    # An unclosed/latest day may have sales for only some menus. Use the newest
+    # day observed for every requested menu, rather than inventing zero sales
+    # for the others or letting one newer menu block otherwise usable history.
+    dates_by_product = {product: set() for product in product_ids}
+    for day, product in observed:
+        dates_by_product[product].add(day)
+    common_days = set.intersection(*dates_by_product.values())
+    if not common_days:
+        raise InsufficientHistory("Requested products have no common observed daily sales")
+    origin = max(common_days)
     if (start - origin).days > 7:
         raise InsufficientHistory("Latest daily sales are too old; update sales history")
     histories, prices, price_histories, sources = [], [], [], []
