@@ -22,6 +22,8 @@ owner ของร้านเรียก HTTP handlers จริงผ่า�
 
 Session ของ **instance ที่รัน replay เท่านั้น** มีอายุ 168 ชั่วโมงจำลองและล็อกอินใหม่ทุก 6 วัน การหมดอายุ session ของแอปปกติยังใช้ config เดิม การเขียน replay ใช้ asynchronous commit เฉพาะ connection ของตัวรัน; root connection ที่ประกาศจบงานใช้ synchronous commit ตามปกติ
 
+ตัวรันปฏิเสธเริ่มหากพอร์ต API ปกติยังเปิดอยู่ Nightly worker พักการออกพยากรณ์ระหว่างมีรอบ running หรือ failed ที่ยังไม่ย้อนกลับ เพื่อไม่ออกผลจากประวัติที่กำลังสะสม เมื่อรอบ complete หรือ failed ที่ rolled_back แล้วจึงกลับทำงานตามปกติ
+
 ## ระบุแหล่งที่มา
 
 Migration 011 เพิ่มตารางรอบ/เมนูที่เข้าร่วม และ `simulation_run_id` บน orders/payments/stock_movements/day_closings/forecast_runs รายการสั่งและเหตุผล stock มี `[SIMULATION <run-id>]` ด้วย เมนู/ราคา/ตัวเลือก/สูตร/โต๊ะเดิมไม่ถูกแก้

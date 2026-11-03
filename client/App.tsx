@@ -208,6 +208,7 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
     user.role === "kitchen" ? null : "/orders/summary",
   );
   useEffect(queue.reload, [queue.reload, live.revision]);
+  useEffect(shopContext.reload, [shopContext.reload, live.revision]);
   const location = useLocation();
   const confirm = useConfirm();
   const heading =

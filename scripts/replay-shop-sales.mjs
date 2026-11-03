@@ -4,6 +4,7 @@ import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import pg from "pg";
+import { createServer } from "node:net";
 import request from "supertest";
 import { createApp } from "../dist/app.js";
 import { connectDatabase } from "../dist/db.js";
@@ -140,6 +141,14 @@ async function login() {
   cookie = response.headers["set-cookie"][0].split(";")[0];
 }
 try {
+  const probe = createServer();
+  await new Promise((resolve, reject) => {
+    probe.once("error", () =>
+      reject(new Error("Stop the normal API before main-shop replay")),
+    );
+    probe.listen(config.PORT, "127.0.0.1", resolve);
+  });
+  await new Promise((resolve) => probe.close(resolve));
   assert(
     (await lock.query("SELECT pg_try_advisory_lock(7301020) AS acquired"))
       .rows[0].acquired,

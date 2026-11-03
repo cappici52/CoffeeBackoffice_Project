@@ -23,6 +23,16 @@ async function tick() {
       }).format(new Date()),
     );
     if (hour < 2) return;
+    // The owner-authorized historical replay freezes its own test forecast.
+    // Do not issue a normal nightly run against a partially collected replay.
+    if (
+      (
+        await db.query(
+          "SELECT EXISTS(SELECT 1 FROM shop_simulation_runs WHERE status='running' OR (status='failed' AND coalesce(metadata->>'rolled_back','false')<>'true')) AS active",
+        )
+      ).rows[0]?.active
+    )
+      return;
     // Keep a dedicated transaction advisory lock across the service call so only one worker runs.
     await db.transaction(async (sql) => {
       const lock = (
