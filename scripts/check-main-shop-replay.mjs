@@ -81,6 +81,42 @@ try {
       await expect(
         page.locator(".notice").filter({ hasText: "ผลทดสอบจากการจำลอง:" }),
       ).toContainText(String(report.menus.length * 30));
+    if (name === "holdout") {
+      for (const [label, key] of [
+        ["MAPE", "mape"],
+        ["RMSE", "rmse"],
+        ["MAE", "mae"],
+        ["WAPE", "wape"],
+      ]) {
+        const value =
+          new Intl.NumberFormat("th-TH", { maximumFractionDigits: 2 }).format(
+            report.holdout_metrics[key],
+          ) + (label === "MAPE" || label === "WAPE" ? "%" : "");
+        await expect(
+          page
+            .locator(".metrics > div")
+            .filter({ has: page.getByText(label, { exact: true }) })
+            .locator("strong"),
+        ).toHaveText(value);
+      }
+      await page
+        .getByLabel("คะแนนที่แสดง", { exact: true })
+        .selectOption("actual");
+      await expect(
+        page
+          .locator(".metrics > div")
+          .filter({ has: page.getByText("MAE", { exact: true }) })
+          .locator("strong"),
+      ).toHaveText("—");
+      await page
+        .getByLabel("คะแนนที่แสดง", { exact: true })
+        .selectOption("auto");
+    } else
+      await expect(
+        page.getByText("ยังไม่มีคู่ข้อมูลสำหรับคะแนนที่เลือก", {
+          exact: false,
+        }),
+      ).toBeVisible();
     await page.waitForTimeout(1800); // Recharts' known 1.5s line animation.
     await page.screenshot({
       path: resolve(output, `main-${name}-desktop.png`),
@@ -120,6 +156,33 @@ try {
   );
   await page.getByRole("button", { name: "แสดงผล", exact: true }).click();
   assert.equal((await (await response).json()).forecasts.length, 30);
+  await page.goto(base + "/forecast");
+  await expect(page.locator(".metrics")).toBeVisible();
+  await expect(page.locator(".chart-panel")).toContainText("ไม่มีข้อมูล");
+  await page.waitForTimeout(1800);
+  await page.screenshot({
+    path: resolve(output, "main-default-forecast-fixed.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("link", { name: "ดูผลทดสอบย้อนหลัง 30 วัน", exact: true })
+    .click();
+  await expect(
+    page.getByLabel("รอบพยากรณ์ที่แสดง", { exact: true }),
+  ).toHaveValue(report.holdout_run_id);
+  await expect(
+    page
+      .locator(".metrics > div")
+      .filter({ has: page.getByText("MAE", { exact: true }) })
+      .locator("strong"),
+  ).toHaveText(
+    new Intl.NumberFormat("th-TH", { maximumFractionDigits: 2 }).format(
+      report.holdout_metrics.mae,
+    ),
+  );
+  checks.push(
+    "All four metric cards follow the chosen source; future scores stay unavailable; missing-day note and historical-test shortcut work",
+  );
   for (const route of ["/orders", "/inventory", "/reports"]) {
     await page.goto(base + route);
     await expect(

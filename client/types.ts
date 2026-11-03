@@ -264,7 +264,14 @@ export interface Forecasts {
       product_id: string;
       lead_days: number;
     })[];
+    latest_test: { id: string; date_from: string; date_to: string } | null;
   };
+  displayed_run: {
+    id: string;
+    generated_at: string;
+    data_mode: "actual" | "mixed";
+    contains_simulated_sales: boolean;
+  } | null;
   selected_run_id: string | null;
   contains_demo_history: boolean;
   contains_simulated_sales: boolean;

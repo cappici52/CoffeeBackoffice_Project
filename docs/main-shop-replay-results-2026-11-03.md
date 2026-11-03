@@ -81,7 +81,7 @@ XGBoost รุ่น `coffee-xgb-v2-9ff86b23c08a` ใช้กับสองเ
 - [พยากรณ์ 4 พฤศจิกายน – 3 ธันวาคม 2026](http://localhost:3001/forecast?from=2026-11-04&to=2026-12-03&mode=actual&run=67dd4148-d05c-4b61-9d22-084096ee778c)
 - [เทียบผลช่วงทดสอบ 3 ตุลาคม – 1 พฤศจิกายน 2026](http://localhost:3001/forecast?from=2026-10-03&to=2026-11-01&mode=actual&run=aa9d34ae-e360-400e-b20e-d9c0a8790240)
 
-คะแนนจริงด้านบนแสดง — เมื่อไม่มี genuine forecast pairs; คะแนนของการจำลอง 240 คู่แสดงในป้ายผลทดสอบแยก โดย `data_mode=actual` หมายถึง order ledger ของร้าน และ `contains_simulated_sales` เก็บ lineage จริงของชุดฝึก
+เลือก “คะแนนที่แสดง” เพื่อดูยอดขายปกติหรือการจำลอง ช่องคะแนนจะแสดงค่าจากแหล่งที่เลือก พร้อมระบุที่มา เลือกยอดปกติที่ยังไม่มี genuine forecast pairs จะแสดง — ส่วนช่วง holdout จำลองมี 240 คู่ให้วัด การเลือกอัตโนมัติของรอบนี้แสดงคะแนนจำลองได้ในช่องหลัก โดย `data_mode=actual` หมายถึง order ledger ของร้าน และ `contains_simulated_sales` เก็บ lineage จริงของชุดฝึก
 
 Nightly worker ตรวจแล้วว่าพักระหว่าง replay/incomplete recovery โดยไม่ออก forecast แทรก เมื่อรอบสมบูรณ์กลับทำงานปกติ
 

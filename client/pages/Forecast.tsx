@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Area,
   CartesianGrid,
   ComposedChart,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -30,6 +31,7 @@ import {
   usePagedRows,
 } from "../ui";
 import type { Catalog, Forecasts } from "../types";
+import { forecastChart, forecastScore } from "../forecast-view";
 function methodLabel(version: string) {
   if (version.startsWith("coffee-xgb-")) return "XGBoost ประวัติร้าน";
   if (version.startsWith("projecta-xgb-")) return "XGBoost ProjectA";
@@ -51,6 +53,17 @@ export default function Forecast() {
   const [runDraft, setRunDraft] = useState(run);
   useEffect(() => setRunDraft(run), [run]);
   const lead = params.get("lead") ?? "";
+  const requestedScore = params.get("score") ?? "auto";
+  const scoreScope = [
+    "auto",
+    "actual",
+    "simulation",
+    "demo",
+    "mixed",
+    "unknown",
+  ].includes(requestedScore)
+    ? requestedScore
+    : "auto";
   const [days, setDays] = useState("7");
   const catalog = useResource<Catalog>("/catalog");
   const resource = useResource<Forecasts>(
@@ -79,42 +92,37 @@ export default function Forecast() {
           : source === "mixed"
             ? "ข้อมูลผสม"
             : "ไม่ทราบที่มา";
-  const chartMap = new Map<
-    string,
-    {
-      date: string;
-      actual?: number;
-      forecast?: number;
-      lower: number;
-      upper: number;
-      interval?: [number, number];
-      hasInterval?: boolean;
-    }
-  >();
-  for (const f of data?.forecasts ?? []) {
-    const row = chartMap.get(f.date) ?? { date: f.date, lower: 0, upper: 0 };
-    row.forecast = (row.forecast ?? 0) + Number(f.predicted_qty);
-    row.hasInterval =
-      (row.hasInterval ?? true) && f.lower_qty !== null && f.upper_qty !== null;
-    if (f.lower_qty !== null && f.upper_qty !== null) {
-      row.lower += Number(f.lower_qty);
-      row.upper += Number(f.upper_qty);
-    }
-    chartMap.set(f.date, row);
-  }
-  for (const a of data?.actual ?? []) {
-    const row = chartMap.get(a.date) ?? { date: a.date, lower: 0, upper: 0 };
-    row.actual = (row.actual ?? 0) + Number(a.qty);
-    chartMap.set(a.date, row);
-  }
-  const chart = [...chartMap.values()]
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .map((row) => ({
-      ...row,
-      ...(row.forecast !== undefined && row.hasInterval
-        ? { interval: [row.lower, row.upper] as [number, number] }
-        : {}),
-    }));
+  const chart = forecastChart(
+    from,
+    to,
+    data?.forecasts ?? [],
+    data?.actual ?? [],
+  );
+  const known = chart.filter(
+    (r) => r.actual !== undefined || r.forecast !== undefined,
+  );
+  const gapDates = chart.filter(
+    (r) =>
+      known.length > 1 &&
+      r.date > known[0]!.date &&
+      r.date < known.at(-1)!.date &&
+      r.actual === undefined &&
+      r.forecast === undefined,
+  );
+  const gapStarts = gapDates.filter(
+    (r, i) =>
+      i === 0 ||
+      Date.parse(r.date) - Date.parse(gapDates[i - 1]!.date) > 86400000,
+  );
+  const chartMenuCount =
+    new Set(data?.forecasts.map((f) => f.product_id) ?? []).size ||
+    data?.coverage.length ||
+    0;
+  const partialDate = chart.find(
+    (r) => r.actual !== undefined && r.actual_menus < chartMenuCount,
+  );
+  const selectedScore = data ? forecastScore(data, scoreScope) : null;
+  const displayedMetrics = selectedScore?.metrics;
   return (
     <>
       <Notice>
@@ -188,6 +196,7 @@ export default function Forecast() {
               mode: String(fd.get("mode")),
               run: String(fd.get("run")),
               lead: String(fd.get("lead")),
+              score: scoreScope,
             })
           }
         >
@@ -242,7 +251,7 @@ export default function Forecast() {
             value={runDraft}
             onChange={(event) => setRunDraft(event.target.value)}
           >
-            <option value="">ผลล่าสุดแต่ละเมนู</option>
+            <option value="">รอบล่าสุดอัตโนมัติ</option>
             {runDraft && !data?.runs.some((r) => r.id === runDraft) && (
               <option key={runDraft} value={runDraft}>
                 รอบที่เลือก · {runDraft.slice(0, 8)}
@@ -354,7 +363,13 @@ export default function Forecast() {
                 จำนวนหน่วยขาย · {dateText(from)} – {dateText(to)}
               </span>
             </div>
-            {chart.length ? (
+            {data.displayed_run && (
+              <p className="caption muted">
+                แสดงรอบเดียว: {dateText(data.displayed_run.generated_at, true)}{" "}
+                · {data.displayed_run.id.slice(0, 8)}
+              </p>
+            )}
+            {known.length ? (
               <div className="chart forecast-chart">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chart}>
@@ -369,6 +384,20 @@ export default function Forecast() {
                       tickFormatter={(v) => String(v).slice(5)}
                     />
                     <YAxis stroke="var(--muted)" width={45} />
+                    {gapStarts.slice(0, 3).map((r) => (
+                      <ReferenceLine
+                        key={r.date}
+                        x={r.date}
+                        stroke="var(--warning)"
+                        strokeDasharray="2 4"
+                        label={{
+                          value: "ไม่มีข้อมูล",
+                          fill: "var(--warning)",
+                          position: "insideTop",
+                          fontSize: 12,
+                        }}
+                      />
+                    ))}
                     <Tooltip
                       contentStyle={{
                         background: "var(--surface)",
@@ -397,7 +426,7 @@ export default function Forecast() {
                       dataKey="actual"
                       stroke="var(--text)"
                       strokeWidth={2}
-                      dot={false}
+                      dot={{ r: 2 }}
                       connectNulls={false}
                     />
                     <Line
@@ -405,7 +434,12 @@ export default function Forecast() {
                       stroke="var(--primary)"
                       strokeWidth={2}
                       strokeDasharray="5 4"
-                      dot={false}
+                      dot={
+                        chart.filter((r) => r.forecast !== undefined).length ===
+                        1
+                          ? { r: 3 }
+                          : false
+                      }
                       connectNulls={false}
                     />
                   </ComposedChart>
@@ -426,7 +460,54 @@ export default function Forecast() {
                 <span>ช่วงแรเงาจากผลจำลองเดิม ไม่ใช่ช่วงความเชื่อมั่น</span>
               )}
             </div>
+            {gapDates.length > 0 && (
+              <p className="caption warning-text">
+                ไม่มีข้อมูล {gapDates.length} วัน เช่น{" "}
+                {dateText(gapDates[0]!.date)} จึงเว้นเส้นไว้
+                ไม่เติมยอดเป็นศูนย์หรือเชื่อมข้ามวันที่ไม่ทราบยอด
+              </p>
+            )}
+            {partialDate && (
+              <p className="caption muted">
+                {dateText(partialDate.date)} มีข้อมูลส่งมอบ{" "}
+                {partialDate.actual_menus}/{chartMenuCount} เมนู
+                เมนูที่ไม่มีข้อมูลยังไม่ถูกนับเป็นศูนย์
+              </p>
+            )}
+            <p className="caption muted">
+              เส้นยอดส่งมอบจบเมื่อสิ้นสุดประวัติที่บันทึก
+              ส่วนเส้นพยากรณ์แสดงเฉพาะวันเป้าหมายของรอบที่เลือก
+            </p>
           </section>
+          <Select
+            label="คะแนนที่แสดง"
+            value={scoreScope}
+            onChange={(e) =>
+              setParams((previous) => {
+                const next = new URLSearchParams(previous);
+                next.set("score", e.target.value);
+                return next;
+              })
+            }
+          >
+            <option value="auto">อัตโนมัติตามข้อมูล</option>
+            {data.evaluation.by_source
+              .filter(
+                (e) =>
+                  e.source === "actual" ||
+                  e.samples > 0 ||
+                  e.source === selectedScore?.source,
+              )
+              .map((e) => (
+                <option key={e.source} value={e.source}>
+                  {sourceLabel(e.source)} · {e.samples} คู่ทดสอบ
+                </option>
+              ))}
+          </Select>
+          <p className="caption muted">
+            กำลังแสดงคะแนน: {sourceLabel(selectedScore?.source ?? "actual")} ·
+            ช่วงวันที่ เมนู และระยะล่วงหน้าที่เลือก
+          </p>
           <div className="metrics">
             <div>
               <span>จำนวนที่พยากรณ์ในช่วงนี้</span>
@@ -443,47 +524,78 @@ export default function Forecast() {
             <div>
               <span>MAPE</span>
               <strong>
-                {data.accuracy.mape === null
+                {displayedMetrics?.mape == null
                   ? "—"
-                  : number(data.accuracy.mape) + "%"}
+                  : number(displayedMetrics.mape) + "%"}
               </strong>
               <small>ไม่นับวันที่ยอดจริงเป็นศูนย์</small>
             </div>
             <div>
               <span>RMSE</span>
               <strong>
-                {data.accuracy.rmse === null ? "—" : number(data.accuracy.rmse)}
+                {displayedMetrics?.rmse == null
+                  ? "—"
+                  : number(displayedMetrics.rmse)}
               </strong>
               <small>
-                เทียบได้ {data.accuracy.samples} ตัวอย่าง · ไม่มีข้อมูลจะแสดง —
+                เทียบได้ {displayedMetrics?.samples ?? 0} ตัวอย่าง ·
+                ไม่มีข้อมูลจะแสดง —
               </small>
             </div>
             <div>
               <span>MAE</span>
               <strong>
-                {data.accuracy.mae === null ? "—" : number(data.accuracy.mae)}
+                {displayedMetrics?.mae == null
+                  ? "—"
+                  : number(displayedMetrics.mae)}
               </strong>
               <small>จำนวนหน่วยที่คลาดเคลื่อนเฉลี่ย</small>
             </div>
             <div>
               <span>WAPE</span>
               <strong>
-                {data.accuracy.wape === null
+                {displayedMetrics?.wape == null
                   ? "—"
-                  : number(data.accuracy.wape) + "%"}
+                  : number(displayedMetrics.wape) + "%"}
               </strong>
               <small>ไม่กำหนดเมื่อยอดจริงรวมเป็นศูนย์</small>
             </div>
           </div>
           <p className="muted caption">
-            คะแนนหลักใช้รอบข้อมูลจริงล้วนที่ออกก่อนวันเป้าหมาย
-            เลือกรอบแรกของแต่ละเมนู/วัน/ระยะล่วงหน้า
+            คะแนนใช้ผลที่ออกก่อนวันเป้าหมายและมียอดส่งมอบจับคู่ได้
+            แยกตามที่มาของข้อมูล เลือกรอบแรกของแต่ละเมนู/วัน/ระยะล่วงหน้า
             จึงไม่เพิ่มจำนวนตัวอย่างเมื่อกดสร้างซ้ำ
           </p>
+          {displayedMetrics?.samples === 0 && (
+            <Notice>
+              ยังไม่มีคู่ข้อมูลสำหรับคะแนนที่เลือก
+              วันอนาคตยังไม่มียอดส่งมอบให้เทียบ จึงยังคำนวณ MAPE/RMSE/MAE/WAPE
+              ไม่ได้
+            </Notice>
+          )}
+          {data.evaluation.latest_test && (
+            <Link
+              className="button"
+              to={
+                "?" +
+                new URLSearchParams({
+                  from: data.evaluation.latest_test.date_from,
+                  to: data.evaluation.latest_test.date_to,
+                  run: data.evaluation.latest_test.id,
+                  mode: "actual",
+                  product,
+                  score: "simulation",
+                  lead: "",
+                })
+              }
+            >
+              ดูผลทดสอบย้อนหลัง 30 วัน
+            </Link>
+          )}
           {data.contains_simulated_sales && (
             <Notice tone="warning">
-              ประวัติร้านนี้มีรายการจำลองการขาย
-              ผลทดสอบจากรายการจำลองแยกจากคะแนนจริงด้านบน
+              ประวัติร้านนี้มีรายการจำลองการขาย คะแนนจำลองแยกจากยอดขายปกติ
+              และเลือกแสดงในช่องคะแนนด้านบนได้
               {data.evaluation.by_source
                 .filter((e) => e.source === "simulation")
                 .map((e) => (
@@ -640,7 +752,7 @@ export default function Forecast() {
                       <td>{methodLabel(f.model_version)}</td>
                       <td>
                         {f.history_source === "actual"
-                          ? "ยอดขายจริง"
+                          ? "ข้อมูลออเดอร์ร้าน"
                           : f.history_source === "demo"
                             ? "ข้อมูลตัวอย่าง"
                             : f.history_source === "mixed"

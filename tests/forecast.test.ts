@@ -471,3 +471,59 @@ test("forecasts derived from replay orders retain provenance and are scored sepa
     ),
   ).toMatchObject({ samples: 1, mae: 1 });
 });
+
+test("latest display reads one immutable round and ignores stale or edited cache quantities", async () => {
+  const menu = randomUUID(),
+    older = randomUUID(),
+    newer = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO products(id,category_id,name,price_satang,station) SELECT $1,category_id,'Coherent round',7500,'bar' FROM products WHERE id=$2",
+    [menu, product],
+  );
+  const ingredient = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO ingredients(id,name,unit,cost_satang) VALUES($1,'Coherent ingredient','g',100)",
+    [ingredient],
+  );
+  await fixture.db.query("INSERT INTO recipes(product_id) VALUES($1)", [menu]);
+  await fixture.db.query(
+    "INSERT INTO recipe_ingredients(product_id,ingredient_id,qty) VALUES($1,$2,2)",
+    [menu, ingredient],
+  );
+  for (const [id, hour, qty] of [
+    [older, "08", 11],
+    [newer, "09", 22],
+  ] as const) {
+    await fixture.db.query(
+      "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history) VALUES($1,$2,$3,$3,'actual','fulfilled_v1',$4,'[]')",
+      [id, date + "T" + hour + ":00:00+07:00", day(1), "b".repeat(64)],
+    );
+    await fixture.db.query(
+      "INSERT INTO forecast_run_points(run_id,forecast_date,product_id,predicted_qty,model_version,history_source,lead_days) VALUES($1,$2,$3,$4,'mean-7-v1','actual',1)",
+      [id, day(1), menu, qty],
+    );
+  }
+  await fixture.db.query(
+    "INSERT INTO forecasts(id,forecast_date,product_id,predicted_qty,lower_qty,upper_qty,model_version,history_source) VALUES($1,$2,$3,999,null,null,'mock-old','demo')",
+    [randomUUID(), day(1), menu],
+  );
+  const response = await request(app)
+    .get(
+      `/api/forecasts?date_from=${day(1)}&date_to=${day(1)}&product_id=${menu}`,
+    )
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(response.body.selected_run_id).toBe(newer);
+  expect(response.body.displayed_run.id).toBe(newer);
+  expect(response.body.forecasts).toHaveLength(1);
+  expect(Number(response.body.forecasts[0].predicted_qty)).toBe(22);
+  expect(response.body.contains_demo_history).toBe(false);
+  expect(Number(response.body.recommendations[0].required_qty)).toBe(44);
+  const old = await request(app)
+    .get(
+      `/api/forecasts?date_from=${day(1)}&date_to=${day(1)}&product_id=${menu}&run_id=${older}`,
+    )
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(Number(old.body.forecasts[0].predicted_qty)).toBe(11);
+});

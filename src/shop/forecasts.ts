@@ -298,14 +298,30 @@ export function forecastsRouter(
     const params = [input.date_from, input.date_to, input.product_id ?? null];
     const runs = (
       await db.query(
-        `SELECT r.id,r.generated_at,r.date_from::text,r.date_to::text,r.data_mode,r.target_basis,r.history_sha256,r.contains_simulated_sales
+        `SELECT r.id,r.generated_at,r.date_from::text,r.date_to::text,r.data_mode,r.target_basis,r.history_sha256,r.contains_simulated_sales,
+      (SELECT count(DISTINCT product_id)::int FROM forecast_run_points WHERE run_id=r.id) AS product_count
       FROM forecast_runs r WHERE r.date_from <= $2::date AND r.date_to >= $1::date
       AND ($3::uuid IS NULL OR EXISTS(SELECT 1 FROM forecast_run_points p WHERE p.run_id=r.id AND p.product_id=$3))
       ORDER BY r.generated_at DESC,r.id DESC LIMIT 50`,
         params,
       )
     ).rows;
-    const points = input.run_id
+    // One coherent round: never stitch old demo/cache values into a newer run.
+    const widest = Math.max(0, ...runs.map((r) => Number(r.product_count)));
+    let displayedRun = input.run_id
+      ? runs.find((r) => r.id === input.run_id)
+      : runs.find(
+          (r) => input.product_id || Number(r.product_count) === widest,
+        );
+    if (input.run_id && !displayedRun)
+      displayedRun = (
+        await db.query(
+          "SELECT id,generated_at,date_from::text,date_to::text,data_mode,contains_simulated_sales FROM forecast_runs WHERE id=$1",
+          [input.run_id],
+        )
+      ).rows[0];
+    const displayedRunId = displayedRun?.id ?? null;
+    const points = displayedRunId
       ? (
           await db.query(
             `SELECT p.*,p.forecast_date::text AS date,m.name AS product_name,
@@ -313,7 +329,7 @@ export function forecastsRouter(
       FROM forecast_run_points p JOIN forecast_runs r ON r.id=p.run_id JOIN products m ON m.id=p.product_id
       WHERE p.run_id=$4 AND p.forecast_date BETWEEN $1::date AND $2::date AND ($3::uuid IS NULL OR p.product_id=$3)
       ORDER BY p.forecast_date,m.name`,
-            [...params, input.run_id],
+            [...params, displayedRunId],
           )
         ).rows
       : (
@@ -326,25 +342,31 @@ export function forecastsRouter(
             params,
           )
         ).rows;
+    const displayedProducts = new Set(points.map((p) => p.product_id));
     const actual = (await history(db, input.data_mode)).filter(
       (h) =>
         h.date >= input.date_from &&
         h.date <= input.date_to &&
-        (!input.product_id || h.product_id === input.product_id),
+        (!input.product_id || h.product_id === input.product_id) &&
+        (!displayedRunId ||
+          !displayedProducts.size ||
+          displayedProducts.has(h.product_id)),
     );
     const recommendations = (
       await db.query(
-        `WITH selected AS (
-      SELECT product_id,predicted_qty FROM forecasts WHERE forecast_date BETWEEN $1::date AND $2::date
-       AND ($3::uuid IS NULL OR product_id=$3) AND $4::uuid IS NULL
-      UNION ALL
-      SELECT product_id,predicted_qty FROM forecast_run_points WHERE forecast_date BETWEEN $1::date AND $2::date
-       AND ($3::uuid IS NULL OR product_id=$3) AND run_id=$4
-    ) SELECT i.id,i.name,i.unit,i.current_stock,sum(f.predicted_qty*ri.qty) AS required_qty,
+        `WITH selected AS (SELECT * FROM jsonb_to_recordset($1::jsonb) AS x(product_id uuid,predicted_qty numeric))
+      SELECT i.id,i.name,i.unit,i.current_stock,sum(f.predicted_qty*ri.qty) AS required_qty,
       greatest(0,sum(f.predicted_qty*ri.qty)-i.current_stock) AS order_qty FROM selected f
       JOIN recipe_ingredients ri ON ri.product_id=f.product_id JOIN ingredients i ON i.id=ri.ingredient_id
       WHERE i.is_active GROUP BY i.id,i.name,i.unit,i.current_stock ORDER BY order_qty DESC,i.name`,
-        [...params, input.run_id ?? null],
+        [
+          JSON.stringify(
+            points.map((p) => ({
+              product_id: p.product_id,
+              predicted_qty: Number(p.predicted_qty),
+            })),
+          ),
+        ],
       )
     ).rows;
     const sales = await history(db, "actual");
@@ -453,6 +475,17 @@ export function forecastsRouter(
           "SELECT EXISTS(SELECT 1 FROM orders WHERE simulation_run_id IS NOT NULL) AS present",
         )
       ).rows[0]?.present === true;
+    const latestTest =
+      (
+        await db.query(
+          `SELECT r.id,r.date_from::text,r.date_to::text
+      FROM shop_simulation_runs s JOIN forecast_runs r ON r.id::text=s.metadata->'report'->>'holdout_run_id'
+      WHERE s.status='complete' AND r.date_to < $1::date AND r.date_from >= $1::date-120
+      AND ($2::uuid IS NULL OR EXISTS(SELECT 1 FROM forecast_run_points p WHERE p.run_id=r.id AND p.product_id=$2))
+      ORDER BY s.completed_at DESC LIMIT 1`,
+          [businessDate(), input.product_id ?? null],
+        )
+      ).rows[0] ?? null;
     res.json({
       forecasts: points,
       actual,
@@ -463,19 +496,16 @@ export function forecastsRouter(
         policy: "earliest-issued-per-target-menu-lead",
         by_source: bySource,
         by_product_lead: groups,
+        latest_test: latestTest,
       },
       runs,
       coverage,
-      selected_run_id: input.run_id ?? null,
+      selected_run_id: displayedRunId,
+      displayed_run: displayedRun ?? null,
       target_basis: "fulfilled_v1",
       contains_simulated_sales: hasSimulation,
       contains_demo_history:
-        (input.data_mode === "mixed" &&
-          (
-            await db.query(
-              "SELECT 1 FROM sales_daily WHERE source='demo' LIMIT 1",
-            )
-          ).rows.length > 0) ||
+        actual.some((h) => h.source === "demo") ||
         points.some((p) => ["demo", "mixed"].includes(p.history_source)),
       recommendation_basis: "base_recipe",
       model_mode: points.length

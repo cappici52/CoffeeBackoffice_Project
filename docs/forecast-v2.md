@@ -32,7 +32,7 @@ Migration 010 เพิ่ม `forecast_runs` และ `forecast_run_points` �
 - ประวัติที่ส่งให้โมเดลจริงทั้งชุด พร้อม SHA-256
 - ผลรายเมนู/วัน, ระยะล่วงหน้าจากวันที่ออก forecast, method/version, provenance, bounds ถ้ามี และ diagnostics
 
-DB triggers ปฏิเสธ UPDATE/DELETE ของ archive ตาราง `forecasts` เดิมเป็น cache ผลล่าสุดเพื่อคงการอ่าน/แนะนำ stock เดิมเท่านั้น ผลเก่าจากฐาน paid-sales ยังอ่านได้แต่ไม่ถูกแอบ backfill เป็นรอบ fulfilled หรือใช้คิดคะแนนใหม่
+DB triggers ปฏิเสธ UPDATE/DELETE ของ archive ตาราง `forecasts` เดิมยังเป็น cache สำหรับ compatibility เมื่อมี archive หน้าผลล่าสุดเลือกหนึ่งรอบที่ครอบคลุมเมนูมากที่สุด แล้วเลือกรอบล่าสุดในขอบเขตนั้น ไม่ต่อค่าหลายรอบเข้าด้วยกัน รายการแนะนำ stock คำนวณจากจุดที่แสดงบนกราฟจริง ผลเก่าจากฐาน paid-sales ไม่ถูกแอบ backfill เป็นรอบ fulfilled หรือใช้คิดคะแนนใหม่
 
 JSON export มี `input_history_serialized` เป็นข้อความ UTF-8 ที่เรียง property ตามสัญญาคงที่ (`date,product_id,qty,unit_price,source`) ใช้ SHA-256 ของข้อความนี้เทียบ `history_sha256` ได้ตรง แม้ PostgreSQL jsonb จะจัดลำดับ key ของ object ใหม่ ไม่ใช้ hash ของไฟล์ export ทั้งไฟล์
 
@@ -45,6 +45,10 @@ JSON export มี `input_history_serialized` เป็นข้อความ 
 นโยบายคงที่: เลือกรอบที่ออก **แรกสุด** ต่อเมนู/วันเป้าหมาย/lead/source/mode การกดสร้างซ้ำจึงไม่คูณจำนวนตัวอย่างหรือเลือกคะแนนที่ดูดีภายหลัง แสดงคะแนนแยกตาม lead และเมนู ส่วนคะแนนรวมทุก lead คือ forecast pairs หลายระยะ ไม่ใช่จำนวนวันอิสระ
 
 MAE/RMSE/Bias รวม actual เป็นศูนย์ด้วย MAPE ตัดคู่ที่ actual=0 และระบุจำนวน zero pairs; WAPE ไม่กำหนดเมื่อยอดจริงรวมเป็นศูนย์ ทุกคะแนนเป็น null เมื่อยังไม่มีคู่ที่วัดได้ แสดงผลโหมดทดลองแยกจากคะแนนหลัก
+
+ช่อง MAPE/RMSE/MAE/WAPE เลือกแหล่งคะแนนด้วย `score` ใน URL: auto/actual/simulation/demo/mixed/unknown อัตโนมัติให้ใช้กลุ่ม simulation เมื่อรอบที่แสดงฝึกจากรายการจำลอง โดยมีป้ายระบุที่มา ไม่เปลี่ยน API `accuracy` ซึ่งยังเก็บคะแนน genuine เท่านั้น ช่วงอนาคตที่ยังไม่มีคู่เทียบยังแสดง — และมีลิงก์ดู holdout ล่าสุดจาก metadata ของรอบจำลองที่ complete แล้ว คะแนนยังเป็น population ตามช่วงวัน/เมนู/lead ตาม earliest-issued policy ไม่ได้เลือกเฉพาะรอบที่คะแนนดีที่สุด
+
+กราฟมีวันปฏิทินครบ ไม่เติมวันหายเป็นศูนย์ ไม่ลากเส้นข้ามข้อมูลที่ไม่ทราบ และมีป้ายวันขาด แสดงจำนวนเมนูที่มี observation เมื่อวันนั้นมีข้อมูลบางเมนู จุดพยากรณ์ของกราฟและคำแนะนำวัตถุดิบมาจากรอบเดียวกัน
 
 การเลือก run ID เปลี่ยนกราฟ/รายละเอียด/stock recommendation ตามรอบนั้น stock recommendation ใช้สูตรพื้นฐานและ stock **ปัจจุบัน** ไม่ใช่ snapshot วัตถุดิบในอดีต ส่วนตารางวัดผลใช้ population และนโยบาย earliest-issued ข้างต้นตามช่วงวัน/เมนู/lead ที่เลือก ไม่คำนวณคะแนนเฉพาะรอบที่เลือกเพื่อหลีกเลี่ยงการเลือกเฉพาะรอบที่ชนะ
 

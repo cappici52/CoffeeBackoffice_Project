@@ -69,6 +69,8 @@ Menu editors accept a single real photograph from the device through the shared 
 
 Forecast v2 uses the same shared filter Form/Select controls and scrollable tables for actual/demo mode, saved runs, data readiness and per-menu/lead evaluation. Source/selection diagnostics use plain disclosure text rather than decorative confidence indicators. Existing charcoal/sage tokens remain unchanged.
 
+Forecast graphs show a coherent archived round on a complete daily axis. Missing days have a warning marker/caption and remain unknown; partial menu coverage is disclosed. The shared Select owns the score-source control, with an explicit source label above the metric cards. A standard button link opens the latest completed historical test when future targets cannot yet be evaluated. No invented connecting values or score blending is used.
+
 When the owner runs a marked historical sales replay in the main database, the authenticated shell shows a shared warning Notice that financial reports and stock include generated transactions. Forecasts identify replay-derived runs and show their test scores separately from genuine-sales accuracy. An order-ledger source is not described as proof of genuine customers. No extra theme or screen-specific warning style is introduced.
 
 ## Elevation & Depth
