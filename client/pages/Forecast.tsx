@@ -33,18 +33,27 @@ import {
 import type { Catalog, Forecasts } from "../types";
 import ForecastData, { cohortLabel } from "../components/ForecastData";
 import ForecastMonitor from "../components/ForecastMonitor";
+import ForecastBacktest from "../components/ForecastBacktest";
 import {
   forecastChart,
   forecastCsv,
   forecastScore,
   monthRange,
 } from "../forecast-view";
+function stockAmount(value: number | string, unit: string) {
+  const n = Number(value);
+  return unit === "ml" && n >= 1000
+    ? number(n / 1000, 2) + " ลิตร"
+    : unit === "g" && n >= 1000
+      ? number(n / 1000, 2) + " กก."
+      : number(n, 3) + " " + unit;
+}
 function methodLabel(version: string) {
-  if (version.startsWith("coffee-direct-v4-"))
-    return "XGBoost รายระยะจากยอดร้าน";
+  if (/^coffee-direct-v[45]-/.test(version)) return "XGBoost รายระยะจากยอดร้าน";
   if (version === "scheduled-closure-v1") return "วันหยุดขายที่บันทึกไว้";
   if (version.startsWith("coffee-xgb-")) return "XGBoost ประวัติร้าน";
   if (version.startsWith("projecta-xgb-")) return "XGBoost ProjectA";
+  if (version === "last-value-v1") return "ยอดวันล่าสุด";
   if (version === "weekly-naive-v1") return "ยอดสัปดาห์ก่อน";
   if (version === "mean-28-v1") return "ค่าเฉลี่ย 28 วัน";
   if (version === "mean-7-v1") return "ค่าเฉลี่ย 7 วัน";
@@ -67,6 +76,7 @@ export default function Forecast() {
       ? params.get("cohort")!
       : "auto";
   const run = params.get("run") ?? "";
+  const safety = params.get("safety") ?? "";
   const [runDraft, setRunDraft] = useState(run);
   useEffect(() => setRunDraft(run), [run]);
   const lead = params.get("lead") ?? "";
@@ -82,10 +92,10 @@ export default function Forecast() {
     ? requestedScore
     : "auto";
   const [days, setDays] = useState("7");
-  const [methodPolicy, setMethodPolicy] = useState("mean28");
+  const [methodPolicy, setMethodPolicy] = useState("auto");
   const catalog = useResource<Catalog>("/catalog");
   const resource = useResource<Forecasts>(
-    `/forecasts?date_from=${from}&date_to=${to}&data_mode=${mode}${product ? "&product_id=" + product : ""}${run ? "&run_id=" + run : ""}${lead ? "&lead_days=" + lead : ""}`,
+    `/forecasts?date_from=${from}&date_to=${to}&data_mode=${mode}${product ? "&product_id=" + product : ""}${run ? "&run_id=" + run : ""}${lead ? "&lead_days=" + lead : ""}${safety ? "&safety_factor=" + safety : ""}`,
   );
   const toast = useToast();
   const data = resource.data;
@@ -145,19 +155,13 @@ export default function Forecast() {
   const displayedMetrics = selectedScore?.metrics;
   return (
     <>
-      <Notice>
-        เลือกใช้วิธีพื้นฐานหรือทดลองเลือกโมเดลรายเมนูสำหรับระยะ 1, 7 หรือ 30 วัน
-        โดยเทียบยอดสัปดาห์ก่อน ค่าเฉลี่ย การปรับเรียบ และ XGBoost จากยอดร้าน
-        ใช้วันปิดยอดที่คุณภาพผ่านอย่างน้อย 28 วันใน 56 วันล่าสุด
-        โดยไม่เติมวันที่ขาดเป็นศูนย์
-        กันข้อมูลช่วงถัดจากการเลือกโมเดลไว้ประเมินช่วงคาดการณ์
-        ผลเก่ายังเปิดดูได้จากรอบที่บันทึก
-      </Notice>
-      <Notice>
-        ยอดสำหรับเตรียมสินค้าใช้วันส่งมอบ รวมรายการเสิร์ฟแล้วที่ยังไม่จ่าย
-        ส่วนรายงานการเงินยังใช้วันรับเงิน
-        ผลเก่าก่อนเปลี่ยนวิธีนับจะไม่นำมาคิดคะแนนความแม่นยำใหม่
-      </Notice>
+      <details className="section-details">
+        <summary>เกี่ยวกับการพยากรณ์</summary>
+        <p className="caption muted">
+          ใช้จำนวนส่งมอบรายเมนู เลือกวิธีจากการทดสอบตามเวลา ไม่บังคับให้ XGBoost
+          ชนะ ช่วงค่ามาจากความคลาดเคลื่อนย้อนหลัง ส่วนรายงานการเงินนับวันรับเงิน
+        </p>
+      </details>
       {mode === "mixed" && (
         <Notice tone="warning">
           โหมดทดลอง: อนุญาตข้อมูลตัวอย่างร่วมด้วย
@@ -188,6 +192,7 @@ export default function Forecast() {
           ประวัติที่ใช้พยากรณ์มีข้อมูลตัวอย่าง แยกจากยอดขายจริงในหน้ารายงาน
         </Notice>
       )}
+      <h2 className="section-title">สร้างพยากรณ์</h2>
       <div className="forecast-controls">
         <Form
           noValidate
@@ -219,12 +224,8 @@ export default function Forecast() {
             value={methodPolicy}
             onChange={(e) => setMethodPolicy(e.target.value)}
           >
-            <option value="mean28">
-              ค่าเฉลี่ย 28 วัน · ค่าเริ่มต้นจากผลทดลองชุดจำลอง
-            </option>
-            <option value="auto">
-              ทดลองเลือกวิธีรายเมนูจากการทดสอบย้อนหลัง
-            </option>
+            <option value="mean28">ค่าเฉลี่ย 28 วัน (เลือกเอง)</option>
+            <option value="auto">เลือกโมเดลอัตโนมัติ</option>
             <option value="weekly">ยอดวันเดียวกันสัปดาห์ก่อน</option>
           </Select>
           <Submit>สร้างพยากรณ์ใหม่</Submit>
@@ -376,6 +377,12 @@ export default function Forecast() {
           </button>
         ))}
       </Form>
+      <ForecastBacktest
+        product={product}
+        cohort={cohort}
+        mode={mode}
+        catalog={catalog.data}
+      />
       <QueryState {...resource} retry={resource.reload} />
       {data && (
         <Form
@@ -611,6 +618,87 @@ export default function Forecast() {
           </p>
           <div className="metrics">
             <div>
+              <span>พยากรณ์พรุ่งนี้</span>
+              <strong>
+                {data.summary?.tomorrow == null
+                  ? "—"
+                  : number(data.summary.tomorrow)}
+              </strong>
+              <small>หน่วยขาย</small>
+            </div>
+            <div>
+              <span>เฉลี่ย 7 วันล่าสุดที่ปิดยอด</span>
+              <strong>
+                {data.summary?.seven_day_average == null
+                  ? "—"
+                  : number(data.summary.seven_day_average)}
+              </strong>
+              <small>
+                {data.summary?.change_percent == null
+                  ? "ยังไม่มีประวัติครบ 7 วัน"
+                  : (data.summary.change_percent >= 0 ? "+" : "") +
+                    number(data.summary.change_percent) +
+                    "% สำหรับพรุ่งนี้"}
+              </small>
+            </div>
+          </div>
+          <div className="table-panel">
+            <div
+              className="table-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="เลื่อนแผนเตรียมรายเมนู"
+            >
+              <table>
+                <caption>เมนูที่คาดว่าจะขาย · รวมวันอนาคตที่แสดง</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">เมนู</th>
+                    <th scope="col">จำนวนเตรียม</th>
+                    <th scope="col">MAE ที่วัดได้</th>
+                    <th scope="col">สต็อกตามแผนรวม</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...(data.planning?.products ?? [])]
+                    .sort((a, b) => b.predicted_qty - a.predicted_qty)
+                    .map((p) => {
+                      const score = data.evaluation.by_product?.find(
+                        (e) =>
+                          e.product_id === p.product_id &&
+                          e.source === selectedScore?.source,
+                      );
+                      return (
+                        <tr key={p.product_id}>
+                          <th scope="row">
+                            {catalog.data?.products.find(
+                              (c) => c.id === p.product_id,
+                            )?.name ?? p.product_id}
+                          </th>
+                          <td>{number(p.predicted_qty)}</td>
+                          <td>
+                            {score?.mae == null ? "—" : number(score.mae)}
+                          </td>
+                          <td
+                            className={
+                              p.status === "sufficient" ? "" : "warning-text"
+                            }
+                          >
+                            {p.status === "sufficient"
+                              ? "เพียงพอ"
+                              : p.status === "missing_recipe"
+                                ? "ยังไม่มีสูตร"
+                                : "ต้องเติมวัตถุดิบ"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="metrics">
+            <div>
               <span>จำนวนที่พยากรณ์ในช่วงนี้</span>
               <strong>
                 {number(
@@ -623,13 +711,13 @@ export default function Forecast() {
               <small>สูตรพื้นฐาน ไม่รวมการเปลี่ยนตัวเลือก</small>
             </div>
             <div>
-              <span>MAPE</span>
+              <span>MAE</span>
               <strong>
-                {displayedMetrics?.mape == null
+                {displayedMetrics?.mae == null
                   ? "—"
-                  : number(displayedMetrics.mape) + "%"}
+                  : number(displayedMetrics.mae)}
               </strong>
-              <small>ไม่นับวันที่ยอดจริงเป็นศูนย์</small>
+              <small>คลาดเคลื่อนเฉลี่ยต่อเมนู/วัน</small>
             </div>
             <div>
               <span>RMSE</span>
@@ -644,13 +732,13 @@ export default function Forecast() {
               </small>
             </div>
             <div>
-              <span>MAE</span>
+              <span>Bias</span>
               <strong>
-                {displayedMetrics?.mae == null
+                {displayedMetrics?.bias == null
                   ? "—"
-                  : number(displayedMetrics.mae)}
+                  : number(displayedMetrics.bias)}
               </strong>
-              <small>จำนวนหน่วยที่คลาดเคลื่อนเฉลี่ย</small>
+              <small>บวก = สูงไป · ลบ = ต่ำไป</small>
             </div>
             <div>
               <span>WAPE</span>
@@ -672,7 +760,7 @@ export default function Forecast() {
               ยังไม่มีคู่ข้อมูลสำหรับคะแนนที่เลือก
               ต้องมีรอบพยากรณ์ที่ออกก่อนวันเป้าหมายและยอดปิดวันที่ตรงกัน
               วันอนาคตหรือวันที่ไม่มีผลล่วงหน้าเก็บไว้ จึงยังคำนวณ
-              MAPE/RMSE/MAE/WAPE ไม่ได้
+              MAE/RMSE/WAPE/Bias ไม่ได้
             </Notice>
           )}
           {data.evaluation.latest_test && (
@@ -695,19 +783,7 @@ export default function Forecast() {
             </Link>
           )}
           {data.contains_simulated_sales && (
-            <Notice tone="warning">
-              ประวัติร้านนี้มีรายการจำลองการขาย คะแนนจำลองแยกจากยอดขายปกติ
-              และเลือกแสดงในช่องคะแนนด้านบนได้
-              {data.evaluation.by_source
-                .filter((e) => e.source === "simulation")
-                .map((e) => (
-                  <p key={e.source}>
-                    ผลทดสอบจากการจำลอง: {e.samples} ตัวอย่าง · MAE{" "}
-                    {e.mae === null ? "—" : number(e.mae)} · WAPE{" "}
-                    {e.wape === null ? "—" : number(e.wape) + "%"}
-                  </p>
-                ))}
-            </Notice>
+            <p className="caption muted">คะแนนชุดจำลอง · แยกจากยอดปกติ</p>
           )}
           <details className="section-details">
             <summary>เปรียบเทียบระยะ 1, 7 และ 30 วันกับยอดสัปดาห์ก่อน</summary>
@@ -825,7 +901,32 @@ export default function Forecast() {
               ))}
             </ul>
           </details>
-          <h2 className="section-title">วัตถุดิบตามแผนพยากรณ์</h2>
+          <h2 className="section-title">แผนเตรียมวัตถุดิบ</h2>
+          <Form
+            noValidate
+            guard={false}
+            onSave={async (fd) =>
+              setParams((previous) => {
+                const next = new URLSearchParams(previous);
+                next.set("safety", String(1 + Number(fd.get("buffer")) / 100));
+                return next;
+              })
+            }
+          >
+            <Input
+              key={String(data.planning?.safety_factor)}
+              label="เผื่อวัตถุดิบ (%)"
+              name="buffer"
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              defaultValue={Math.round(
+                ((data.planning?.safety_factor ?? 1) - 1) * 100,
+              )}
+            />
+            <Submit>คำนวณแผน</Submit>
+          </Form>
           <p className="muted caption">
             เฉพาะวันอนาคต: พยากรณ์ × สูตรพื้นฐาน − สต็อกคงเหลือ ·
             ต้องตรวจสต็อกและตัวเลือกจริงก่อนสั่งซื้อ
@@ -845,25 +946,23 @@ export default function Forecast() {
                     <th scope="col">ต้องใช้</th>
                     <th scope="col">มีอยู่</th>
                     <th scope="col">แนะนำสั่งเพิ่ม</th>
+                    <th scope="col">สถานะ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recommendations.items.map((i) => (
                     <tr key={i.id}>
                       <th scope="row">{i.name}</th>
-                      <td>
-                        {number(i.required_qty, 3)} {i.unit}
-                      </td>
-                      <td>
-                        {number(i.current_stock, 3)} {i.unit}
-                      </td>
+                      <td>{stockAmount(i.required_qty, i.unit)}</td>
+                      <td>{stockAmount(i.current_stock, i.unit)}</td>
                       <td
                         className={
                           Number(i.order_qty) > 0 ? "warning-text" : ""
                         }
                       >
-                        {number(i.order_qty, 3)} {i.unit}
+                        {stockAmount(i.order_qty, i.unit)}
                       </td>
+                      <td>{Number(i.order_qty) > 0 ? "ขาด" : "เพียงพอ"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -928,9 +1027,9 @@ export default function Forecast() {
                               {dateText(f.diagnostics.origin)}
                             </summary>
                             <p>
-                              {f.diagnostics.reason === "short_history_weekly"
-                                ? "ประวัติยังไม่ถึงเกณฑ์เลือกวิธีสำหรับระยะนี้ จึงใช้ยอดสัปดาห์ก่อน"
-                                : "เลือก MAE ต่ำสุดจากการทดสอบย้อนหลังหลายจุดเวลา (ไม่ใช่คะแนนทดสอบอิสระ)"}
+                              {f.diagnostics.reason === "limited_history_mean"
+                                ? "ประวัติยังไม่พอเลือกโมเดล จึงใช้ค่าเฉลี่ยช่วงล่าสุด"
+                                : "เลือกตามผลทดสอบก่อนช่วงเป้าหมายและเกณฑ์ความสม่ำเสมอ"}
                             </p>
                             {f.diagnostics.horizon && (
                               <p className="caption muted">

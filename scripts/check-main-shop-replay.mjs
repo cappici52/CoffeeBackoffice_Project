@@ -94,14 +94,14 @@ try {
     await expect(
       page.getByLabel("รอบพยากรณ์ที่แสดง", { exact: true }),
     ).toHaveValue(run);
-    await expect(page.locator(".metrics")).toBeVisible();
+    await expect(page.locator(".metrics").first()).toBeVisible();
     if (name === "holdout")
       await expect(
-        page.locator(".notice").filter({ hasText: "ผลทดสอบจากการจำลอง:" }),
-      ).toContainText(String(report.menus.length * 30));
+        page.getByText("คะแนนชุดจำลอง · แยกจากยอดปกติ", { exact: true }),
+      ).toBeVisible();
     if (name === "holdout") {
       for (const [label, key] of [
-        ["MAPE", "mape"],
+        ["Bias", "bias"],
         ["RMSE", "rmse"],
         ["MAE", "mae"],
         ["WAPE", "wape"],
@@ -175,7 +175,7 @@ try {
   await page.getByRole("button", { name: "แสดงผล", exact: true }).click();
   assert.equal((await (await response).json()).forecasts.length, 30);
   await page.goto(base + "/forecast");
-  await expect(page.locator(".metrics")).toBeVisible();
+  await expect(page.locator(".metrics").first()).toBeVisible();
   await expect(page.locator(".chart-panel")).toContainText("ไม่มีข้อมูล");
   await page.waitForTimeout(1800);
   await page.screenshot({
@@ -268,12 +268,12 @@ try {
   ).json();
   const newest = available.runs.find(
     (r) =>
-      r.input_quality?.pipeline === "coffee-demand-v4-mean28" &&
+      r.input_quality?.pipeline === "coffee-demand-v5" &&
       (Date.parse(r.date_to) - Date.parse(r.date_from)) / 86400000 === 29,
   );
   assert(
     newest,
-    "Generate a new v4 mean28 30-day round before running this main-shop check",
+    "Generate a new v5 auto 30-day round before running this main-shop check",
   );
   const fresh = await (
     await context.request.get(base + "/api/forecasts/runs/" + newest.id)
@@ -282,15 +282,17 @@ try {
     fresh.points.every((p) => p.lower_qty !== null && p.upper_qty !== null),
   );
   const targets = fresh.points.map((p) => p.date).sort();
-  const v4url = `${base}/forecast?from=${targets[0]}&to=${targets.at(-1)}&run=${newest.id}&cohort=simulation`;
-  await page.goto(v4url);
+  const v5url = `${base}/forecast?from=${targets[0]}&to=${targets.at(-1)}&run=${newest.id}&cohort=simulation`;
+  await page.goto(v5url);
   await expect(
     page.getByLabel("วิธีสำหรับรอบใหม่", { exact: true }),
-  ).toHaveValue("mean28");
+  ).toHaveValue("auto");
   await expect(
-    page.getByRole("heading", { name: "ติดตามผลหลังออกพยากรณ์", exact: true }),
+    page.getByText("ประเมินความแม่นยำ", { exact: true }),
   ).toBeVisible();
+  await page.getByText("ประเมินความแม่นยำ", { exact: true }).click();
   await expect(page.getByText(/ไม่ยืมคะแนนของรุ่นเดิมมาแสดง/)).toBeVisible();
+  await page.getByText("ชุดข้อมูลและคุณภาพประวัติ", { exact: true }).click();
   await expect(page.getByLabel("ชุดข้อมูลฝึก", { exact: true })).toHaveValue(
     "simulation",
   );
@@ -298,7 +300,7 @@ try {
     .getByText("จำนวนเตรียมรายเมนูและเวอร์ชันโมเดล", { exact: true })
     .click();
   await expect(
-    page.getByText("ค่าเฉลี่ย 28 วัน", { exact: true }).first(),
+    page.getByRole("columnheader", { name: "วิธีพยากรณ์", exact: true }),
   ).toBeVisible();
   for (const width of [1536, 390]) {
     await page.setViewportSize({ width, height: 960 });
@@ -321,20 +323,64 @@ try {
       ),
     );
     await page.screenshot({
-      path: resolve(output, `forecast-v4-${width}.png`),
+      path: resolve(output, `forecast-v5-${width}.png`),
       fullPage: true,
     });
     await page
       .locator(".chart-panel")
-      .screenshot({ path: resolve(output, `forecast-v4-chart-${width}.png`) });
+      .screenshot({ path: resolve(output, `forecast-v5-chart-${width}.png`) });
   }
+  await page
+    .getByText("ทดสอบย้อนหลังโดยกำหนดวันตัดข้อมูล", { exact: true })
+    .click();
+  await page
+    .getByLabel("ใช้ข้อมูลถึงวันที่", { exact: true })
+    .fill("2026-10-02");
+  const analysisResponse = page.waitForResponse((r) =>
+    r.url().endsWith("/api/forecasts/backtest"),
+  );
+  await page
+    .getByRole("button", { name: "วิเคราะห์ย้อนหลัง", exact: true })
+    .click();
+  const analysis = await (await analysisResponse).json();
+  assert.equal(analysis.kind, "backtest");
+  assert.equal(analysis.score.samples, 240);
+  assert.equal(analysis.date_from, "2026-10-03");
+  assert.equal(analysis.date_to, "2026-11-01");
+  await expect(page.getByText(/ผลวิเคราะห์ย้อนหลัง ·/)).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: "ดาวน์โหลดผลวิเคราะห์ (JSON)",
+      exact: true,
+    }),
+  ).toBeVisible();
+  for (const width of [1536, 390]) {
+    await page.setViewportSize({ width, height: 960 });
+    const a11y = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+      .analyze();
+    assert.deepEqual(
+      a11y.violations.map((v) => ({ id: v.id, nodes: v.nodes.length })),
+      [],
+    );
+    assert(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    );
+    await page.screenshot({
+      path: resolve(output, `forecast-backtest-${width}.png`),
+      fullPage: true,
+    });
+  }
+  checks.push(
+    "Cutoff-based retrospective analysis, 240 scored pairs, separate result/export, desktop/mobile accessibility",
+  );
   await page
     .getByLabel("ชุดข้อมูลฝึก", { exact: true })
     .selectOption("genuine");
   await expect(
-    page
-      .getByText("ต้องมี 28 วันใช้ได้ใน 56 วันล่าสุด และข้อมูลไม่เกิน 6 วัน")
-      .first(),
+    page.getByText("ไม่มีข้อมูลล่าสุดสำหรับพยากรณ์", { exact: true }).first(),
   ).toBeVisible();
   const rejected = page.waitForResponse((r) =>
     r.url().endsWith("/api/forecasts/generate"),
@@ -347,11 +393,9 @@ try {
     409,
     "Explicit genuine request never falls back to generated sales",
   );
-  await expect(
-    page.getByText(/บางเมนูมีวันใช้ได้ไม่ครบ 28 วันใน 56 วันล่าสุด/),
-  ).toBeVisible();
+  await expect(page.getByText(/บางเมนูไม่มีประวัติที่ใช้ได้/)).toBeVisible();
   checks.push(
-    "V4 default baseline, source-cohort controls, calibrated bounds, prospective monitor, desktop/mobile accessibility and explicit genuine-data failure",
+    "V5 automatic selection, source-cohort controls, calibrated bounds, prospective monitor, desktop/mobile accessibility and explicit genuine-data failure",
   );
   for (const route of ["/orders", "/inventory", "/reports"]) {
     await page.goto(base + route);

@@ -79,7 +79,9 @@ const errors: Record<string, string> = {
     "บริการพยากรณ์ยังไม่พร้อม กรุณาเปิดบริการแล้วลองอีกครั้ง",
   FORECAST_INVALID_RESPONSE: "ข้อมูลจากบริการพยากรณ์ไม่ครบหรือไม่ถูกต้อง",
   FORECAST_INSUFFICIENT_HISTORY:
-    "บางเมนูมีวันใช้ได้ไม่ครบ 28 วันใน 56 วันล่าสุด หรือข้อมูลเก่าเกิน 6 วัน กรุณาตรวจชุดข้อมูล คุณภาพข้อมูล และการปิดวัน",
+    "บางเมนูไม่มีประวัติที่ใช้ได้ หรือข้อมูลเก่าเกิน 6 วัน กรุณาตรวจชุดข้อมูล คุณภาพข้อมูล และการปิดวัน",
+  INVALID_FORECAST_CUTOFF: "วันตัดข้อมูลต้องก่อนวันนี้",
+  FORECAST_HORIZON_CONFLICT: "ช่วงวันที่ไม่ตรงกับระยะพยากรณ์",
   NO_FORECAST_PRODUCTS: "ยังไม่มีเมนูสำหรับพยากรณ์",
   TOO_MANY_ATTEMPTS: "ลองเข้าสู่ระบบหลายครั้งเกินไป กรุณารอ 15 นาที",
   TABLE_UNAVAILABLE:
@@ -108,7 +110,10 @@ export async function api<T>(
   options: RequestInit = {},
 ): Promise<T> {
   try {
-    const timeout = path === "/forecasts/generate" ? 70_000 : 25_000;
+    const timeout =
+      path === "/forecasts/generate" || path === "/forecasts/backtest"
+        ? 70_000
+        : 25_000;
     const response = await fetch("/api" + path, {
       ...options,
       credentials: "same-origin",

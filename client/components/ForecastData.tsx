@@ -25,6 +25,8 @@ export type ForecastDataset = {
     observations: number;
     latest_date: string | null;
     ready: boolean;
+    model_ready?: boolean;
+    limited_history?: boolean;
   }[];
   flags: {
     date: string;
@@ -63,8 +65,8 @@ export default function ForecastData({
   const data = resource.data,
     toast = useToast();
   return (
-    <section className="section-details">
-      <h2>ข้อมูลสำหรับพยากรณ์รอบใหม่</h2>
+    <details className="section-details">
+      <summary>ชุดข้อมูลและคุณภาพประวัติ</summary>
       <Select
         label="ชุดข้อมูลฝึก"
         value={cohort}
@@ -86,12 +88,6 @@ export default function ForecastData({
             ชุดที่เลือกใช้: {cohortLabel(data.cohort)} · ย้อนหลังสูงสุด{" "}
             {data.window_days} วัน · ไม่ผสมยอดจริงกับยอดจำลอง
           </p>
-          {data.cohort !== "genuine" && (
-            <Notice tone="warning">
-              รอบใหม่จะใช้ {cohortLabel(data.cohort)}{" "}
-              ผลทดสอบจากชุดนี้ยังไม่ยืนยันความแม่นยำกับลูกค้าจริง
-            </Notice>
-          )}
           <div
             className="table-scroll"
             tabIndex={0}
@@ -120,8 +116,10 @@ export default function ForecastData({
                     </td>
                     <td>
                       {r.ready
-                        ? "พร้อม"
-                        : "ต้องมี 28 วันใช้ได้ใน 56 วันล่าสุด และข้อมูลไม่เกิน 6 วัน"}
+                        ? r.model_ready
+                          ? "พร้อมเลือกโมเดล"
+                          : "ประวัติน้อย · ใช้พื้นฐาน"
+                        : "ไม่มีข้อมูลล่าสุดสำหรับพยากรณ์"}
                     </td>
                   </tr>
                 ))}
@@ -181,6 +179,8 @@ export default function ForecastData({
                 </option>
                 <option value="closed">ร้านหยุด / ไม่เปิดขายเมนูนี้</option>
                 <option value="incomplete">บันทึกข้อมูลไม่ครบ</option>
+                <option value="outlier">ยอดผิดปกติ</option>
+                <option value="unknown">ยังไม่ทราบคุณภาพ</option>
                 <option value="normal">กลับมาใช้วันตามปกติ</option>
               </Select>
               <Textarea
@@ -202,7 +202,11 @@ export default function ForecastData({
                       ? "หยุดขาย"
                       : f.kind === "incomplete"
                         ? "ข้อมูลไม่ครบ"
-                        : "ปกติ"}{" "}
+                        : f.kind === "outlier"
+                          ? "ยอดผิดปกติ"
+                          : f.kind === "unknown"
+                            ? "ยังไม่ทราบคุณภาพ"
+                            : "ปกติ"}{" "}
                   · {f.note}
                 </li>
               ))}
@@ -210,6 +214,6 @@ export default function ForecastData({
           </details>
         </>
       )}
-    </section>
+    </details>
   );
 }

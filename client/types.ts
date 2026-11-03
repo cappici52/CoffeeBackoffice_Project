@@ -256,8 +256,19 @@ export interface Forecasts {
     current_stock: Decimal;
     required_qty: Decimal;
     order_qty: Decimal;
+    status?: string;
   }[];
   accuracy: ForecastMetrics;
+  planning?: {
+    safety_factor: number;
+    ingredients: unknown[];
+    products: { product_id: string; predicted_qty: number; status: string }[];
+  };
+  summary?: {
+    tomorrow: number | null;
+    seven_day_average: number | null;
+    change_percent: number | null;
+  };
   runs: {
     id: string;
     generated_at: string;
@@ -288,6 +299,9 @@ export interface Forecasts {
     basis: string;
     policy: string;
     by_source: (ForecastMetrics & { source: string })[];
+    by_model?: (ForecastMetrics & { model: string; source: string })[];
+    by_product?: (ForecastMetrics & { product_id: string; source: string })[];
+    by_scope?: (ForecastMetrics & { horizon: number; source: string })[];
     by_horizon?: (ForecastMetrics & {
       source: string;
       horizon: number;

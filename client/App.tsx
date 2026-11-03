@@ -299,9 +299,14 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
         <main id="content" className="page">
           {shopContext.data?.contains_simulation && (
             <Notice tone="warning">
-              ฐานข้อมูลนี้มีรายการจำลองการขาย
-              รายงานยอดขายและสต็อกรวมรายการจำลองด้วย
-              รายการเหล่านี้ไม่ใช่การขายหรือรับเงินจริง
+              <details>
+                <summary>ข้อมูลสาธิต</summary>
+                <p>
+                  ฐานข้อมูลนี้มีรายการจำลองการขาย
+                  รายงานยอดขายและสต็อกรวมรายการจำลองด้วย
+                  รายการเหล่านี้ไม่ใช่การขายหรือรับเงินจริง
+                </p>
+              </details>
             </Notice>
           )}
           {failure && <Notice tone="danger">{failure}</Notice>}

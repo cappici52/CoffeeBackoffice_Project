@@ -887,7 +887,9 @@ export function forecastsRouter(
                     ? "mixed"
                     : p.history_source,
         pipeline: p.pipeline as string,
-        model: p.model_version as string,
+        model: /^coffee-direct-v[45]-/.test(p.model_version)
+          ? p.model_version.match(/^coffee-direct-v[45]/)![0]
+          : (p.model_version as string),
         horizon: Number(p.horizon),
         lower:
           p.diagnostics?.interval_kind !== "empirical_absolute_80" ||

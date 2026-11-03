@@ -303,10 +303,9 @@ try {
   });
   checks.push("Reports reflect the real paid order");
   await go("/forecast");
+  await page.getByText("ชุดข้อมูลและคุณภาพประวัติ", { exact: true }).click();
   await expect(
-    page
-      .getByText("ต้องมี 28 วันใช้ได้ใน 56 วันล่าสุด และข้อมูลไม่เกิน 6 วัน")
-      .first(),
+    page.getByText("ความพร้อมของชุดข้อมูลที่เลือก", { exact: true }),
   ).toBeVisible();
   await page
     .getByLabel("ข้อมูลที่ใช้สร้าง", { exact: true })
@@ -321,7 +320,7 @@ try {
   await expect(
     page
       .getByText(
-        /^(weekly-naive-v1|coffee-direct-v4-|ses-v1|mean-|weekday-mean-)/,
+        /^(weekly-naive-v1|coffee-direct-v5-|ses-v1|mean-|weekday-mean-)/,
       )
       .first(),
   ).toBeAttached();
@@ -500,6 +499,7 @@ try {
   checks.push(
     "Selected-menu forecasting works while a new menu has no history",
   );
+  await page.getByText("ชุดข้อมูลและคุณภาพประวัติ", { exact: true }).click();
   await page
     .getByText("บันทึกวันที่ร้านหยุด สินค้าหมด หรือข้อมูลไม่ครบ", {
       exact: true,
