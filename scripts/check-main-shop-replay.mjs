@@ -183,6 +183,59 @@ try {
   checks.push(
     "All four metric cards follow the chosen source; future scores stay unavailable; missing-day note and historical-test shortcut work",
   );
+  await page.goto(base + "/forecast");
+  await page.getByLabel("ดูรายเดือน", { exact: true }).fill("2026-04");
+  await page.getByRole("button", { name: "แสดงเดือนนี้", exact: true }).click();
+  await expect(page).toHaveURL(/from=2026-04-01.*to=2026-04-30/);
+  const monthlyResponse = await context.request.get(
+    base +
+      "/api/forecasts?date_from=2026-04-01&date_to=2026-04-30&data_mode=actual",
+  );
+  const monthly = await monthlyResponse.json();
+  assert.equal(
+    monthly.actual.length,
+    26 * report.menus.length,
+    "April 5-30 is available beyond the 120-day training window",
+  );
+  assert(monthly.actual.every((a) => a.is_closed && a.simulated));
+  const downloadPromise = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "ส่งออก CSV ตามช่วงที่เลือก", exact: true })
+    .click();
+  const download = await downloadPromise;
+  assert.equal(
+    download.suggestedFilename(),
+    "sales-forecast-2026-04-01-2026-04-30.csv",
+  );
+  const csv = await readFile(await download.path(), "utf8");
+  assert(csv.startsWith("\uFEFF"));
+  assert.equal(csv.trim().split("\r\n").length, 1 + 30 * report.menus.length);
+  assert(csv.includes('"simulation"') && csv.includes('"unknown"'));
+  await page
+    .getByRole("button", { name: "เดือนก่อนหน้า", exact: true })
+    .click();
+  await expect(page).toHaveURL(/from=2026-03-01.*to=2026-03-31/);
+  await page.getByRole("button", { name: "เดือนถัดไป", exact: true }).click();
+  await expect(page).toHaveURL(/from=2026-04-01.*to=2026-04-30/);
+  await expect(
+    page.getByLabel("พยากรณ์ล่วงหน้า", { exact: true }).locator("option"),
+  ).toHaveText(["1 วัน", "7 วัน", "30 วัน"]);
+  for (const width of [1536, 390]) {
+    await page.setViewportSize({ width, height: 960 });
+    await expect(page.getByLabel("ดูรายเดือน", { exact: true })).toBeVisible();
+    assert(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    );
+    await page.screenshot({
+      path: resolve(output, `forecast-month-${width}.png`),
+      fullPage: true,
+    });
+  }
+  checks.push(
+    "Monthly history beyond 120 days, previous/next months, UTF-8 CSV with missing-day/source metadata, 1/7/30-day options and mobile layout",
+  );
   for (const route of ["/orders", "/inventory", "/reports"]) {
     await page.goto(base + route);
     await expect(

@@ -5,12 +5,15 @@ export function forecastChart(
   to: string,
   forecasts: Forecasts["forecasts"],
   actual: Forecasts["actual"],
+  expectedMenus = 0,
 ) {
   const rows = new Map<
     string,
     {
       date: string;
       actual?: number;
+      partialActual?: number;
+      unclosed?: boolean;
       actual_menus: number;
       forecast?: number;
       lower: number;
@@ -46,14 +49,85 @@ export function forecastChart(
     if (row) {
       row.actual = (row.actual ?? 0) + Number(a.qty);
       row.actual_menus++;
+      row.unclosed ||= a.is_closed === false;
     }
   }
   return [...rows.values()].map((row) => ({
     ...row,
+    ...(row.actual !== undefined &&
+    (row.unclosed || row.actual_menus < expectedMenus)
+      ? { partialActual: row.actual, actual: undefined }
+      : {}),
     ...(row.forecast !== undefined && row.hasInterval
       ? { interval: [row.lower, row.upper] as [number, number] }
       : {}),
   }));
+}
+
+export function monthRange(month: string, offset = 0) {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error("Invalid month");
+  const [year, number] = month.split("-").map(Number);
+  const first = new Date(Date.UTC(year!, number! - 1 + offset, 1));
+  const last = new Date(
+    Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0),
+  );
+  return {
+    from: first.toISOString().slice(0, 10),
+    to: last.toISOString().slice(0, 10),
+  };
+}
+
+// Quote every cell and neutralize spreadsheet formulas in user-controlled names.
+export function forecastCsv(from: string, to: string, data: Forecasts) {
+  const cell = (value: unknown) => {
+    let text = value == null ? "" : String(value);
+    if (/^[\s]*[=+\-@]/.test(text)) text = "'" + text;
+    return '"' + text.replaceAll('"', '""') + '"';
+  };
+  const products = new Map(
+    data.actual.map((a) => [a.product_id, a.product_name ?? a.product_id]),
+  );
+  for (const f of data.forecasts) products.set(f.product_id, f.product_name);
+  const observed = new Map(
+    data.actual.map((a) => [a.date + ":" + a.product_id, a]),
+  );
+  const predicted = new Map(
+    data.forecasts.map((f) => [f.date + ":" + f.product_id, f]),
+  );
+  const rows: unknown[][] = [
+    [
+      "date",
+      "product_id",
+      "product_name",
+      "actual_qty",
+      "day_status",
+      "actual_source",
+      "predicted_qty",
+      "model_version",
+      "forecast_run_id",
+      "forecast_contains_simulation",
+    ],
+  ];
+  for (const day of forecastChart(from, to, [], []))
+    for (const [id, name] of products) {
+      const a = observed.get(day.date + ":" + id),
+        f = predicted.get(day.date + ":" + id);
+      rows.push([
+        day.date,
+        id,
+        name,
+        a?.qty,
+        a ? (a.is_closed ? "closed" : "unclosed") : "unknown",
+        a ? (a.simulated ? "simulation" : (a.source ?? "unknown")) : "unknown",
+        f?.predicted_qty,
+        f?.model_version,
+        f ? data.selected_run_id : "",
+        f ? data.displayed_run?.contains_simulated_sales : "",
+      ]);
+    }
+  return (
+    "\uFEFF" + rows.map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n"
+  );
 }
 
 export function forecastScore(

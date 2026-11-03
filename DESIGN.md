@@ -96,3 +96,5 @@ Tables are semantic, paginated and aligned. KDS order cards show status, time, i
 - Preserve touch size, keyboard operation and contrast even on dense screens.
 - Do not add a light theme or bright panel backgrounds without a new user request.
 - Do not add decorative animation or financial/forecast figures that imply real data.
+
+Forecast history supports calendar-month navigation and CSV export using the same native Input, Form and Submit components. Unclosed or incomplete daily totals are isolated warning-colored dots rather than part of the completed-day line. CSV preserves unknown quantities as empty cells and labels simulation provenance. Viewing history is independent of the 120-day training window.

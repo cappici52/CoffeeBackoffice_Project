@@ -228,7 +228,15 @@ export interface Forecasts {
       >;
     } | null;
   }[];
-  actual: { date: string; product_id: string; qty: Decimal }[];
+  actual: {
+    date: string;
+    product_id: string;
+    qty: Decimal;
+    product_name?: string;
+    source?: string;
+    is_closed?: boolean;
+    simulated?: boolean;
+  }[];
   recommendations: {
     id: string;
     name: string;

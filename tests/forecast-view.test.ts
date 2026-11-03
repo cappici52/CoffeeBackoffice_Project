@@ -1,5 +1,10 @@
 import { expect, test } from "vitest";
-import { forecastChart, forecastScore } from "../client/forecast-view.js";
+import {
+  forecastChart,
+  forecastCsv,
+  forecastScore,
+  monthRange,
+} from "../client/forecast-view.js";
 import { metrics } from "../src/shop/forecast-metrics.js";
 import type { Forecasts } from "../client/types.js";
 
@@ -79,4 +84,63 @@ test("future run without observations keeps metrics unavailable instead of borro
     source: "simulation",
     metrics: { samples: 0, mae: null, rmse: null, mape: null, wape: null },
   });
+});
+
+test("monthly navigation handles year boundaries and leap months", () => {
+  expect(monthRange("2026-01", -1)).toEqual({
+    from: "2025-12-01",
+    to: "2025-12-31",
+  });
+  expect(monthRange("2024-02")).toEqual({
+    from: "2024-02-01",
+    to: "2024-02-29",
+  });
+  expect(() => monthRange("bad")).toThrow();
+});
+test("unclosed or incomplete totals become isolated partial observations", () => {
+  const rows = forecastChart(
+    "2026-11-01",
+    "2026-11-02",
+    [],
+    [
+      { date: "2026-11-01", product_id: "a", qty: 12, is_closed: true },
+      { date: "2026-11-02", product_id: "a", qty: 7, is_closed: false },
+    ],
+    1,
+  );
+  expect(rows[0]?.actual).toBe(12);
+  expect(rows[1]?.actual).toBeUndefined();
+  expect(rows[1]?.partialActual).toBe(7);
+  expect(
+    forecastChart(
+      "2026-11-01",
+      "2026-11-01",
+      [],
+      [{ date: "2026-11-01", product_id: "a", qty: 12 }],
+      2,
+    )[0]?.partialActual,
+  ).toBe(12);
+});
+test("CSV keeps unknown days blank, explicit zeroes and provenance, and quotes formula-like names", () => {
+  const csv = forecastCsv("2026-11-01", "2026-11-02", {
+    actual: [
+      {
+        date: "2026-11-01",
+        product_id: "a",
+        product_name: '=Coffee,"test"',
+        qty: 0,
+        is_closed: true,
+        simulated: true,
+      },
+    ],
+    forecasts: [],
+    selected_run_id: null,
+    displayed_run: null,
+  } as unknown as Forecasts);
+  expect(csv.startsWith("\uFEFF")).toBe(true);
+  expect(csv).toContain('"\'=Coffee,""test"""');
+  expect(csv).toContain('"0","closed","simulation"');
+  expect(csv).toContain(
+    '"2026-11-02","a","\'=Coffee,""test""","","unknown","unknown"',
+  );
 });

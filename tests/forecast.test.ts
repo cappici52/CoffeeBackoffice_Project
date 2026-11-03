@@ -226,6 +226,10 @@ test("a selected menu can be forecast independently of a new menu with no histor
 });
 
 test("accuracy evaluates immutable actual-only delivery forecasts, excludes demo inputs and backcasts", async () => {
+  await fixture.db.query(
+    "INSERT INTO day_closings(date,closed_by,summary) VALUES($1,$2,'{}')",
+    [day(-4), owner],
+  );
   for (const [id, source, issued] of [
     [product, "actual", day(-5)],
     [newProduct, "actual", date],
@@ -417,6 +421,10 @@ test("forecasts derived from replay orders retain provenance and are scored sepa
     [menu, product],
   );
   const order = await delivered(menu, day(-1), 2);
+  await fixture.db.query(
+    "INSERT INTO day_closings(date,closed_by,summary) VALUES($1,$2,'{}')",
+    [day(-1), owner],
+  );
   await fixture.db.query("UPDATE orders SET simulation_run_id=$1 WHERE id=$2", [
     simulation,
     order,
@@ -526,4 +534,33 @@ test("latest display reads one immutable round and ignores stale or edited cache
     .set("Cookie", cookie)
     .expect(200);
   expect(Number(old.body.forecasts[0].predicted_qty)).toBe(11);
+});
+
+test("browsing reaches beyond training history and unclosed observations stay out of training", async () => {
+  const menu = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO products(id,category_id,name,price_satang,station) SELECT $1,category_id,'History export',7500,'bar' FROM products WHERE id=$2",
+    [menu, product],
+  );
+  await delivered(menu, day(-200), 12);
+  await delivered(menu, day(-6), 5);
+  expect(
+    (await history(fixture.db, "actual")).some((h) => h.date === day(-200)),
+  ).toBe(false);
+  const response = await request(app)
+    .get(
+      `/api/forecasts?date_from=${day(-210)}&date_to=${day(-190)}&product_id=${menu}`,
+    )
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(response.body.actual).toEqual([
+    expect.objectContaining({
+      date: day(-200),
+      is_closed: false,
+      product_name: "History export",
+    }),
+  ]);
+  const closed = await history(fixture.db, "actual", { closedOnly: true });
+  expect(closed.some((h) => h.product_id === menu)).toBe(false);
+  expect(response.body.accuracy.samples).toBe(0);
 });

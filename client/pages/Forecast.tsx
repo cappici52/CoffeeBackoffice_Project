@@ -31,7 +31,12 @@ import {
   usePagedRows,
 } from "../ui";
 import type { Catalog, Forecasts } from "../types";
-import { forecastChart, forecastScore } from "../forecast-view";
+import {
+  forecastChart,
+  forecastCsv,
+  forecastScore,
+  monthRange,
+} from "../forecast-view";
 function methodLabel(version: string) {
   if (version.startsWith("coffee-xgb-")) return "XGBoost ประวัติร้าน";
   if (version.startsWith("projecta-xgb-")) return "XGBoost ProjectA";
@@ -71,6 +76,10 @@ export default function Forecast() {
   );
   const toast = useToast();
   const data = resource.data;
+  const chartMenuCount =
+    new Set(data?.forecasts.map((f) => f.product_id) ?? []).size ||
+    data?.coverage.length ||
+    0;
   const hasLegacy = data?.model_mode === "mock" || data?.model_mode === "mixed";
   const recommendations = usePagedRows(
     data?.recommendations ?? [],
@@ -97,9 +106,13 @@ export default function Forecast() {
     to,
     data?.forecasts ?? [],
     data?.actual ?? [],
+    chartMenuCount,
   );
   const known = chart.filter(
-    (r) => r.actual !== undefined || r.forecast !== undefined,
+    (r) =>
+      r.actual !== undefined ||
+      r.partialActual !== undefined ||
+      r.forecast !== undefined,
   );
   const gapDates = chart.filter(
     (r) =>
@@ -107,6 +120,7 @@ export default function Forecast() {
       r.date > known[0]!.date &&
       r.date < known.at(-1)!.date &&
       r.actual === undefined &&
+      r.partialActual === undefined &&
       r.forecast === undefined,
   );
   const gapStarts = gapDates.filter(
@@ -114,13 +128,7 @@ export default function Forecast() {
       i === 0 ||
       Date.parse(r.date) - Date.parse(gapDates[i - 1]!.date) > 86400000,
   );
-  const chartMenuCount =
-    new Set(data?.forecasts.map((f) => f.product_id) ?? []).size ||
-    data?.coverage.length ||
-    0;
-  const partialDate = chart.find(
-    (r) => r.actual !== undefined && r.actual_menus < chartMenuCount,
-  );
+  const partialDate = chart.find((r) => r.partialActual !== undefined);
   const selectedScore = data ? forecastScore(data, scoreScope) : null;
   const displayedMetrics = selectedScore?.metrics;
   return (
@@ -129,8 +137,9 @@ export default function Forecast() {
         ใช้ XGBoost จาก ProjectA เทียบกับโมเดลที่เทรนจากประวัติร้าน
         ยอดสัปดาห์ก่อน และค่าเฉลี่ยหลายวิธี เลือกวิธีรายเมนูจากการทดสอบย้อนหลัง
         28 วันสองจุดเวลาเมื่อมีข้อมูลครบ 84 วัน
-        หากประวัติสั้นจะใช้ยอดสัปดาห์ก่อน ต้องมีข้อมูลอย่างน้อย 28 วันติดต่อกัน
-        ผลนี้ยังไม่ผ่านการยืนยันความแม่นยำกับร้านกาแฟ และไม่มีช่วงความเชื่อมั่น
+        หากประวัติสั้นจะใช้ยอดสัปดาห์ก่อน ต้องมีข้อมูลอย่างน้อย 28
+        วันติดต่อกันที่ปิดยอดแล้ว ผลนี้ยังไม่ผ่านการยืนยันความแม่นยำกับร้านกาแฟ
+        และไม่มีช่วงความเชื่อมั่น
       </Notice>
       <Notice>
         ยอดสำหรับเตรียมสินค้าใช้วันส่งมอบ รวมรายการเสิร์ฟแล้วที่ยังไม่จ่าย
@@ -174,8 +183,8 @@ export default function Forecast() {
             value={days}
             onChange={(e) => setDays(e.target.value)}
           >
+            <option value="1">1 วัน</option>
             <option value="7">7 วัน</option>
-            <option value="28">28 วัน</option>
             <option value="30">30 วัน</option>
           </Select>
           <Submit>สร้างพยากรณ์ใหม่</Submit>
@@ -284,7 +293,73 @@ export default function Forecast() {
           <Submit>แสดงผล</Submit>
         </Form>
       </div>
+      <Form
+        noValidate
+        guard={false}
+        onSave={async (fd) => {
+          const range = monthRange(String(fd.get("month")));
+          setParams((previous) => {
+            const next = new URLSearchParams(previous);
+            next.set("from", range.from);
+            next.set("to", range.to);
+            next.delete("run");
+            return next;
+          });
+        }}
+      >
+        <Input
+          key={from.slice(0, 7)}
+          label="ดูรายเดือน"
+          name="month"
+          type="month"
+          defaultValue={from.slice(0, 7)}
+          required
+        />
+        <Submit>แสดงเดือนนี้</Submit>
+        {[-1, 1].map((offset) => (
+          <button
+            key={offset}
+            type="button"
+            onClick={() => {
+              const range = monthRange(from.slice(0, 7), offset);
+              setParams((previous) => {
+                const next = new URLSearchParams(previous);
+                next.set("from", range.from);
+                next.set("to", range.to);
+                next.delete("run");
+                return next;
+              });
+            }}
+          >
+            {offset < 0 ? "เดือนก่อนหน้า" : "เดือนถัดไป"}
+          </button>
+        ))}
+      </Form>
       <QueryState {...resource} retry={resource.reload} />
+      {data && (
+        <Form
+          guard={false}
+          onSave={async () => {
+            const url = URL.createObjectURL(
+              new Blob([forecastCsv(from, to, data)], {
+                type: "text/csv;charset=utf-8",
+              }),
+            );
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `sales-forecast-${from}-${to}.csv`;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }}
+        >
+          <Submit>ส่งออก CSV ตามช่วงที่เลือก</Submit>
+          <p className="caption muted">
+            ประวัติดูและส่งออกตามช่วงวันที่ได้สูงสุด 367 วัน ·
+            โมเดลใช้ประวัติล่าสุดสูงสุด 120 วัน · ช่องว่างหมายถึงไม่ทราบยอด
+            ไม่ใช่ศูนย์
+          </p>
+        </Form>
+      )}
       {run && (
         <Form
           noValidate
@@ -430,6 +505,15 @@ export default function Forecast() {
                       connectNulls={false}
                     />
                     <Line
+                      dataKey="partialActual"
+                      name="ยอดบางส่วน / ยังไม่ปิดวัน"
+                      stroke="var(--warning)"
+                      strokeWidth={0}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 5 }}
+                      connectNulls={false}
+                    />
+                    <Line
                       dataKey="forecast"
                       stroke="var(--primary)"
                       strokeWidth={2}
@@ -456,6 +540,9 @@ export default function Forecast() {
                 {data.contains_demo_history ? " (มีข้อมูลตัวอย่าง)" : ""}
               </span>
               <span className="accent">┄ พยากรณ์</span>
+              <span className="warning-text">
+                ● ยอดบางส่วน / ยังไม่ปิดวัน (ไม่ใช้ฝึกหรือวัดผล)
+              </span>
               {hasLegacy && (
                 <span>ช่วงแรเงาจากผลจำลองเดิม ไม่ใช่ช่วงความเชื่อมั่น</span>
               )}
@@ -472,6 +559,7 @@ export default function Forecast() {
                 {dateText(partialDate.date)} มีข้อมูลส่งมอบ{" "}
                 {partialDate.actual_menus}/{chartMenuCount} เมนู
                 เมนูที่ไม่มีข้อมูลยังไม่ถูกนับเป็นศูนย์
+                และยอดที่ยังไม่ปิดวันแสดงเป็นจุดแยกจากเส้นยอดเต็มวัน
               </p>
             )}
             <p className="caption muted">

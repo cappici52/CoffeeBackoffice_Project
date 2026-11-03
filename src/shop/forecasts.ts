@@ -52,7 +52,11 @@ const forecastRow = z
         v.lower <= v.predicted_qty &&
         v.predicted_qty <= v.upper),
   );
-export async function history(sql: Sql, mode: "actual" | "mixed" = "mixed") {
+export async function history(
+  sql: Sql,
+  mode: "actual" | "mixed" = "mixed",
+  options: { from?: string; to?: string; closedOnly?: boolean } = {},
+) {
   return (
     await sql.query(
       `WITH fulfilled AS (
@@ -62,16 +66,20 @@ export async function history(sql: Sql, mode: "actual" | "mixed" = "mixed") {
         WHERE o.completed_at IS NOT NULL GROUP BY 1,2
       ), observations AS (
         SELECT date,product_id,qty,revenue_satang,source FROM fulfilled
-        WHERE date >= (now() AT TIME ZONE 'Asia/Bangkok')::date - 120
+        WHERE date >= coalesce($2::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 120)
+          AND date <= coalesce($3::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 1)
           AND date < (now() AT TIME ZONE 'Asia/Bangkok')::date
+          AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM day_closings c WHERE c.date=fulfilled.date))
         UNION ALL
         SELECT date,product_id,qty,revenue_satang,source FROM sales_daily
         WHERE source='demo' AND $1='mixed'
-          AND date >= (now() AT TIME ZONE 'Asia/Bangkok')::date - 120
+          AND date >= coalesce($2::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 120)
+          AND date <= coalesce($3::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 1)
           AND date < (now() AT TIME ZONE 'Asia/Bangkok')::date
         UNION ALL
         SELECT c.date,p.id,0,0,'actual' FROM day_closings c CROSS JOIN products p
-        WHERE c.date >= (now() AT TIME ZONE 'Asia/Bangkok')::date - 120
+        WHERE c.date >= coalesce($2::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 120)
+          AND c.date <= coalesce($3::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 1)
           AND c.date < (now() AT TIME ZONE 'Asia/Bangkok')::date
           AND (p.forecast_since <= c.date OR EXISTS (
             SELECT 1 FROM shop_simulation_products sp WHERE sp.run_id=c.simulation_run_id AND sp.product_id=p.id))
@@ -82,10 +90,20 @@ export async function history(sql: Sql, mode: "actual" | "mixed" = "mixed") {
           coalesce(sum(revenue_satang) FILTER(WHERE source='actual'),sum(revenue_satang) FILTER(WHERE source='demo')) AS revenue,
           CASE WHEN bool_or(source='actual') THEN 'actual' ELSE 'demo' END AS source
         FROM observations GROUP BY date,product_id
-      ) SELECT d.date::text,d.product_id,d.qty,d.source,
+      ) SELECT d.date::text,d.product_id,p.name AS product_name,d.qty,d.source,
+        EXISTS(SELECT 1 FROM day_closings c WHERE c.date=d.date) AS is_closed,
+        (EXISTS(SELECT 1 FROM orders o JOIN order_items i ON i.order_id=o.id
+          WHERE i.product_id=d.product_id AND (o.completed_at AT TIME ZONE 'Asia/Bangkok')::date=d.date
+          AND o.simulation_run_id IS NOT NULL)
+          OR EXISTS(SELECT 1 FROM day_closings c WHERE c.date=d.date AND c.simulation_run_id IS NOT NULL)) AS simulated,
         CASE WHEN d.qty>0 THEN d.revenue/d.qty/100.0 ELSE p.price_satang/100.0 END AS unit_price
         FROM daily d JOIN products p ON p.id=d.product_id ORDER BY d.date,d.product_id`,
-      [mode],
+      [
+        mode,
+        options.from ?? null,
+        options.to ?? null,
+        options.closedOnly ?? false,
+      ],
     )
   ).rows;
 }
@@ -116,7 +134,7 @@ export async function generateForecasts(
     409,
     "NO_FORECAST_PRODUCTS",
   );
-  const inputHistory = (await history(db, dataMode))
+  const inputHistory = (await history(db, dataMode, { closedOnly: true }))
     .filter((h) => products.includes(h.product_id))
     .map((h) => ({
       date: h.date,
@@ -343,7 +361,12 @@ export function forecastsRouter(
           )
         ).rows;
     const displayedProducts = new Set(points.map((p) => p.product_id));
-    const actual = (await history(db, input.data_mode)).filter(
+    const actual = (
+      await history(db, input.data_mode, {
+        from: input.date_from,
+        to: input.date_to,
+      })
+    ).filter(
       (h) =>
         h.date >= input.date_from &&
         h.date <= input.date_to &&
@@ -369,7 +392,11 @@ export function forecastsRouter(
         ],
       )
     ).rows;
-    const sales = await history(db, "actual");
+    const sales = await history(db, "actual", {
+      from: input.date_from,
+      to: input.date_to,
+      closedOnly: true,
+    });
     const lookup = new Map(
       sales.map((a) => [`${a.date}:${a.product_id}`, Number(a.qty)]),
     );
@@ -443,7 +470,9 @@ export function forecastsRouter(
         [input.product_id ?? null],
       )
     ).rows;
-    const availableHistory = await history(db, input.data_mode);
+    const availableHistory = await history(db, input.data_mode, {
+      closedOnly: true,
+    });
     const coverage = catalog.map((product) => {
       const observations = availableHistory.filter(
         (h) => h.product_id === product.id,
