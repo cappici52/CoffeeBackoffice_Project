@@ -33,7 +33,9 @@
     "local": "node scripts/start-local.mjs",
     "local:lan": "node scripts/start-local.mjs --lan",
     "network:prepare": "node scripts/prepare-network.mjs",
-    "test:postgres": "node scripts/test-postgres.mjs"
+    "test:postgres": "node scripts/test-postgres.mjs",
+    "dataset:prepare": "python forecast-service/public_dataset.py",
+    "dataset:import": "tsx src/research-dataset.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",

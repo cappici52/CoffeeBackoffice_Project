@@ -23,7 +23,7 @@ class ForecastRequest(BaseModel):
     product_ids: list[UUID] = Field(min_length=1, max_length=1000)
     history: list[Sale] = Field(default_factory=list, max_length=200000)
     pipeline: str = Field(default="v5", pattern="^v5$")
-    cohort: str = Field(default="genuine", pattern="^(genuine|simulation|demo)$")
+    cohort: str = Field(default="genuine", pattern="^(genuine|simulation|demo|public_dataset)$")
     method_policy: str = Field(default='auto',pattern='^(auto|mean28|weekly)$')
 
 @app.get("/health")

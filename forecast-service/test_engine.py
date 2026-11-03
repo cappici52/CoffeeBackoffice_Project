@@ -97,6 +97,14 @@ class StandaloneServiceTests(unittest.TestCase):
             self.assertEqual(result.stdout.strip(),'coffee-demand-v5')
 
 class SpecificationFeatureTests(unittest.TestCase):
+    def test_public_replay_future_sales_cannot_change_selection_or_predictions(self):
+        history=observations(180)
+        with patch('engine.fit',return_value=None):
+            before=predict('2026-11-02','2026-12-01',['a'],history,cohort='public_dataset')
+            after=predict('2026-11-02','2026-12-01',['a'],history+[dict(date='2026-11-02',product_id='a',qty=999999.,unit_price=999999.,source='actual')],cohort='public_dataset')
+        self.assertEqual(before,after)
+        self.assertEqual(before[0]['diagnostics']['training_cohort'],'public_dataset')
+        self.assertLess(before[0]['diagnostics']['calibration']['date_to'],'2026-11-02')
     def test_all_requested_features_use_only_observations_at_or_before_issue_time(self):
         from engine import FEATURES,features,metrics
         origin=date(2026,11,1)

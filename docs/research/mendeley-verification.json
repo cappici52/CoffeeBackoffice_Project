@@ -1,0 +1,59 @@
+{
+  "format": "coffee-public-dataset-v1",
+  "id": "893da7cf-5067-51c1-9d59-bc444543cb9c",
+  "data_mode": "PUBLIC_DATASET",
+  "name": "Anonymous Transactional Dataset",
+  "version": "2",
+  "source_url": "https://data.mendeley.com/datasets/kcgf45y24m/2",
+  "doi": "10.17632/kcgf45y24m.2",
+  "license": "CC BY 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "attribution": "Engel, Mychael Maoeretz; Gaol, Ford Lumban; Kurniawan, Aditya; Budiharto, Widodo (2026), Anonymous Transactional Dataset, Mendeley Data, V2, doi:10.17632/kcgf45y24m.2",
+  "transform_version": "mendeley-item-occurrences-v1",
+  "content_sha256": "5af45ebdc5f5f7f6eac4164d882c2a1b6bc9a755fa1dbf82e296a59c23ec7cc0",
+  "raw_hashes": {
+    "Transactions.csv": "36f2412969f8241e72b5f3eb395e5af13a7ba042de1e6ecdbe32bee23723ef90",
+    "Products.csv": "09e3d91530797fb0c2c5a214f5660a6e2235521b1cf332382343c75e7708d047"
+  },
+  "outlets": [
+    {
+      "id": "SHOP001",
+      "date_from": "2025-01-02",
+      "date_to": "2025-09-30",
+      "active_days": 272,
+      "missing_dates": []
+    },
+    {
+      "id": "SHOP002",
+      "date_from": "2025-01-02",
+      "date_to": "2025-09-30",
+      "active_days": 272,
+      "missing_dates": []
+    },
+    {
+      "id": "SHOP003",
+      "date_from": "2025-01-02",
+      "date_to": "2025-09-30",
+      "active_days": 272,
+      "missing_dates": []
+    }
+  ],
+  "report": {
+    "raw_transactions": 53820,
+    "unique_receipts": 53820,
+    "exact_duplicates_skipped": 0,
+    "item_occurrences": 61973,
+    "daily_rows": 76435,
+    "inferred_zero_rows": 35646,
+    "date_from": "2025-01-02",
+    "date_to": "2025-09-30",
+    "target": "Recorded item occurrences per product, outlet and source-calendar date; TotalItem reconciles list length.",
+    "zero_policy": "After first observed product occurrence, no item on an outlet-active date is an inferred recorded-sales zero. Dates without any outlet receipts remain unknown. This does not prove stock or menu availability.",
+    "price_policy": "Currency is not specified by the files. Static product metadata prices and basket totals are excluded from all model features; unit_price=0.",
+    "limitations": [
+      "No item-level quantity field beyond item tokens and TotalItem; this target is reconciled recorded item occurrences.",
+      "No stockout, closure, cancellation or complete-day flags; recorded sales are not unconstrained demand.",
+      "Dates use the source calendar without assuming a timezone or converting them to Bangkok."
+    ]
+  }
+}

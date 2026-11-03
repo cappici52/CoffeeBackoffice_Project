@@ -3,7 +3,6 @@ import { Router, type RequestHandler } from "express";
 import { z } from "zod";
 import type { Config } from "../config.js";
 import type { Database, Sql } from "../db.js";
-import { ApiError } from "../security.js";
 import {
   businessDate,
   dateRange,
@@ -16,65 +15,10 @@ import { metrics, intervalMetrics } from "./forecast-metrics.js";
 import { serializeForecastHistory } from "./forecast-snapshot.js";
 import { dataset, type Cohort } from "./forecast-data.js";
 import { requirements } from "./forecast-planning.js";
+import { requestForecast } from "./forecast-client.js";
+import { runPublicReplay, getPublicReplay } from "./forecast-replay.js";
 import { forecastSummary } from "./forecast-summary.js";
 
-const forecastRow = z
-  .object({
-    date: dateSchema,
-    product_id: idSchema,
-    predicted_qty: z.number().min(0).max(1e6),
-    lower: z.number().min(0).max(1e6).nullable(),
-    upper: z.number().min(0).max(1e6).nullable(),
-    model_version: z.string().min(1).max(100),
-    history_source: z
-      .enum(["actual", "demo", "mixed", "unknown"])
-      .default("unknown"),
-    diagnostics: z
-      .object({
-        origin: dateSchema,
-        history_days: z.number().int().min(1).max(180),
-        reason: z.string().max(200),
-        horizon: z
-          .union([z.literal(1), z.literal(7), z.literal(30)])
-          .optional(),
-        validation_origins: z.number().int().min(0).max(30).optional(),
-        gap_days: z.number().int().min(0).max(6).optional(),
-        pipeline: z.string().max(100).optional(),
-        method_policy: z.enum(["auto", "mean28", "weekly"]).optional(),
-        training_cohort: z.enum(["genuine", "simulation", "demo"]).optional(),
-        interval_kind: z
-          .enum(["empirical_absolute_80", "unavailable"])
-          .optional(),
-        calibration: z
-          .object({
-            samples: z.number().int().min(20).max(30),
-            date_from: dateSchema,
-            date_to: dateSchema,
-          })
-          .nullable()
-          .optional(),
-        selection: z.record(
-          z.string().max(100),
-          z.object({
-            mae: z.number().nonnegative(),
-            rmse: z.number().nonnegative(),
-            wape: z.number().nonnegative().nullable(),
-            bias: z.number().finite().optional(),
-            samples: z.number().int().nonnegative(),
-          }),
-        ),
-      })
-      .optional(),
-  })
-  .strict()
-  .refine(
-    (v) =>
-      (v.lower === null && v.upper === null) ||
-      (v.lower !== null &&
-        v.upper !== null &&
-        v.lower <= v.predicted_qty &&
-        v.predicted_qty <= v.upper),
-  );
 export async function history(
   sql: Sql,
   mode: "actual" | "mixed" = "mixed",
@@ -164,51 +108,15 @@ export async function computeForecast(
       unit_price: Number(h.unit_price),
       source: h.source,
     }));
-  let result: unknown;
-  try {
-    const response = await fetch(`${config.FORECAST_SERVICE_URL}/forecast`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...range,
-        product_id: null,
-        product_ids: products,
-        history: inputHistory,
-        pipeline: "v5",
-        cohort: training.cohort,
-        method_policy: methodPolicy,
-      }),
-      signal: AbortSignal.timeout(60_000),
-    });
-    if (response.status === 422) {
-      const error = (await response.json().catch(() => null)) as {
-        detail?: { code?: string };
-      } | null;
-      if (error?.detail?.code === "FORECAST_INSUFFICIENT_HISTORY")
-        throw new ApiError(409, "FORECAST_INSUFFICIENT_HISTORY");
-    }
-    fail(response.ok, 502, "FORECAST_SERVICE_UNAVAILABLE");
-    result = await response.json();
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    fail(false, 502, "FORECAST_SERVICE_UNAVAILABLE");
-  }
-  const parsed = z.array(forecastRow).max(30000).safeParse(result);
-  fail(parsed.success, 502, "FORECAST_INVALID_RESPONSE");
-  const rows = parsed.data;
-  const expectedPipeline =
-    methodPolicy === "auto"
-      ? "coffee-demand-v5"
-      : "coffee-demand-v5-" + methodPolicy;
-  fail(
-    rows.every(
-      (row) =>
-        row.diagnostics?.pipeline === expectedPipeline &&
-        (!row.diagnostics.training_cohort ||
-          row.diagnostics.training_cohort === training.cohort),
-    ),
-    502,
-    "FORECAST_INVALID_RESPONSE",
+  const rows = await requestForecast(
+    config,
+    from,
+    to,
+    products,
+    inputHistory,
+    training.cohort,
+    methodPolicy,
+    dataMode === "actual",
   );
   const closedTargets = new Set(
     (
@@ -230,24 +138,6 @@ export async function computeForecast(
         row.diagnostics.calibration = null;
       }
     }
-  const expected =
-    products.length * ((Date.parse(to) - Date.parse(from)) / 86400000 + 1);
-  const keys = new Set(rows.map((r) => `${r.date}:${r.product_id}`));
-  fail(
-    rows.length === expected &&
-      keys.size === expected &&
-      rows.every(
-        (r) =>
-          r.date >= from && r.date <= to && products.includes(r.product_id),
-      ),
-    502,
-    "FORECAST_INVALID_RESPONSE",
-  );
-  fail(
-    dataMode !== "actual" || rows.every((r) => r.history_source === "actual"),
-    502,
-    "FORECAST_INVALID_RESPONSE",
-  );
   return { rows, training, inputHistory };
 }
 
@@ -410,6 +300,27 @@ export function forecastsRouter(
 ) {
   const r = Router();
   r.use("/forecasts", auth, manage);
+  r.get("/forecasts/datasets", async (_req, res) => {
+    res.json({
+      datasets: (
+        await db.query(
+          "SELECT id,imported_at,data_mode,metadata FROM research_datasets ORDER BY imported_at DESC,id",
+        )
+      ).rows,
+    });
+  });
+  r.get("/forecasts/replays", async (_req, res) => {
+    res.json({
+      runs: (
+        await db.query(
+          "SELECT id,dataset_id,created_at,cutoff::text,horizon,outlet_id,product_id,metadata FROM research_replay_runs ORDER BY created_at DESC,id DESC LIMIT 100",
+        )
+      ).rows,
+    });
+  });
+  r.get("/forecasts/replays/:id", async (req, res) => {
+    res.json(await getPublicReplay(db, idSchema.parse(req.params.id)));
+  });
   r.get("/forecasts/data", async (req, res) => {
     const input = z
       .object({
@@ -550,6 +461,10 @@ export function forecastsRouter(
     );
   });
   r.post("/forecasts/backtest", async (req, res) => {
+    if (req.body.dataset_id !== undefined) {
+      res.json(await runPublicReplay(db, config, req.body, res.locals.user.id));
+      return;
+    }
     const input = z
       .object({
         cutoff: dateSchema,
