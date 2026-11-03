@@ -113,6 +113,11 @@ Migration มี checksum ห้ามแก้ไฟล์ที่ใช้แ
 
 - [สเปกต้นฉบับ](docs/coffee-shop-backoffice-spec.md)
 - [สถานะงานและขอบเขต](docs/roadmap.md)
+- [โครงสร้างระบบ Use Cases, ER และพจนานุกรมข้อมูล](docs/system-design.md)
+- [แผนทดสอบรับมอบ/ทดลองกับผู้ใช้และแนวทางสาธิต](docs/acceptance-plan.md)
+- [แผนเก็บข้อมูลจริงและประเมินพยากรณ์](docs/forecast-evaluation-plan.md)
+- [คู่มือใช้งานร้าน สำรอง/กู้คืน และตรวจความพร้อม](docs/operations.md)
+- [ผลตรวจระบบและข้อจำกัดก่อนเปิดร้าน](docs/release-check.md)
 - [กติกา domain / การรับเงินและปิดวัน](docs/domain-decisions.md)
 - [ผลทดลองเทรนด้วยข้อมูล Coffee Sales จริงและข้อจำกัด](docs/coffee-sales-evaluation.md) — เทรนและทดสอบแล้ว แต่ยังไม่เปิดใช้แทนโมเดลในแอปเพราะแพ้ baseline ที่เลือกจาก validation
 - [แนวทาง UI และ token](DESIGN.md) / [พฤติกรรมร่วม](UX-CONTRACT.md)

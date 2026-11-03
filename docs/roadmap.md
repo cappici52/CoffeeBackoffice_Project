@@ -19,6 +19,8 @@ Requirements: [source specification](coffee-shop-backoffice-spec.md). Operationa
 
 ## External inputs still needed
 
+Technical handover is documented in `system-design.md`, `operations.md`, `acceptance-plan.md` and `forecast-evaluation-plan.md`. Automated checks cover implementation and recovery. Actual-device acceptance and user evaluation are explicitly pending rather than presented as fabricated results.
+
 - Sufficient real coffee-shop daily sales history for independent accuracy evaluation. The supplied model and new shop-history training are connected; demo-backed results are labeled and cannot establish operational accuracy.
 - A payment provider, actual printer model or IoT hardware only if the user later requests those direct integrations. Initial scope records payment manually and prints via browser.
 
