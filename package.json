@@ -23,6 +23,8 @@
     "forecast:worker": "tsx src/forecast-worker.ts",
     "test:e2e": "node scripts/browser-test.mjs",
     "local": "node scripts/start-local.mjs",
+    "local:lan": "node scripts/start-local.mjs --lan",
+    "network:prepare": "node scripts/prepare-network.mjs",
     "test:postgres": "node scripts/test-postgres.mjs"
   },
   "dependencies": {

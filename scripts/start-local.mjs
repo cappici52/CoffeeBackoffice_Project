@@ -2,12 +2,17 @@ import "dotenv/config";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
+import { prepareNetwork, requestedIp } from "./prepare-network.mjs";
 
 if (!existsSync("dist/client/index.html"))
   throw new Error("Run npm run build first");
 if (!process.env.DATABASE_URL)
   throw new Error("Configure DATABASE_URL in .env first");
 const port = Number(process.env.PORT ?? 3001);
+const args = process.argv.slice(2);
+if (args.length && args[0] !== "--lan")
+  throw new Error("Use npm run local:lan for automatic hotspot/Wi-Fi setup");
+const lanIp = args[0] === "--lan" ? requestedIp(args.slice(1)) : undefined;
 const python = resolve(
   process.platform === "win32"
     ? ".venv/Scripts/python.exe"
@@ -33,6 +38,8 @@ try {
 } catch (error) {
   if (error.message?.includes("already running")) throw error;
 }
+// Explicit LAN mode only: do not overwrite a configured online URL during normal startup.
+if (args[0] === "--lan") await prepareNetwork({ ip: lanIp, port });
 const children = [];
 let stopping = false;
 function stop(code = 0) {
@@ -53,7 +60,23 @@ function start(executable, args) {
   });
   return child;
 }
-if (localForecast)
+let forecastAlreadyRunning = false;
+if (localForecast) {
+  try {
+    forecastAlreadyRunning = (
+      await fetch(forecast.origin + "/health", {
+        signal: AbortSignal.timeout(1500),
+      })
+    ).ok;
+  } catch {
+    /* Start the configured local service below. */
+  }
+}
+if (forecastAlreadyRunning)
+  console.log(
+    "Using the forecast service already running; Ctrl+C will leave that existing service running.",
+  );
+if (localForecast && !forecastAlreadyRunning)
   start(python, [
     "-m",
     "uvicorn",

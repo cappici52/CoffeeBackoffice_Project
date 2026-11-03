@@ -39,6 +39,8 @@ npm run local
 
 ตรวจความพร้อมด้วย `npm run ops:check` สำรองข้อมูลด้วย `npm run db:backup` และทดสอบกู้คืนด้วย `npm run test:backup` (ต้อง build และใช้ development PostgreSQL ที่สร้างฐานทดลองได้) ดู [คู่มือเปิดร้าน ปิดวัน สำรองและกู้คืน](docs/operations.md) สำหรับขั้นตอนใช้งานจริง
 
+เมื่อนำเครื่องไปใช้กับ Wi-Fi/ฮอตสปอตที่ IP เปลี่ยน: หยุดระบบเดิมก่อน แล้วใช้ `npm run local:lan` แทน `npm run local` คำสั่งจะตรวจ IP ภายในและตั้ง `PUBLIC_ORIGIN` ให้ก่อนเริ่ม API จากนั้นโหลดหน้า **โต๊ะ / QR** ใหม่และให้สแกน QR รอบนั้น ถ้าพบหลายเครือข่ายใช้ `npm run local:lan -- --ip 10.75.121.79` โดยแทน IP ด้วยค่าที่แสดงบนเครื่อง คุณสมบัตินี้ไม่ทำให้ QR เก่าหรือเน็ตมือถือคนละเครือข่ายเข้าได้ ดู [การนำเสนอผ่านฮอตสปอต](docs/operations.md#การนำเสนอผ่านฮอตสปอต)
+
 เปิด [http://localhost:3001](http://localhost:3001) แล้วใช้บัญชีตาม `.env` รหัสผ่านไม่ถูก commit ขึ้น Git `npm run local` เปิด API/หน้าเว็บ, FastAPI และ worker ใน terminal เดียว กด Ctrl+C เพื่อหยุด โปรแกรมจะไม่เปิด API ซ้ำหาก port นั้นมี Coffee Backoffice ทำงานอยู่แล้ว
 
 `db:seed` สร้าง owner เฉพาะฐานข้อมูลที่ยังไม่มีผู้ใช้ ไม่ reset รหัสผ่านเดิม `db:demo` ทำงานเฉพาะ development/test และเฉพาะเมื่อยังไม่มีสินค้า ข้อมูลตัวอย่างสร้าง manager@example.com, cashier@example.com, kitchen@example.com โดยใช้รหัสเริ่มต้นเดียวกับ owner สำหรับทดลองในเครื่อง ควรเปลี่ยนรหัส/ปิดบัญชีตัวอย่างก่อนใช้งานจริง
@@ -100,7 +102,7 @@ npm run build
 npm run test:e2e
 ```
 
-- 56 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast ทั้งชุด/รายเมนู, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย, LAN/production security headers และอัปโหลด/ตรวจไฟล์รูป
+- 62 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast ทั้งชุด/รายเมนู, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย, LAN/production security headers และอัปโหลด/ตรวจไฟล์รูป
 - Python model/selection tests 24 กรณี รวมตรวจผลตรงกับโมเดล ProjectA กันข้อมูลอนาคตรั่ว ประวัติสิ้นสุดต่างวัน และทำซ้ำผลเทรน Coffee Sales จริง
 - Browser test ครอบคลุม 24 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, อัปโหลดรูป/พรีวิวบนมือถือ, พยากรณ์เฉพาะเมนู, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
 - Tests บน PostgreSQL และ browser ใช้ schema สุ่มแล้วลบ ไม่เขียน test orders ลงตารางร้านจริง ต้องใช้ development database ที่อนุญาตสร้าง schema
