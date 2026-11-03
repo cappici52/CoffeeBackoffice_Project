@@ -404,3 +404,70 @@ test("production history mode cannot silently accept demo-trained results", asyn
     .send({ date_from: day(1), date_to: day(1), product_id: product })
     .expect(502);
 });
+
+test("forecasts derived from replay orders retain provenance and are scored separately from genuine sales", async () => {
+  const simulation = randomUUID(),
+    menu = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO shop_simulation_runs(id,date_from,date_to,seed,status,created_by) VALUES($1,$2,$3,42,'complete',$4)",
+    [simulation, day(-3), day(-1), owner],
+  );
+  await fixture.db.query(
+    "INSERT INTO products(id,category_id,name,price_satang,station) SELECT $1,category_id,'Replay menu',7500,'bar' FROM products WHERE id=$2",
+    [menu, product],
+  );
+  const order = await delivered(menu, day(-1), 2);
+  await fixture.db.query("UPDATE orders SET simulation_run_id=$1 WHERE id=$2", [
+    simulation,
+    order,
+  ]);
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    new Response(
+      JSON.stringify([
+        {
+          date: day(1),
+          product_id: menu,
+          predicted_qty: 3,
+          lower: null,
+          upper: null,
+          model_version: "weekly-naive-v1",
+          history_source: "actual",
+        },
+      ]),
+      { status: 200 },
+    ),
+  );
+  const generated = await request(app)
+    .post("/api/forecasts/generate")
+    .set("Origin", origin)
+    .set("Cookie", cookie)
+    .send({ date_from: day(1), date_to: day(1), product_id: menu })
+    .expect(200);
+  const exported = await request(app)
+    .get("/api/forecasts/runs/" + generated.body.run_id)
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(exported.body.run.contains_simulated_sales).toBe(true);
+  const previous = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history,contains_simulated_sales) VALUES($1,$2,$3,$3,'actual','fulfilled_v1',$4,'[]',true)",
+    [previous, day(-2) + "T08:00:00+07:00", day(-1), "a".repeat(64)],
+  );
+  await fixture.db.query(
+    "INSERT INTO forecast_run_points(run_id,forecast_date,product_id,predicted_qty,model_version,history_source,lead_days) VALUES($1,$2,$3,3,'weekly-naive-v1','actual',1)",
+    [previous, day(-1), menu],
+  );
+  const data = await request(app)
+    .get(
+      `/api/forecasts?date_from=${day(-1)}&date_to=${day(-1)}&product_id=${menu}`,
+    )
+    .set("Cookie", cookie)
+    .expect(200);
+  expect(data.body.contains_simulated_sales).toBe(true);
+  expect(data.body.accuracy.samples).toBe(0);
+  expect(
+    data.body.evaluation.by_source.find(
+      (s: { source: string }) => s.source === "simulation",
+    ),
+  ).toMatchObject({ samples: 1, mae: 1 });
+});

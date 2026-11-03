@@ -201,6 +201,9 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
   const [failure, setFailure] = useState("");
   const { user } = useAuth();
   const live = useLive();
+  const shopContext = useResource<{ contains_simulation: boolean }>(
+    "/shop-context",
+  );
   const queue = useResource<{ unpaid: number; qr_unpaid: number }>(
     user.role === "kitchen" ? null : "/orders/summary",
   );
@@ -293,6 +296,13 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
           </span>
         </header>
         <main id="content" className="page">
+          {shopContext.data?.contains_simulation && (
+            <Notice tone="warning">
+              ฐานข้อมูลนี้มีรายการจำลองการขาย
+              รายงานยอดขายและสต็อกรวมรายการจำลองด้วย
+              รายการเหล่านี้ไม่ใช่การขายหรือรับเงินจริง
+            </Notice>
+          )}
           {failure && <Notice tone="danger">{failure}</Notice>}
           <Suspense
             fallback={

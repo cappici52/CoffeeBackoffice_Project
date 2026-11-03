@@ -70,13 +70,15 @@ export default function Forecast() {
     from + to + product + lead,
   );
   const sourceLabel = (source: string) =>
-    source === "actual"
-      ? "ข้อมูลจริงล้วน"
-      : source === "demo"
-        ? "ข้อมูลตัวอย่าง"
-        : source === "mixed"
-          ? "ข้อมูลผสม"
-          : "ไม่ทราบที่มา";
+    source === "simulation"
+      ? "จำลองการขายผ่านแอปนี้"
+      : source === "actual"
+        ? "ข้อมูลออเดอร์ร้าน"
+        : source === "demo"
+          ? "ข้อมูลตัวอย่าง"
+          : source === "mixed"
+            ? "ข้อมูลผสม"
+            : "ไม่ทราบที่มา";
   const chartMap = new Map<
     string,
     {
@@ -230,7 +232,7 @@ export default function Forecast() {
             key={"mode" + mode}
             defaultValue={mode}
           >
-            <option value="actual">ข้อมูลจริงเท่านั้น</option>
+            <option value="actual">ออเดอร์ร้านเท่านั้น</option>
             <option value="mixed">ทดลอง: ใช้ข้อมูลตัวอย่างร่วมด้วย</option>
           </Select>
           <Select
@@ -249,7 +251,11 @@ export default function Forecast() {
             {data?.runs.map((r) => (
               <option key={r.id} value={r.id}>
                 {dateText(r.generated_at, true)} · {r.id.slice(0, 8)} ·{" "}
-                {r.data_mode === "actual" ? "จริง" : "ทดลอง"}
+                {r.contains_simulated_sales
+                  ? "มีรายการจำลอง"
+                  : r.data_mode === "actual"
+                    ? "ออเดอร์ร้าน"
+                    : "ทดลอง"}
               </option>
             ))}
           </Select>
@@ -310,7 +316,7 @@ export default function Forecast() {
                     <th scope="col">เมนู</th>
                     <th scope="col">วันล่าสุด</th>
                     <th scope="col">ต่อเนื่อง</th>
-                    <th scope="col">วันที่มียอดจริง</th>
+                    <th scope="col">วันที่มีข้อมูลส่งมอบ</th>
                     <th scope="col">สถานะ</th>
                   </tr>
                 </thead>
@@ -343,7 +349,7 @@ export default function Forecast() {
           </details>
           <section className="chart-panel">
             <div className="section-head">
-              <h2>ยอดขายจริงและพยากรณ์</h2>
+              <h2>ยอดส่งมอบและพยากรณ์</h2>
               <span className="caption muted">
                 จำนวนหน่วยขาย · {dateText(from)} – {dateText(to)}
               </span>
@@ -474,6 +480,21 @@ export default function Forecast() {
             เลือกรอบแรกของแต่ละเมนู/วัน/ระยะล่วงหน้า
             จึงไม่เพิ่มจำนวนตัวอย่างเมื่อกดสร้างซ้ำ
           </p>
+          {data.contains_simulated_sales && (
+            <Notice tone="warning">
+              ประวัติร้านนี้มีรายการจำลองการขาย
+              ผลทดสอบจากรายการจำลองแยกจากคะแนนจริงด้านบน
+              {data.evaluation.by_source
+                .filter((e) => e.source === "simulation")
+                .map((e) => (
+                  <p key={e.source}>
+                    ผลทดสอบจากการจำลอง: {e.samples} ตัวอย่าง · MAE{" "}
+                    {e.mae === null ? "—" : number(e.mae)} · WAPE{" "}
+                    {e.wape === null ? "—" : number(e.wape) + "%"}
+                  </p>
+                ))}
+            </Notice>
+          )}
           <details className="section-details">
             <summary>ผลวัดจริงแยกเมนูและระยะล่วงหน้า</summary>
             <div

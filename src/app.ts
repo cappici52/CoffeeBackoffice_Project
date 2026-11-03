@@ -45,6 +45,14 @@ export function createApp(db: Database, config: Config) {
   const auth = authentication(db, config);
   app.use("/api/guest", guestRouter(db, config));
   app.use("/api", auth.router);
+  app.get("/api/shop-context", auth.authenticate, async (_req, res) => {
+    const row = (
+      await db.query(
+        "SELECT EXISTS(SELECT 1 FROM orders WHERE simulation_run_id IS NOT NULL) AS contains_simulation",
+      )
+    ).rows[0];
+    res.json(row);
+  });
   app.use(
     "/api",
     imagesRouter(db, auth.authenticate, auth.requireRoles("owner", "manager")),

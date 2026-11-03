@@ -246,6 +246,7 @@ export interface Forecasts {
     data_mode: "actual" | "mixed";
     target_basis: string;
     history_sha256: string;
+    contains_simulated_sales: boolean;
   }[];
   coverage: {
     product_id: string;
@@ -266,6 +267,7 @@ export interface Forecasts {
   };
   selected_run_id: string | null;
   contains_demo_history: boolean;
+  contains_simulated_sales: boolean;
   model_mode: "adaptive" | "mock" | "mixed" | "empty";
 }
 export interface ForecastMetrics {

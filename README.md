@@ -102,7 +102,7 @@ npm run build
 npm run test:e2e
 ```
 
-- 69 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast ทั้งชุด/รายเมนู, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย, LAN/production security headers และอัปโหลด/ตรวจไฟล์รูป
+- 71 integration/configuration tests ครอบคลุม auth/roles, CRUD, SQL rollback, ราคา, options, สต็อก, idempotency, สถานะ KDS, คืนเงิน, รายงาน, ปิดวัน, forecast ทั้งชุด/รายเมนู, public QR/table binding, quote validation, capability isolation, ทานเสร็จค่อยจ่าย, LAN/production security headers และอัปโหลด/ตรวจไฟล์รูป
 - Python model/selection tests 28 กรณี รวมตรวจผลตรงกับโมเดล ProjectA กันข้อมูลอนาคตรั่ว ประวัติสิ้นสุดต่างวัน และทำซ้ำผลเทรน Coffee Sales จริง
 - Browser test ครอบคลุม 25 กลุ่มตรวจ รวม lost-payment-response retry, POS → ใบเสร็จ → KDS → ส่งมอบ → รายงาน, CRUD, อัปโหลดรูป/พรีวิวบนมือถือ, พยากรณ์เฉพาะเมนู, สิทธิ์, เปลี่ยนรหัสผ่าน, ถอดรหัส PNG ของ QR, การสั่ง/ติดตามของลูกค้า, 1536px/390px และ automated WCAG checks บน POS/หน้าลูกค้า
 - Tests บน PostgreSQL และ browser ใช้ schema สุ่มแล้วลบ ไม่เขียน test orders ลงตารางร้านจริง ต้องใช้ development database ที่อนุญาตสร้าง schema
@@ -120,6 +120,7 @@ Migration มี checksum ห้ามแก้ไฟล์ที่ใช้แ
 - [แผนเก็บข้อมูลจริงและประเมินพยากรณ์](docs/forecast-evaluation-plan.md)
 - [พยากรณ์ v2: ประวัติส่งมอบ รอบย้อนหลัง และการเลือกโมเดล](docs/forecast-v2.md)
 - [จำลองการขายผ่านระบบและทดสอบพยากรณ์ 30 วันในฐานข้อมูลแยก](docs/sales-simulation.md)
+- [จำลองการขายผ่านร้านเดิมในฐานหลักตามคำขอเจ้าของ](docs/main-shop-replay.md)
 - [ตรวจแหล่งข้อมูลจริงและผลเปรียบเทียบหลายจุดเวลา](docs/forecast-data-review.md)
 - [คู่มือใช้งานร้าน สำรอง/กู้คืน และตรวจความพร้อม](docs/operations.md)
 - [ผลตรวจระบบและข้อจำกัดก่อนเปิดร้าน](docs/release-check.md)

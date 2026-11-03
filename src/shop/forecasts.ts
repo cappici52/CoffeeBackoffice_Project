@@ -73,7 +73,8 @@ export async function history(sql: Sql, mode: "actual" | "mixed" = "mixed") {
         SELECT c.date,p.id,0,0,'actual' FROM day_closings c CROSS JOIN products p
         WHERE c.date >= (now() AT TIME ZONE 'Asia/Bangkok')::date - 120
           AND c.date < (now() AT TIME ZONE 'Asia/Bangkok')::date
-          AND p.forecast_since <= c.date
+          AND (p.forecast_since <= c.date OR EXISTS (
+            SELECT 1 FROM shop_simulation_products sp WHERE sp.run_id=c.simulation_run_id AND sp.product_id=p.id))
           AND NOT EXISTS (SELECT 1 FROM fulfilled s WHERE s.date=c.date AND s.product_id=p.id)
       ), daily AS (
         SELECT date,product_id,
@@ -173,11 +174,26 @@ export async function generateForecasts(
     "FORECAST_INVALID_RESPONSE",
   );
   const runId = randomUUID();
+  const simulated =
+    (
+      await db.query(
+        `SELECT EXISTS (
+    SELECT 1 FROM orders o JOIN order_items i ON i.order_id=o.id
+    JOIN jsonb_to_recordset($1::jsonb) AS h(date date,product_id uuid) ON h.product_id=i.product_id
+      AND h.date=(o.completed_at AT TIME ZONE 'Asia/Bangkok')::date
+    WHERE o.simulation_run_id IS NOT NULL
+    UNION ALL
+    SELECT 1 FROM day_closings c JOIN shop_simulation_products sp ON sp.run_id=c.simulation_run_id
+    JOIN jsonb_to_recordset($1::jsonb) AS h(date date,product_id uuid) ON h.date=c.date AND h.product_id=sp.product_id
+  ) AS present`,
+        [JSON.stringify(inputHistory)],
+      )
+    ).rows[0]?.present === true;
   await db.transaction(async (sql) => {
     await sql.query("SELECT pg_advisory_xact_lock(7301004)");
     const snapshot = serializeForecastHistory(inputHistory);
     await sql.query(
-      "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history,created_by) VALUES($1,$2,$3,$4,$5,'fulfilled_v1',$6,$7,$8)",
+      "INSERT INTO forecast_runs(id,generated_at,date_from,date_to,data_mode,target_basis,history_sha256,input_history,created_by,contains_simulated_sales) VALUES($1,$2,$3,$4,$5,'fulfilled_v1',$6,$7,$8,$9)",
       [
         runId,
         generatedAt.toISOString(),
@@ -187,6 +203,7 @@ export async function generateForecasts(
         createHash("sha256").update(snapshot).digest("hex"),
         snapshot,
         actor ?? null,
+        simulated,
       ],
     );
     for (const row of rows) {
@@ -281,7 +298,7 @@ export function forecastsRouter(
     const params = [input.date_from, input.date_to, input.product_id ?? null];
     const runs = (
       await db.query(
-        `SELECT r.id,r.generated_at,r.date_from::text,r.date_to::text,r.data_mode,r.target_basis,r.history_sha256
+        `SELECT r.id,r.generated_at,r.date_from::text,r.date_to::text,r.data_mode,r.target_basis,r.history_sha256,r.contains_simulated_sales
       FROM forecast_runs r WHERE r.date_from <= $2::date AND r.date_to >= $1::date
       AND ($3::uuid IS NULL OR EXISTS(SELECT 1 FROM forecast_run_points p WHERE p.run_id=r.id AND p.product_id=$3))
       ORDER BY r.generated_at DESC,r.id DESC LIMIT 50`,
@@ -339,7 +356,7 @@ export function forecastsRouter(
     const archived = (
       await db.query(
         `WITH ranked AS (
-      SELECT p.*,r.generated_at,r.data_mode,row_number() OVER(PARTITION BY p.forecast_date,p.product_id,p.lead_days,p.history_source,r.data_mode
+      SELECT p.*,r.generated_at,r.data_mode,r.contains_simulated_sales,row_number() OVER(PARTITION BY p.forecast_date,p.product_id,p.lead_days,p.history_source,r.data_mode
         ORDER BY r.generated_at,r.id) AS rank
       FROM forecast_run_points p JOIN forecast_runs r ON r.id=p.run_id
       WHERE p.forecast_date BETWEEN $1::date AND $2::date AND ($3::uuid IS NULL OR p.product_id=$3)
@@ -362,22 +379,30 @@ export function forecastsRouter(
         lead_days: Number(p.lead_days),
         history_source: p.history_source,
         data_mode: p.data_mode,
+        simulated: p.contains_simulated_sales === true,
       }));
     const genuine = comparisons.filter(
-      (p) => p.history_source === "actual" && p.data_mode === "actual",
+      (p) =>
+        p.history_source === "actual" &&
+        p.data_mode === "actual" &&
+        !p.simulated,
     );
     const accuracy = metrics(genuine);
-    const bySource = ["actual", "demo", "mixed", "unknown"].map((source) => ({
-      source,
-      ...metrics(
-        comparisons.filter(
-          (p) =>
-            (p.history_source === "actual" && p.data_mode !== "actual"
-              ? "mixed"
-              : p.history_source) === source,
+    const bySource = ["actual", "demo", "mixed", "unknown", "simulation"].map(
+      (source) => ({
+        source,
+        ...metrics(
+          comparisons.filter(
+            (p) =>
+              (p.simulated
+                ? "simulation"
+                : p.history_source === "actual" && p.data_mode !== "actual"
+                  ? "mixed"
+                  : p.history_source) === source,
+          ),
         ),
-      ),
-    }));
+      }),
+    );
     const groups = [
       ...new Set(genuine.map((p) => `${p.product_id}:${p.lead_days}`)),
     ].map((key) => {
@@ -422,9 +447,12 @@ export function forecastsRouter(
         ready: consecutive >= 28 && recent,
       };
     });
-    const demo =
-      (await db.query("SELECT 1 FROM sales_daily WHERE source='demo' LIMIT 1"))
-        .rows.length > 0;
+    const hasSimulation =
+      (
+        await db.query(
+          "SELECT EXISTS(SELECT 1 FROM orders WHERE simulation_run_id IS NOT NULL) AS present",
+        )
+      ).rows[0]?.present === true;
     res.json({
       forecasts: points,
       actual,
@@ -440,8 +468,14 @@ export function forecastsRouter(
       coverage,
       selected_run_id: input.run_id ?? null,
       target_basis: "fulfilled_v1",
+      contains_simulated_sales: hasSimulation,
       contains_demo_history:
-        demo ||
+        (input.data_mode === "mixed" &&
+          (
+            await db.query(
+              "SELECT 1 FROM sales_daily WHERE source='demo' LIMIT 1",
+            )
+          ).rows.length > 0) ||
         points.some((p) => ["demo", "mixed"].includes(p.history_source)),
       recommendation_basis: "base_recipe",
       model_mode: points.length

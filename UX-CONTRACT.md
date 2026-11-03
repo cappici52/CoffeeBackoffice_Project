@@ -2,6 +2,8 @@
 
 Thai operational product for a single coffee shop: owner/manager desktops, cashier tablets and bar/kitchen touch displays. Language: Thai, currency: THB, business timezone: Asia/Bangkok. Accessibility target: WCAG 2.2 AA; automated browser checks supplement keyboard and visual checks, not a claim of a complete accessibility audit.
 
+Owner-authorized main-database sales replays retain `simulation_run_id` on generated orders, payments, movements, closings and issued forecasts. `/api/shop-context` drives a canonical shared warning in the authenticated shell. Forecast runs derived from replay history retain `contains_simulated_sales`; their scores belong to the simulation group and are excluded from genuine-sales accuracy, even if `data_mode=actual` reads the order ledger. Replay dates never overlap original orders/closings, catalog data is reused unchanged, and normal server/OS clocks stay real.
+
 ## Business-context sources
 
 | Domain                                                      | Source                                              | Reviewed   |
