@@ -16,6 +16,7 @@ import { existsSync } from "node:fs";
 import { guestRouter } from "./shop/guest.js";
 import { tablesRouter } from "./shop/tables.js";
 import { imagesRouter } from "./shop/images.js";
+import { paymentQrRouter } from "./shop/payment-qr.js";
 
 export function createApp(db: Database, config: Config) {
   const app = express();
@@ -45,6 +46,15 @@ export function createApp(db: Database, config: Config) {
   const auth = authentication(db, config);
   app.use("/api/guest", guestRouter(db, config));
   app.use("/api", auth.router);
+  app.use(
+    "/api",
+    paymentQrRouter(
+      db,
+      auth.authenticate,
+      auth.requireRoles("owner", "manager", "cashier"),
+      auth.requireRoles("owner", "manager"),
+    ),
+  );
   app.get("/api/shop-context", auth.authenticate, async (_req, res) => {
     const row = (
       await db.query(

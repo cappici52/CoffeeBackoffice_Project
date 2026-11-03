@@ -23,6 +23,7 @@ import {
   useToast,
 } from "../ui";
 import type { Order, OrderStatus } from "../types";
+import PromptPayQr from "../components/PromptPayQr";
 export default function Orders() {
   const [params, setParams] = useSearchParams();
   const page = Math.max(1, Number(params.get("page")) || 1);
@@ -145,6 +146,7 @@ function OrderDetail({
   const confirm = useConfirm();
   const toast = useToast();
   const [action, setAction] = useState<"pay" | "cancel" | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   const [failure, setFailure] = useState("");
   const [busy, setBusy] = useState(false);
   const o = resource.data?.order;
@@ -328,11 +330,20 @@ function OrderDetail({
             >
               {action === "pay" ? (
                 <>
-                  <Select label="วิธีรับชำระ" name="method">
+                  <Select
+                    label="วิธีรับชำระ"
+                    name="method"
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
                     <option value="cash">เงินสด</option>
                     <option value="promptpay">PromptPay</option>
                   </Select>
+                  {paymentMethod === "promptpay" && (
+                    <PromptPayQr amount={o.total_satang} />
+                  )}
                   <CheckField
+                    key={paymentMethod}
                     name="verified"
                     label={
                       "ตรวจสอบว่าได้รับเงิน " + money(o.total_satang) + " แล้ว"

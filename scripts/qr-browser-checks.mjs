@@ -217,6 +217,16 @@ export async function qrBrowserChecks({ browser, page, base, output, checks }) {
       fullPage: true,
     });
     await page.getByRole("button", { name: "รับชำระ", exact: true }).click();
+    await page
+      .getByLabel("วิธีรับชำระ", { exact: true })
+      .selectOption("promptpay");
+    await expect(
+      page.getByRole("img", {
+        name: "QR PromptPay ของร้านสำหรับชำระเงิน",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page.locator(".promptpay-image").evaluate((img) => img.decode());
     await page.getByRole("checkbox", { name: /ตรวจสอบว่าได้รับเงิน/ }).check();
     await page
       .getByRole("button", { name: "ยืนยันรับชำระ", exact: true })

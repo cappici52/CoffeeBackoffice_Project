@@ -1785,3 +1785,17 @@ details summary {
     align-self: flex-start;
   }
 }
+
+.promptpay-payment {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  margin-block: 1rem;
+}
+.promptpay-image {
+  display: block;
+  width: min(100%, 24rem);
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius);
+}

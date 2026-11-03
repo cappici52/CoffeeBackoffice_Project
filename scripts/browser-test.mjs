@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import pg from "pg";
 import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import QRCode from "qrcode";
 import { qrBrowserChecks } from "./qr-browser-checks.mjs";
 
 // Browser plugin not available. Use installed Edge on Windows, Chromium in CI.
@@ -103,6 +104,35 @@ try {
     await expect(page.locator(".loading")).toHaveCount(0);
   }
   await login(page, "owner@example.com");
+  // A non-real recipient fixture exists only in the disposable test schema.
+  const tlv = (tag, value) =>
+    tag + String(value.length).padStart(2, "0") + value;
+  const qrBody =
+    tlv("00", "01") +
+    tlv("01", "11") +
+    tlv("29", tlv("00", "A000000677010111") + tlv("01", "0066000000000")) +
+    tlv("53", "764") +
+    tlv("58", "TH") +
+    "6304";
+  let qrCrc = 0xffff;
+  for (const c of qrBody) {
+    qrCrc ^= c.charCodeAt(0) << 8;
+    for (let b = 0; b < 8; b++)
+      qrCrc = ((qrCrc << 1) ^ (qrCrc & 0x8000 ? 0x1021 : 0)) & 0xffff;
+  }
+  const qrImage = await QRCode.toBuffer(
+    qrBody + qrCrc.toString(16).padStart(4, "0").toUpperCase(),
+    { width: 500, margin: 4 },
+  );
+  assert.equal(
+    (
+      await context.request.put(base + "/api/payment-qr", {
+        headers: { Origin: base, "Content-Type": "image/png" },
+        data: qrImage,
+      })
+    ).status(),
+    200,
+  );
   await expect(page).toHaveTitle("ขายหน้าร้าน · Coffee Backoffice");
   await expect(
     page.getByRole("heading", { name: "ขายหน้าร้าน", exact: true }),
@@ -162,6 +192,23 @@ try {
     fullPage: true,
   });
   let dropped = false;
+  await page.getByRole("button", { name: "PromptPay", exact: true }).click();
+  await expect(
+    page.getByRole("img", {
+      name: "QR PromptPay ของร้านสำหรับชำระเงิน",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.locator(".promptpay-image").evaluate((img) => img.decode());
+  await expect(page.locator(".promptpay-payment")).toContainText("฿90");
+  await page.screenshot({
+    path: join(output, "promptpay-pos.png"),
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "เงินสด", exact: true }).click();
+  checks.push(
+    "Configured PromptPay QR and current order amount appear before manual payment verification",
+  );
   await page.route("**/api/orders", async (route) => {
     if (route.request().method() === "POST" && !dropped) {
       dropped = true;

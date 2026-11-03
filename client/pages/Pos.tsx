@@ -17,6 +17,7 @@ import type { Catalog, Order, CartLine as Line } from "../types";
 import { CartLines } from "../components/CartLines";
 import { ItemEditor } from "../components/ItemEditor";
 import { ProductBrowser } from "../components/ProductBrowser";
+import PromptPayQr from "../components/PromptPayQr";
 import { linePrice as price, randomId, makeCartLine } from "../menu";
 interface Draft {
   lines: Line[];
@@ -229,6 +230,7 @@ export default function Pos() {
               PromptPay
             </button>
           </div>
+          {draft.method === "promptpay" && <PromptPayQr amount={total} />}
           {draft.method === "promptpay" && (
             <CheckField
               name="verified"
