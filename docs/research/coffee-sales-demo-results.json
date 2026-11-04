@@ -1,0 +1,32 @@
+{
+  "run_id": "671ff294-673e-4edd-ac09-578a102f09c6",
+  "dataset_id": "0a3020c4-010f-539b-9f2f-cb4adb54d609",
+  "cutoff": "2025-02-22",
+  "executed_at": "2026-11-04T06:19:38.665Z",
+  "history_sha256": "d0dfe7a0ff598054dac7c0762558e9e4d34b421057fa55d66a5585c520fad74b",
+  "score_product_day": {
+    "samples": 240,
+    "mae": 1.3333416666666664,
+    "rmse": 1.7629344736357433,
+    "wape": 76.5555023923445,
+    "mape": 77.71471835075492,
+    "bias": 0.606458333333333,
+    "zero_actual_samples": 76
+  },
+  "score_daily_total": {
+    "samples": 30,
+    "mae": 5.899666666666666,
+    "rmse": 7.4833743502959065,
+    "wape": 42.34210526315789,
+    "mape": 74.17976024203571,
+    "bias": 4.851666666666664,
+    "zero_actual_samples": 0
+  },
+  "coverage": {
+    "expected": 240,
+    "matched": 240,
+    "missing": 0,
+    "inferred_zero": 76
+  },
+  "offline_live_prediction_parity": 240
+}

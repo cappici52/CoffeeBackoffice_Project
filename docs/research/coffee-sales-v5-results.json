@@ -1,0 +1,1200 @@
+{
+  "protocol": {
+    "format": "coffee-v5-rolling-research-v1",
+    "dataset_id": "0a3020c4-010f-539b-9f2f-cb4adb54d609",
+    "prepared_sha256": "81d3c1fa675473f606a66150cd1beee7b766fcfa3e210a467c801f5fa895db79",
+    "engine_sha256": "3b635cf93c0c19af2a4ea6cac0dc0dec4389a05d8ae31ce25e8d9031d967be7b",
+    "pipeline": "coffee-demand-v5",
+    "outlet": "index_1",
+    "history_calendar_days": 180,
+    "evaluation_calendar_days": 90,
+    "cutoffs": {
+      "1": [
+        "2024-12-24",
+        "2024-12-25",
+        "2024-12-26",
+        "2024-12-27",
+        "2024-12-28",
+        "2024-12-29",
+        "2024-12-30",
+        "2024-12-31",
+        "2025-01-01",
+        "2025-01-02",
+        "2025-01-03",
+        "2025-01-04",
+        "2025-01-05",
+        "2025-01-06",
+        "2025-01-07",
+        "2025-01-08",
+        "2025-01-09",
+        "2025-01-10",
+        "2025-01-11",
+        "2025-01-12",
+        "2025-01-13",
+        "2025-01-14",
+        "2025-01-15",
+        "2025-01-16",
+        "2025-01-17",
+        "2025-01-18",
+        "2025-01-19",
+        "2025-01-20",
+        "2025-01-21",
+        "2025-01-22",
+        "2025-01-23",
+        "2025-01-24",
+        "2025-01-25",
+        "2025-01-26",
+        "2025-01-27",
+        "2025-01-28",
+        "2025-01-29",
+        "2025-01-30",
+        "2025-01-31",
+        "2025-02-01",
+        "2025-02-02",
+        "2025-02-03",
+        "2025-02-04",
+        "2025-02-05",
+        "2025-02-06",
+        "2025-02-07",
+        "2025-02-08",
+        "2025-02-09",
+        "2025-02-10",
+        "2025-02-11",
+        "2025-02-12",
+        "2025-02-13",
+        "2025-02-14",
+        "2025-02-15",
+        "2025-02-16",
+        "2025-02-17",
+        "2025-02-18",
+        "2025-02-19",
+        "2025-02-20",
+        "2025-02-21",
+        "2025-02-22",
+        "2025-02-23",
+        "2025-02-24",
+        "2025-02-25",
+        "2025-02-26",
+        "2025-02-27",
+        "2025-02-28",
+        "2025-03-01",
+        "2025-03-02",
+        "2025-03-03",
+        "2025-03-04",
+        "2025-03-05",
+        "2025-03-06",
+        "2025-03-07",
+        "2025-03-08",
+        "2025-03-09",
+        "2025-03-10",
+        "2025-03-11",
+        "2025-03-12",
+        "2025-03-13",
+        "2025-03-14",
+        "2025-03-15",
+        "2025-03-16",
+        "2025-03-17",
+        "2025-03-18",
+        "2025-03-19",
+        "2025-03-20",
+        "2025-03-21",
+        "2025-03-22",
+        "2025-03-23"
+      ],
+      "7": [
+        "2024-12-30",
+        "2025-01-06",
+        "2025-01-13",
+        "2025-01-20",
+        "2025-01-27",
+        "2025-02-03",
+        "2025-02-10",
+        "2025-02-17",
+        "2025-02-24",
+        "2025-03-03",
+        "2025-03-10",
+        "2025-03-17"
+      ],
+      "30": [
+        "2024-12-24",
+        "2025-01-23",
+        "2025-02-22"
+      ]
+    },
+    "selection": "Existing v5 prior-only rolling selection/calibration, unchanged promotion guards.",
+    "candidates": [
+      "weekly-naive-v1",
+      "last-value-v1",
+      "mean-7-v1",
+      "mean-28-v1",
+      "weekday-mean-v1",
+      "ses-v1",
+      "direct",
+      "auto"
+    ],
+    "policy": "No tuning on outer target outcomes. Each candidate evaluated on identical available pairs within a horizon; unknown targets excluded, not zero-filled.",
+    "previous_exposure": "Source was inspected and evaluated with a legacy 28-day pipeline previously; this is a new fixed-protocol re-evaluation, not a pristine independent dataset."
+  },
+  "frozen_prediction_files": [
+    {
+      "file": "predictions-1-2024-12-24.json",
+      "sha256": "b6199cfcb8828e8128237df7f55af39f7980193d7d408724e842b9ae65c468fe"
+    },
+    {
+      "file": "predictions-1-2024-12-25.json",
+      "sha256": "db5cd37a69f5ecb3e7788e2b24b86560edf44055062f8920d57ea39410da8388"
+    },
+    {
+      "file": "predictions-1-2024-12-26.json",
+      "sha256": "2511c812c8261fc4fa829174b5744d17ae938b4ca8d5d322a5eaba5e16e60419"
+    },
+    {
+      "file": "predictions-1-2024-12-27.json",
+      "sha256": "4667e1a09b3b15d0e13de75abcc3a1aef628d3acab262e4fb424159995af0edd"
+    },
+    {
+      "file": "predictions-1-2024-12-28.json",
+      "sha256": "c4ed95a17961d76aab487d197c2a51dded62a6ea2b4b051bb1d8e0ce0375f325"
+    },
+    {
+      "file": "predictions-1-2024-12-29.json",
+      "sha256": "5f2c9894976972d41c9db41a0d88027f6c3549a3f1e5b5314561032a0d99ecec"
+    },
+    {
+      "file": "predictions-1-2024-12-30.json",
+      "sha256": "15aab1d030f0ee1c83405b3cda44f32b0fc805539d3d61ea424939cf2aecfe4f"
+    },
+    {
+      "file": "predictions-1-2024-12-31.json",
+      "sha256": "e662a02c4c0d8fddc0565cb492a7b468fc3b131c039670ff72f93da6968fb426"
+    },
+    {
+      "file": "predictions-1-2025-01-01.json",
+      "sha256": "6bd560120a1b4c715802814f11869a8e82583517f946b30eebce67e236866492"
+    },
+    {
+      "file": "predictions-1-2025-01-02.json",
+      "sha256": "a0615dfd1f022a5b8753b04df89c883b38872430117b68295d2a0d5af8c1785d"
+    },
+    {
+      "file": "predictions-1-2025-01-03.json",
+      "sha256": "3949ab43e3e8ef3f2ab8de29ef246a36c39b1722d4d045396d3d295589c4aa9a"
+    },
+    {
+      "file": "predictions-1-2025-01-04.json",
+      "sha256": "18ef2791e485c765e715f02fa296d4c5d1fc415bbea2d3cd8cb94d9b767a1581"
+    },
+    {
+      "file": "predictions-1-2025-01-05.json",
+      "sha256": "cf497c3c83640a9e47b97b9c45b6ce4ba4ca60ad600f8aa92d75334dcd3f7253"
+    },
+    {
+      "file": "predictions-1-2025-01-06.json",
+      "sha256": "0e730b4de992ffb95d97113cf222561078fd5a2940d3c624349574c15cf1f322"
+    },
+    {
+      "file": "predictions-1-2025-01-07.json",
+      "sha256": "dcd976e5807e2d28d9f6b641aec350b8b004584fd7005318044788661fbf9f27"
+    },
+    {
+      "file": "predictions-1-2025-01-08.json",
+      "sha256": "ef3a495e3bf7ebb9e8b5d625e06a0667b2ef6c0018a688904c0e6e36c07d044e"
+    },
+    {
+      "file": "predictions-1-2025-01-09.json",
+      "sha256": "df45d01a12c4aab847ab706c38430035e2591ec1741ac5765d2bed08dce25d39"
+    },
+    {
+      "file": "predictions-1-2025-01-10.json",
+      "sha256": "b7f3c1872ff7305e77bc460f6619da637b29c848561b9b3565ec984583c465d9"
+    },
+    {
+      "file": "predictions-1-2025-01-11.json",
+      "sha256": "e265e34bc6cbdbe7531623816ff799007327945c501a961265cf9806e1da8a03"
+    },
+    {
+      "file": "predictions-1-2025-01-12.json",
+      "sha256": "4c85d2acc074647930c3dbcf3e3c6641cacea9d24ab46608981fa50d36a99bc5"
+    },
+    {
+      "file": "predictions-1-2025-01-13.json",
+      "sha256": "665a0f78a8491d48b61f40a6b41a36a3a77d76297a4a1721ad304ebe4bf85bd2"
+    },
+    {
+      "file": "predictions-1-2025-01-14.json",
+      "sha256": "d9d89a72ba642f609bffc9e3b8d6fe6b637f350a9cffd07b124b69716761950e"
+    },
+    {
+      "file": "predictions-1-2025-01-15.json",
+      "sha256": "e882c8c06ea4d0af133b9307fe1a474f32bc876c304628e2f0161b6351758a36"
+    },
+    {
+      "file": "predictions-1-2025-01-16.json",
+      "sha256": "1e09a7968efb2400af71cbaf4459fd29eb07412fc80896544d70df6e088ebd07"
+    },
+    {
+      "file": "predictions-1-2025-01-17.json",
+      "sha256": "e46bfbae45293338609fa56a8e9f84da9f6ab662ca6a8a2c483c97f5b441136a"
+    },
+    {
+      "file": "predictions-1-2025-01-18.json",
+      "sha256": "06e6d031384e908982bd43260d5ceab0371c6793555b657e13fd98b3440f5cf3"
+    },
+    {
+      "file": "predictions-1-2025-01-19.json",
+      "sha256": "cd38e22978a916f4f271de85b3071e999baa7d9fa0ec6617b1cae020bf598fff"
+    },
+    {
+      "file": "predictions-1-2025-01-20.json",
+      "sha256": "e75c121a66ee76ad858cc8057dd203be91be9ff94f8e2f242f8f60dbc48a9bb9"
+    },
+    {
+      "file": "predictions-1-2025-01-21.json",
+      "sha256": "85d02ae745bb304703a925f57de90573803ab7b852f9202b004d3ac8c2d6508e"
+    },
+    {
+      "file": "predictions-1-2025-01-22.json",
+      "sha256": "6b0615d0befb5c9db2bde1bd1c61c7e00ec7301e91b30d5c4b5ef034e45f1aaa"
+    },
+    {
+      "file": "predictions-1-2025-01-23.json",
+      "sha256": "ca3b95a8a4117bce8a2dc35940897942e115270a83cff07394914c3bd4192684"
+    },
+    {
+      "file": "predictions-1-2025-01-24.json",
+      "sha256": "c968d243aef6bfce8dfd333f0bdc1e486269c1878963f8a8338892f80c9bc592"
+    },
+    {
+      "file": "predictions-1-2025-01-25.json",
+      "sha256": "a6b755fce28cd4388c57ca9bd8992c8946aa67ae8b5e528e90fdbf9d585ac403"
+    },
+    {
+      "file": "predictions-1-2025-01-26.json",
+      "sha256": "dd0ac6fd52354e995a31031266599e84fe49394dc724b058efd735ccbf93b16d"
+    },
+    {
+      "file": "predictions-1-2025-01-27.json",
+      "sha256": "6c677f3beb9550ac6f013a40230a1890c35d5a30ce94b7e698f30f4ece26fbd5"
+    },
+    {
+      "file": "predictions-1-2025-01-28.json",
+      "sha256": "bb49ee520cfba4a482b4ce6cdf790361af160c845cfce267b980d31016fb8b18"
+    },
+    {
+      "file": "predictions-1-2025-01-29.json",
+      "sha256": "c8f32a8beebb60acaa721c832374b3d5fa8d56a4f6c3ab74942ac8d4f092bcb2"
+    },
+    {
+      "file": "predictions-1-2025-01-30.json",
+      "sha256": "dbff1971f36b27c88910f73c2b87789ec006544abe67bee65cffad94de0942bb"
+    },
+    {
+      "file": "predictions-1-2025-01-31.json",
+      "sha256": "ae8a0e1378f799d5024b59904c2bbd293cb9aed8690e6d711358e33e9ae5e0db"
+    },
+    {
+      "file": "predictions-1-2025-02-01.json",
+      "sha256": "5b365e05697b8693b353b6215844d1e7c602a3b035c67829d3f8b3ba2b996ea2"
+    },
+    {
+      "file": "predictions-1-2025-02-02.json",
+      "sha256": "40b54ea0709bd302e28841c71c21aa2fecfcd8f927dd5c76d6ba7fe6371f056e"
+    },
+    {
+      "file": "predictions-1-2025-02-03.json",
+      "sha256": "3f2382b137baa662496aba53c83336be622aad250a245ca6259c6caff753c2a2"
+    },
+    {
+      "file": "predictions-1-2025-02-04.json",
+      "sha256": "6ee57cb4297783ae56ab0864be5a23244c2c5a737757bfc3c0aa842f4a332a41"
+    },
+    {
+      "file": "predictions-1-2025-02-05.json",
+      "sha256": "b2041178d94f0fef829e16225aaea522cd9503d1a1df1227a7dd3e8bae87a389"
+    },
+    {
+      "file": "predictions-1-2025-02-06.json",
+      "sha256": "94ee10adaba4e220fbe48495df04fdc3cffa0218fcc6dc4a55559954b356af0c"
+    },
+    {
+      "file": "predictions-1-2025-02-07.json",
+      "sha256": "80ab377ee8db467299873c7295240a3c9d9d10efb572dbbe0ae08f53aa35d372"
+    },
+    {
+      "file": "predictions-1-2025-02-08.json",
+      "sha256": "587b0d55df8e70127a6bb411f09e0e2ff10baddfc47249f6257e48ccab12a5b0"
+    },
+    {
+      "file": "predictions-1-2025-02-09.json",
+      "sha256": "a82b219ebb77f67199df609f52bcfb134a665e9822d8366f52733dd86c0f5b38"
+    },
+    {
+      "file": "predictions-1-2025-02-10.json",
+      "sha256": "e866c74cf068c279630ece3fab26bf3b6de42f9b673c3670e9035ae2ec820365"
+    },
+    {
+      "file": "predictions-1-2025-02-11.json",
+      "sha256": "6e914dd463d4a83395274014a3c345dcb0855ed0b61f9267a089dcca19d3cb32"
+    },
+    {
+      "file": "predictions-1-2025-02-12.json",
+      "sha256": "8865ed619fd52504a7c989056b2356986b66562712ddbd7f9cd69f12b58b31ee"
+    },
+    {
+      "file": "predictions-1-2025-02-13.json",
+      "sha256": "7c966a605c999bc4469000bcf1c201b4ab68f0ec19c60f21efa3acdf22c389ae"
+    },
+    {
+      "file": "predictions-1-2025-02-14.json",
+      "sha256": "c07c6b1a879c9de4c992d52b26630a87b939a0a81c1eb40fbfd0857c03401225"
+    },
+    {
+      "file": "predictions-1-2025-02-15.json",
+      "sha256": "4a997c98658e4e4a145651d6fa13503d7a1e0c1fd7f81728776a78ee40b06396"
+    },
+    {
+      "file": "predictions-1-2025-02-16.json",
+      "sha256": "6d30a9e30d39a36cee8e37ea1c0641b2d56fad0d33065557887ff4404f42f4d6"
+    },
+    {
+      "file": "predictions-1-2025-02-17.json",
+      "sha256": "22281b1368b23b97c47e5ac235b43791530419de6d8287da70d24e036f0d306e"
+    },
+    {
+      "file": "predictions-1-2025-02-18.json",
+      "sha256": "03beda98cf972853e8339890d7afb891bda5631e4d11419821387f114b4716d1"
+    },
+    {
+      "file": "predictions-1-2025-02-19.json",
+      "sha256": "c08a2df732dde76f4e0550b6d183ea2fca6a974aff8b6aa98aee5422967d73a1"
+    },
+    {
+      "file": "predictions-1-2025-02-20.json",
+      "sha256": "014fe80c499fe23a69316ea0ca4944a073eff342113da25e47472d1e91b16c4d"
+    },
+    {
+      "file": "predictions-1-2025-02-21.json",
+      "sha256": "a1f0cea81e8512b426f20800471414956472fa649a3e520d97fbfbfc388fc25d"
+    },
+    {
+      "file": "predictions-1-2025-02-22.json",
+      "sha256": "d4d3b1e21dcf526afdef8bbb4963ee6ddbd5688b9295a1a0c272655ba0db5fef"
+    },
+    {
+      "file": "predictions-1-2025-02-23.json",
+      "sha256": "abadc0e266ab83181fc8ebbdd86aac758a0bafa7cc197e1f1788b750e2348688"
+    },
+    {
+      "file": "predictions-1-2025-02-24.json",
+      "sha256": "288efe2bf805de7da70ed8805e1fe4be1e45b23e8f169905903feca9c400ebbf"
+    },
+    {
+      "file": "predictions-1-2025-02-25.json",
+      "sha256": "3e1f679333c6797d0992ec953b31f1c81cc000709abc07843954435ae83fc509"
+    },
+    {
+      "file": "predictions-1-2025-02-26.json",
+      "sha256": "0172b48f060df8acb19012ceac124beb333691bf59ab8892a940dcdc397eac25"
+    },
+    {
+      "file": "predictions-1-2025-02-27.json",
+      "sha256": "202228e60d707a2580f571ce05af96b0d706dbeff95bbfd50212345d8f55d793"
+    },
+    {
+      "file": "predictions-1-2025-02-28.json",
+      "sha256": "8e47bbbeb3a030c30add0ec78491ce16cab81a4dae9364a340fea5e8a2932263"
+    },
+    {
+      "file": "predictions-1-2025-03-01.json",
+      "sha256": "4cc6d3f4c7132b49cfd899d80b28329e8d82c521259726d11e44ebf666936a6a"
+    },
+    {
+      "file": "predictions-1-2025-03-02.json",
+      "sha256": "c04796a4e3e1c6e1fa2186545f07f0a924270ee2618d3c5a011aacbd28bd9400"
+    },
+    {
+      "file": "predictions-1-2025-03-03.json",
+      "sha256": "bf3824e528bcf237e40810ba61f1cf52f63d04f92a27beae3670545e12d709e7"
+    },
+    {
+      "file": "predictions-1-2025-03-04.json",
+      "sha256": "2df5b5e581ac2ed3b0d69c8b8e09118d9b3a5bcbe260fc9c3fff031c3d8b135c"
+    },
+    {
+      "file": "predictions-1-2025-03-05.json",
+      "sha256": "02e74a5340b9bab893cfec8d472149691226666330cae0b4bed4583b559a9099"
+    },
+    {
+      "file": "predictions-1-2025-03-06.json",
+      "sha256": "24ae96ce17e82b3356343599d6d77b905268cc934c3d33fef9dbabb1c22289f4"
+    },
+    {
+      "file": "predictions-1-2025-03-07.json",
+      "sha256": "b0b31c9fd982154e5be4a19d4570c51d2192b6930756f69d39bd959eaa52131f"
+    },
+    {
+      "file": "predictions-1-2025-03-08.json",
+      "sha256": "bc6713d7ed25f1eaebaad3596ea43f394cdad5c5693c0476bd8c0eaf6041e335"
+    },
+    {
+      "file": "predictions-1-2025-03-09.json",
+      "sha256": "33e491c2d2a9759555001dd44bdfd7b10ec45e4371e01c43f726933bbc568967"
+    },
+    {
+      "file": "predictions-1-2025-03-10.json",
+      "sha256": "f6cde4c25385eab3060e45e678e5f87b2b1119af1303bb28a44c23f96be07bde"
+    },
+    {
+      "file": "predictions-1-2025-03-11.json",
+      "sha256": "a4d77971d769a8dde111d388214705a569685817b43d3c2659134bacef3a1edb"
+    },
+    {
+      "file": "predictions-1-2025-03-12.json",
+      "sha256": "47e58b3b31a539254b0cd1c247f0b3bf6b7b31476d371ac8bf87c367caea4c39"
+    },
+    {
+      "file": "predictions-1-2025-03-13.json",
+      "sha256": "7dcdd2d3a60595746beace4796dc121199ab8d7321d0c8ffcabc69195d39fe91"
+    },
+    {
+      "file": "predictions-1-2025-03-14.json",
+      "sha256": "c7c4b403a195a168f959b4ec06094882935fdb5c42ffc415e97e5a6d5d76333f"
+    },
+    {
+      "file": "predictions-1-2025-03-15.json",
+      "sha256": "d7208d9093f846dfc28311b3d64d8e0248d25f6b92f73f105ba4947d638cbf01"
+    },
+    {
+      "file": "predictions-1-2025-03-16.json",
+      "sha256": "6bd65055bb1d7539cbfed76b7862f7960d79e4b48bc2008f02c812bfd7217ab3"
+    },
+    {
+      "file": "predictions-1-2025-03-17.json",
+      "sha256": "86af2d0f14d7ac7acabbc1e97d90a278362b2d4e4baa2828c9cd271029700693"
+    },
+    {
+      "file": "predictions-1-2025-03-18.json",
+      "sha256": "d47c22f2a3b202c4e8bffdb4b84715a7d6809236ec3d2bb0e9e0c9bff4e4104a"
+    },
+    {
+      "file": "predictions-1-2025-03-19.json",
+      "sha256": "c6ff7da144e32adfe9da38a9857e5dc09704b4b3c97a937210db86777e5bd40b"
+    },
+    {
+      "file": "predictions-1-2025-03-20.json",
+      "sha256": "1d5e6058042b883ef8a262f484f8e159f0a9aa8a639aecda82079559e5bd52f7"
+    },
+    {
+      "file": "predictions-1-2025-03-21.json",
+      "sha256": "17b123e923e229010e09312620fbd46cf2c60fd73daf4adbdc414301d6f74627"
+    },
+    {
+      "file": "predictions-1-2025-03-22.json",
+      "sha256": "dab8d970862927f2e591574279f5486c03149a9c20a694e654a551936b893a2c"
+    },
+    {
+      "file": "predictions-1-2025-03-23.json",
+      "sha256": "91f88baac30f7efcb4762b8528c2e69eadb5ea403d8fabd171a06c9bdc120fba"
+    },
+    {
+      "file": "predictions-7-2024-12-30.json",
+      "sha256": "e95418918358f44929c392d95eeb142444ecd78c15e81709ce633f19eff44fcc"
+    },
+    {
+      "file": "predictions-7-2025-01-06.json",
+      "sha256": "6b2293a51c81d79cf41766e863c47f875f7ac99bc399f8b82920ef99da285cad"
+    },
+    {
+      "file": "predictions-7-2025-01-13.json",
+      "sha256": "aeb842349cbac2341ffc3ba28c2ecda3df982a7a0b8c794a06bc9b299457ce08"
+    },
+    {
+      "file": "predictions-7-2025-01-20.json",
+      "sha256": "e1e4ed105a67be4a7134e07dd4388b2a1f9096187dafd0642390dd61e532b3bb"
+    },
+    {
+      "file": "predictions-7-2025-01-27.json",
+      "sha256": "76efb44012a04521f697b7fb7e5e7908ab739e0a9459e449275b823f151dc52d"
+    },
+    {
+      "file": "predictions-7-2025-02-03.json",
+      "sha256": "f542a03b4c08d34d480c3bfdfd8d1d0c7b15076b9b8f2bb34f83051ff70fddff"
+    },
+    {
+      "file": "predictions-7-2025-02-10.json",
+      "sha256": "5a85cd168c0faa855a868fcf97704f5c49b39bd59b04f8ab0a763970bfcb0fca"
+    },
+    {
+      "file": "predictions-7-2025-02-17.json",
+      "sha256": "36b07f541246eb800058f88418c0b74513e4d2b2d3a78e54160c48938f4a853c"
+    },
+    {
+      "file": "predictions-7-2025-02-24.json",
+      "sha256": "afefdd848023068541c0de952e0c2194230a978dfc48c3f690be37e3290b28cb"
+    },
+    {
+      "file": "predictions-7-2025-03-03.json",
+      "sha256": "3aae95eab9b344e5c304f294532dc6a061f67a03f9417157882547c25c12d1c2"
+    },
+    {
+      "file": "predictions-7-2025-03-10.json",
+      "sha256": "05c87044580378ec7eb2c15cf7d6cc103b6f4455ec9d151a64f35076a48e4e4b"
+    },
+    {
+      "file": "predictions-7-2025-03-17.json",
+      "sha256": "1150418a20d3b2f62cc94e38030ba98bbea61e8eeaa4b55251d98b1d2ace2c68"
+    },
+    {
+      "file": "predictions-30-2024-12-24.json",
+      "sha256": "235815f85b96df8938f941326360dcca97aab667ab9849d5498c529ae1c744a9"
+    },
+    {
+      "file": "predictions-30-2025-01-23.json",
+      "sha256": "4bd094c19b448af6279f4742d8886c207f3e6043dc37a2f54cfe0ca60653fe1b"
+    },
+    {
+      "file": "predictions-30-2025-02-22.json",
+      "sha256": "8e7c2dc2889e72c9992c63a819507c2a826d74bee23188e3072001fd280d27c6"
+    }
+  ],
+  "models": {
+    "1": {
+      "auto": {
+        "product_day": {
+          "mae": 1.0989037356321838,
+          "rmse": 1.548714677034498,
+          "bias": -0.1344324712643678,
+          "wape": 75.50217176702863,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 4.160103448275861,
+          "rmse": 5.290543342802228,
+          "bias": -1.0754597701149424,
+          "wape": 35.72843040473839,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "weekly-naive-v1": {
+        "product_day": {
+          "mae": 1.1738505747126438,
+          "rmse": 1.6794053408425778,
+          "bias": -0.06752873563218391,
+          "wape": 80.65153010858836,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 3.8275862068965516,
+          "rmse": 5.191726397693329,
+          "bias": -0.5402298850574713,
+          "wape": 32.87265547877591,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "last-value-v1": {
+        "product_day": {
+          "mae": 1.2873563218390804,
+          "rmse": 1.8944868592233928,
+          "bias": 0.005747126436781609,
+          "wape": 88.45014807502469,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 5.218390804597701,
+          "rmse": 6.831300510639732,
+          "bias": 0.04597701149425287,
+          "wape": 44.81737413622902,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "mean-7-v1": {
+        "product_day": {
+          "mae": 1.0476077586206896,
+          "rmse": 1.4178920280334888,
+          "bias": -0.029754310344827596,
+          "wape": 71.97778874629812,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 4.163804597701149,
+          "rmse": 5.275203776638157,
+          "bias": -0.23803448275862085,
+          "wape": 35.76021717670287,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "mean-28-v1": {
+        "product_day": {
+          "mae": 1.0397600574712644,
+          "rmse": 1.4170283383833964,
+          "bias": -0.12422557471264367,
+          "wape": 71.4385982230997,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 4.2922413793103456,
+          "rmse": 5.483552972927001,
+          "bias": -0.9938045977011496,
+          "wape": 36.86327739387957,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "weekday-mean-v1": {
+        "product_day": {
+          "mae": 1.0366379310344827,
+          "rmse": 1.4301253863524188,
+          "bias": -0.16738505747126436,
+          "wape": 71.22408687068115,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 3.4597701149425286,
+          "rmse": 4.768189612830853,
+          "bias": -1.339080459770115,
+          "wape": 29.713721618953603,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "ses-v1": {
+        "product_day": {
+          "mae": 1.051823275862069,
+          "rmse": 1.4222460447410672,
+          "bias": -0.03511925287356322,
+          "wape": 72.26742349457058,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 4.241781609195402,
+          "rmse": 5.377581220363779,
+          "bias": -0.2809540229885058,
+          "wape": 36.42991115498519,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "direct": {
+        "product_day": {
+          "mae": 1.032557471264368,
+          "rmse": 1.3577705642605506,
+          "bias": -0.015218390804597689,
+          "wape": 70.94373149062191,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 3.6314252873563215,
+          "rmse": 4.601508715602972,
+          "bias": -0.12174712643678158,
+          "wape": 31.187956564659423,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      }
+    },
+    "7": {
+      "auto": {
+        "product_day": {
+          "mae": 1.1258317901234567,
+          "rmse": 1.595150255606964,
+          "bias": -0.3165231481481481,
+          "wape": 75.36559917355372,
+          "samples": 648
+        },
+        "daily_total": {
+          "mae": 4.671493827160494,
+          "rmse": 5.860823433698345,
+          "bias": -2.5321851851851847,
+          "wape": 39.08997933884297,
+          "samples": 81
+        },
+        "missing_pairs": 24
+      },
+      "weekly-naive-v1": {
+        "product_day": {
+          "mae": 1.1790123456790123,
+          "rmse": 1.698764983491184,
+          "bias": -0.08333333333333333,
+          "wape": 78.92561983471074,
+          "samples": 648
+        },
+        "daily_total": {
+          "mae": 3.802469135802469,
+          "rmse": 5.171145012542265,
+          "bias": -0.6666666666666666,
+          "wape": 31.818181818181817,
+          "samples": 81
+        },
+        "missing_pairs": 24
+      },
+      "last-value-v1": {
+        "product_day": {
+          "mae": 1.2839506172839505,
+          "rmse": 1.916465367851149,
+          "bias": -0.7314814814814815,
+          "wape": 85.9504132231405,
+          "samples": 648
+        },
+        "daily_total": {
+          "mae": 6.469135802469136,
+          "rmse": 8.050764858994132,
+          "bias": -5.851851851851852,
+          "wape": 54.132231404958674,
+          "samples": 81
+        },
+        "missing_pairs": 24
+      },
+      "mean-7-v1": {
+        "product_day": {
+          "mae": 1.0410586419753087,
+          "rmse": 1.4346491580836491,
+          "bias": -0.08549382716049382,
+          "wape": 69.69070247933884,
+          "samples": 648
+        },
+        "daily_total": {
+          "mae": 4.381283950617283,
+          "rmse": 5.400511946468651,
+          "bias": -0.6839506172839509,
+          "wape": 36.66157024793388,
+          "samples": 81
+        },
+        "missing_pairs": 24
+      },
+      "mean-28-v1": {
+        "product_day": {
+          "mae": 1.054010802469136,
+          "rmse": 1.4632326670639098,
+          "bias": -0.1820108024691358,
+          "wape": 70.5577479338843,
+          "samples": 648
+        },
+        "daily_total": {
+          "mae": 4.542061728395062,
+          "rmse": 5.727342269249831,
+          "bias": -1.4560864197530863,
+          "wape": 38.0069214876033,
+          "samples": 81
+        },
+        "missing_pairs": 24
+      },
+      "weekday-mean-v1": {
+        "product_day": {
+          "mae": 1.0401234567901234,
+          "rmse": 1.4469129547990895,
+          "bias": -0.18364197530864199,
+          "wape": 69.62809917355372,
+          "samples": 648
+        },
+        "daily_total": {
+          "mae": 3.5185185185185186,
+          "rmse": 4.848475641826275,
+          "bias": -1.4691358024691359,
+          "wape": 29.44214876033058,
+          "samples": 81
+        },
+        "missing_pairs": 24
+      },
+      "ses-v1": {
+        "product_day": {
+          "mae": 1.0405679012345679,
+          "rmse": 1.4548113258519677,
+          "bias": -0.22449382716049385,
+          "wape": 69.65785123966943,
+          "samples": 648
+        },
+        "daily_total": {
+          "mae": 4.4967901234567895,
+          "rmse": 5.570435342164432,
+          "bias": -1.7959506172839508,
+          "wape": 37.628099173553714,
+          "samples": 81
+        },
+        "missing_pairs": 24
+      },
+      "direct": {
+        "product_day": {
+          "mae": 1.0474074074074073,
+          "rmse": 1.4039648310814556,
+          "bias": -0.08026851851851849,
+          "wape": 70.11570247933885,
+          "samples": 648
+        },
+        "daily_total": {
+          "mae": 3.8550617283950617,
+          "rmse": 4.8174030886483346,
+          "bias": -0.642148148148148,
+          "wape": 32.25826446280992,
+          "samples": 81
+        },
+        "missing_pairs": 24
+      }
+    },
+    "30": {
+      "auto": {
+        "product_day": {
+          "mae": 1.2166882183908048,
+          "rmse": 1.6912052395721586,
+          "bias": 0.0867887931034483,
+          "wape": 83.59476801579467,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 5.0343333333333335,
+          "rmse": 6.68197893720426,
+          "bias": 0.6943103448275859,
+          "wape": 43.23662388943731,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "weekly-naive-v1": {
+        "product_day": {
+          "mae": 1.2341954022988506,
+          "rmse": 1.7951883325783085,
+          "bias": -0.07040229885057471,
+          "wape": 84.79763079960513,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 4.195402298850575,
+          "rmse": 5.6252713855350605,
+          "bias": -0.5632183908045977,
+          "wape": 36.03158933859822,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "last-value-v1": {
+        "product_day": {
+          "mae": 1.4195402298850575,
+          "rmse": 2.242484254612261,
+          "bias": 0.22988505747126436,
+          "wape": 97.53208292201381,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 6.482758620689655,
+          "rmse": 8.387182338914952,
+          "bias": 1.839080459770115,
+          "wape": 55.676209279368216,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "mean-7-v1": {
+        "product_day": {
+          "mae": 1.1528520114942529,
+          "rmse": 1.613512413620684,
+          "bias": -0.033136494252873565,
+          "wape": 79.20878578479763,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 4.737459770114943,
+          "rmse": 6.341890133963563,
+          "bias": -0.26509195402298963,
+          "wape": 40.686969397828236,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "mean-28-v1": {
+        "product_day": {
+          "mae": 1.085683908045977,
+          "rmse": 1.5428917142670846,
+          "bias": -0.2423390804597701,
+          "wape": 74.59387956564659,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 4.761241379310345,
+          "rmse": 6.192844040531364,
+          "bias": -1.9387126436781614,
+          "wape": 40.89121421520237,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "weekday-mean-v1": {
+        "product_day": {
+          "mae": 1.0686063218390804,
+          "rmse": 1.5201295411375573,
+          "bias": -0.26113505747126436,
+          "wape": 73.42053307008885,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 3.8591954022988504,
+          "rmse": 5.509722336913636,
+          "bias": -2.089080459770115,
+          "wape": 33.144126357354395,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "ses-v1": {
+        "product_day": {
+          "mae": 1.1496408045977011,
+          "rmse": 1.615390508283639,
+          "bias": -0.0006695402298850284,
+          "wape": 78.98815399802567,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 4.8886206896551725,
+          "rmse": 6.541734140365105,
+          "bias": -0.005356321839080432,
+          "wape": 41.98519249753208,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      },
+      "direct": {
+        "product_day": {
+          "mae": 1.1894827586206895,
+          "rmse": 1.5972559686256753,
+          "bias": 0.1000718390804598,
+          "wape": 81.72556762092793,
+          "samples": 696
+        },
+        "daily_total": {
+          "mae": 5.656735632183907,
+          "rmse": 6.969030686734253,
+          "bias": 0.8005747126436781,
+          "wape": 48.582033563672255,
+          "samples": 87
+        },
+        "missing_pairs": 24
+      }
+    }
+  },
+  "by_product": {
+    "1": [
+      {
+        "product_id": "dacc1870-a3cc-5134-a3a5-ad5e472dabf5",
+        "name": "Americano",
+        "mae": 1.6493793103448273,
+        "rmse": 2.3341612045305764,
+        "bias": -0.6381379310344828,
+        "wape": 57.16972111553784,
+        "samples": 87
+      },
+      {
+        "product_id": "9d239bd5-cdeb-521c-8c69-9eeb5d1e9f1c",
+        "name": "Americano with Milk",
+        "mae": 1.546241379310345,
+        "rmse": 1.8960712587850712,
+        "bias": -0.11001149425287356,
+        "wape": 66.26748768472908,
+        "samples": 87
+      },
+      {
+        "product_id": "83522655-59cb-51d0-8ca5-4a2c32f16e5e",
+        "name": "Cappuccino",
+        "mae": 1.039712643678161,
+        "rmse": 1.304272171194235,
+        "bias": -0.07368965517241378,
+        "wape": 68.01127819548873,
+        "samples": 87
+      },
+      {
+        "product_id": "603e5a4a-ceb5-5a9e-b29f-ce52a5faed3e",
+        "name": "Cocoa",
+        "mae": 1.1491494252873564,
+        "rmse": 1.57182166810419,
+        "bias": -0.1930574712643678,
+        "wape": 96.13076923076923,
+        "samples": 87
+      },
+      {
+        "product_id": "0b151394-c9d1-59c2-9179-2dee634383b9",
+        "name": "Cortado",
+        "mae": 0.6111494252873564,
+        "rmse": 0.911195450726839,
+        "bias": 0.12052873563218391,
+        "wape": 118.15555555555557,
+        "samples": 87
+      },
+      {
+        "product_id": "c0c62500-f88a-5490-9b20-1ed535d92bfe",
+        "name": "Espresso",
+        "mae": 0.5878505747126437,
+        "rmse": 0.7944480698146253,
+        "bias": 0.0256896551724138,
+        "wape": 138.22432432432433,
+        "samples": 87
+      },
+      {
+        "product_id": "29bc95ba-bbac-5b7c-9d48-a51950c2fac0",
+        "name": "Hot Chocolate",
+        "mae": 0.9149310344827587,
+        "rmse": 1.2511300960497191,
+        "bias": -0.0005172413793103338,
+        "wape": 104.73552631578949,
+        "samples": 87
+      },
+      {
+        "product_id": "0c937ec6-87d2-5c33-8128-92444e637a65",
+        "name": "Latte",
+        "mae": 1.292816091954023,
+        "rmse": 1.7164620020838506,
+        "bias": -0.20626436781609195,
+        "wape": 68.58231707317073,
+        "samples": 87
+      }
+    ],
+    "7": [
+      {
+        "product_id": "dacc1870-a3cc-5134-a3a5-ad5e472dabf5",
+        "name": "Americano",
+        "mae": 1.7338641975308644,
+        "rmse": 2.487706839840188,
+        "bias": -1.1408765432098766,
+        "wape": 57.090650406504075,
+        "samples": 81
+      },
+      {
+        "product_id": "9d239bd5-cdeb-521c-8c69-9eeb5d1e9f1c",
+        "name": "Americano with Milk",
+        "mae": 1.3362592592592593,
+        "rmse": 1.6542194571294582,
+        "bias": -0.3985802469135803,
+        "wape": 55.22295918367347,
+        "samples": 81
+      },
+      {
+        "product_id": "83522655-59cb-51d0-8ca5-4a2c32f16e5e",
+        "name": "Cappuccino",
+        "mae": 1.2306913580246914,
+        "rmse": 1.5729357470022514,
+        "bias": -0.5212839506172838,
+        "wape": 78.49291338582678,
+        "samples": 81
+      },
+      {
+        "product_id": "603e5a4a-ceb5-5a9e-b29f-ce52a5faed3e",
+        "name": "Cocoa",
+        "mae": 1.1687530864197533,
+        "rmse": 1.6084025469659078,
+        "bias": -0.18176543209876544,
+        "wape": 93.73168316831683,
+        "samples": 81
+      },
+      {
+        "product_id": "0b151394-c9d1-59c2-9179-2dee634383b9",
+        "name": "Cortado",
+        "mae": 0.6030617283950617,
+        "rmse": 0.9039434457345326,
+        "bias": 0.11508641975308641,
+        "wape": 132.02162162162162,
+        "samples": 81
+      },
+      {
+        "product_id": "c0c62500-f88a-5490-9b20-1ed535d92bfe",
+        "name": "Espresso",
+        "mae": 0.5961234567901235,
+        "rmse": 0.875247365387228,
+        "bias": -0.0943456790123457,
+        "wape": 146.3212121212121,
+        "samples": 81
+      },
+      {
+        "product_id": "29bc95ba-bbac-5b7c-9d48-a51950c2fac0",
+        "name": "Hot Chocolate",
+        "mae": 0.922283950617284,
+        "rmse": 1.2428021852269726,
+        "bias": 0.09759259259259258,
+        "wape": 103.75694444444443,
+        "samples": 81
+      },
+      {
+        "product_id": "0c937ec6-87d2-5c33-8128-92444e637a65",
+        "name": "Latte",
+        "mae": 1.4156172839506171,
+        "rmse": 1.8005812333182243,
+        "bias": -0.40801234567901234,
+        "wape": 73.50320512820512,
+        "samples": 81
+      }
+    ],
+    "30": [
+      {
+        "product_id": "dacc1870-a3cc-5134-a3a5-ad5e472dabf5",
+        "name": "Americano",
+        "mae": 2.1141149425287358,
+        "rmse": 2.9402093286961257,
+        "bias": -0.5573793103448276,
+        "wape": 73.2780876494024,
+        "samples": 87
+      },
+      {
+        "product_id": "9d239bd5-cdeb-521c-8c69-9eeb5d1e9f1c",
+        "name": "Americano with Milk",
+        "mae": 1.2552068965517242,
+        "rmse": 1.5742592383166398,
+        "bias": -0.0865172413793103,
+        "wape": 53.79458128078818,
+        "samples": 87
+      },
+      {
+        "product_id": "83522655-59cb-51d0-8ca5-4a2c32f16e5e",
+        "name": "Cappuccino",
+        "mae": 1.1864597701149426,
+        "rmse": 1.5327055336474658,
+        "bias": 0.19740229885057475,
+        "wape": 77.61052631578949,
+        "samples": 87
+      },
+      {
+        "product_id": "603e5a4a-ceb5-5a9e-b29f-ce52a5faed3e",
+        "name": "Cocoa",
+        "mae": 1.3527241379310344,
+        "rmse": 1.6922815891604723,
+        "bias": 0.25033333333333335,
+        "wape": 113.16057692307693,
+        "samples": 87
+      },
+      {
+        "product_id": "0b151394-c9d1-59c2-9179-2dee634383b9",
+        "name": "Cortado",
+        "mae": 1.0920459770114943,
+        "rmse": 1.393868081952183,
+        "bias": 0.8633563218390804,
+        "wape": 211.12888888888887,
+        "samples": 87
+      },
+      {
+        "product_id": "c0c62500-f88a-5490-9b20-1ed535d92bfe",
+        "name": "Espresso",
+        "mae": 0.5287356321839081,
+        "rmse": 0.7427813527082074,
+        "bias": 0.25287356321839083,
+        "wape": 124.32432432432432,
+        "samples": 87
+      },
+      {
+        "product_id": "29bc95ba-bbac-5b7c-9d48-a51950c2fac0",
+        "name": "Hot Chocolate",
+        "mae": 0.8604252873563218,
+        "rmse": 1.0666434246749468,
+        "bias": 0.28345977011494256,
+        "wape": 98.49605263157895,
+        "samples": 87
+      },
+      {
+        "product_id": "0c937ec6-87d2-5c33-8128-92444e637a65",
+        "name": "Latte",
+        "mae": 1.3437931034482757,
+        "rmse": 1.7067379587300786,
+        "bias": -0.5092183908045979,
+        "wape": 71.28658536585365,
+        "samples": 87
+      }
+    ]
+  }
+}
