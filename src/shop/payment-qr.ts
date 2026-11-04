@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import type { QRCode } from "jsqr";
 import type { Database } from "../db.js";
 import { fail, record } from "./shared.js";
+import { branchScope,LEGACY_BRANCH } from '../branch-context.js';
 const jsQR = createRequire(import.meta.url)("jsqr") as (
   pixels: Uint8ClampedArray,
   width: number,
@@ -29,7 +30,7 @@ export function paymentQrRouter(
       row
         ? {
             available: true,
-            image_url: "/api/payment-qr/image?v=" + row.sha256,
+            image_url: "/api/payment-qr/image?v=" + row.sha256+'&branch_id='+encodeURIComponent(branchScope()?.ids[0]??LEGACY_BRANCH),
             fixed_amount_satang: row.fixed_amount_satang,
           }
         : { available: false },
@@ -141,7 +142,7 @@ export function paymentQrRouter(
       const hash = createHash("sha256").update(original).digest("hex");
       await db.transaction(async (sql) => {
         await sql.query(
-          "INSERT INTO payment_qr(id,image,sha256,fixed_amount_satang,updated_by) VALUES('promptpay',$1,$2,$3,$4) ON CONFLICT(id) DO UPDATE SET image=excluded.image,sha256=excluded.sha256,fixed_amount_satang=excluded.fixed_amount_satang,updated_by=excluded.updated_by,updated_at=now()",
+          "INSERT INTO payment_qr(id,image,sha256,fixed_amount_satang,updated_by) VALUES('promptpay',$1,$2,$3,$4) ON CONFLICT(branch_id,id) DO UPDATE SET image=excluded.image,sha256=excluded.sha256,fixed_amount_satang=excluded.fixed_amount_satang,updated_by=excluded.updated_by,updated_at=now()",
           [original, hash, fixed, res.locals.user.id],
         );
         await record(

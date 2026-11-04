@@ -107,7 +107,7 @@ async function confirmOrder(sql: Sql, id: string, actor: User) {
   )) {
     const i = (
       await sql.query(
-        "SELECT current_stock,is_active FROM ingredients WHERE id=$1 FOR UPDATE",
+        "SELECT s.current_stock,i.is_active FROM branch_stock s JOIN ingredients i ON i.id=s.ingredient_id WHERE s.ingredient_id=$1 AND s.branch_id=coffee_current_branch() FOR UPDATE OF s",
         [ingredientId],
       )
     ).rows[0];
@@ -231,7 +231,7 @@ export async function createOrder(
     for (const line of input.items) {
       const p = (
         await sql.query(
-          "SELECT * FROM products WHERE id=$1 AND is_available AND NOT is_archived FOR SHARE",
+          "SELECT * FROM branch_catalog WHERE id=$1 AND is_available AND NOT is_archived",
           [line.product_id],
         )
       ).rows[0];
@@ -572,7 +572,7 @@ export function ordersRouter(
             ).rows;
             for (const m of movements) {
               await sql.query(
-                "SELECT id FROM ingredients WHERE id=$1 FOR UPDATE",
+                "SELECT ingredient_id AS id FROM branch_stock WHERE ingredient_id=$1 AND branch_id=coffee_current_branch() FOR UPDATE",
                 [m.ingredient_id],
               );
               await moveStock(

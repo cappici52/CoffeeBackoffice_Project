@@ -58,7 +58,7 @@ const productFields = z
 export async function catalog(sql: Sql) {
   const products = (
     await sql.query<{ id: string; name: string }>(
-      "SELECT * FROM products WHERE NOT is_archived ORDER BY name,id",
+      "SELECT * FROM branch_catalog WHERE NOT is_archived ORDER BY name,id",
     )
   ).rows;
   const groups = (
@@ -117,6 +117,10 @@ export function catalogRouter(
 ) {
   const router = Router();
   router.use(auth);
+  router.use(['/categories','/products'],(req,res,next)=>{
+    if(!['GET','HEAD'].includes(req.method))fail(res.locals.user.role==='owner',403,'CENTRAL_MASTER_REQUIRES_OWNER');
+    next();
+  });
   router.get("/catalog", read, async (_req, res) =>
     res.json({
       products: await catalog(db),

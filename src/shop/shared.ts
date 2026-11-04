@@ -66,7 +66,7 @@ export async function moveStock(
   orderId: string | null = null,
 ) {
   const r = await sql.query(
-    "UPDATE ingredients SET current_stock = current_stock + $1, version=version+1 WHERE id=$2 AND current_stock + $1 >= 0 RETURNING current_stock",
+    "UPDATE branch_stock SET current_stock = current_stock + $1, version=version+1 WHERE ingredient_id=$2 AND branch_id=coffee_current_branch() AND current_stock + $1 >= 0 RETURNING current_stock",
     [qty, ingredientId],
   );
   fail(r.rows[0], 409, "INSUFFICIENT_STOCK");

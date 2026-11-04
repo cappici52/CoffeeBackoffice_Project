@@ -17,8 +17,12 @@ import { guestRouter } from "./shop/guest.js";
 import { tablesRouter } from "./shop/tables.js";
 import { imagesRouter } from "./shop/images.js";
 import { paymentQrRouter } from "./shop/payment-qr.js";
+import { branchDatabase } from './branch-context.js';
+import { branchMiddleware, branchesRouter } from './branches.js';
+import { branchProductsRouter } from './shop/branch-products.js';
 
 export function createApp(db: Database, config: Config) {
+  db = branchDatabase(db);
   const app = express();
   app.disable("x-powered-by");
   app.use(
@@ -46,6 +50,11 @@ export function createApp(db: Database, config: Config) {
   const auth = authentication(db, config);
   app.use("/api/guest", guestRouter(db, config));
   app.use("/api", auth.router);
+  app.use('/api', branchesRouter(db,auth.authenticate,auth.requireRoles('owner')));
+  app.use('/api/users',usersRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
+  app.use('/api',imagesRouter(db,auth.authenticate,auth.requireRoles('owner')));
+  app.use('/api',auth.authenticate,branchMiddleware(db));
+  app.use('/api',branchProductsRouter(db,auth.requireRoles('owner','manager')));
   app.use(
     "/api",
     paymentQrRouter(
@@ -65,20 +74,12 @@ export function createApp(db: Database, config: Config) {
   });
   app.use(
     "/api",
-    imagesRouter(db, auth.authenticate, auth.requireRoles("owner", "manager")),
-  );
-  app.use(
-    "/api",
     tablesRouter(
       db,
       config,
       auth.authenticate,
       auth.requireRoles("owner", "manager"),
     ),
-  );
-  app.use(
-    "/api/users",
-    usersRouter(db, auth.authenticate, auth.requireRoles("owner", "manager")),
   );
   app.use(
     "/api",
@@ -169,6 +170,9 @@ export function createApp(db: Database, config: Config) {
       if ("code" in error && error.code === "23514") {
         res.status(400).json({ error: "INVALID_VALUE" });
         return;
+      }
+      if ('code' in error && error.code === '42501') {
+        res.status(403).json({error:'BRANCH_PERMISSION_REQUIRED'});return;
       }
       if ("type" in error && error.type === "entity.too.large") {
         res.status(413).json({ error: "BODY_TOO_LARGE" });

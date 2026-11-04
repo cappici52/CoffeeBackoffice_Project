@@ -7,6 +7,7 @@ import { seedOwner } from "../src/seed.js";
 import { createApp } from "../src/app.js";
 import { readConfig } from "../src/config.js";
 import { importPublicDataset } from "../src/research-dataset.js";
+import type { QueryResultRow } from 'pg';
 
 let f: Awaited<ReturnType<typeof testDatabase>>,
   app: ReturnType<typeof createApp>,
@@ -107,6 +108,17 @@ test("research import is idempotent, immutable, reconciled and isolated from liv
 test("public replay has exclusive cutoff, immutable predictions before truth reads, honest metrics and no POS writes", async () => {
   let fetched = false;
   const query = vi.spyOn(f.db, "query");
+  const transaction=f.db.transaction.bind(f.db);
+  vi.spyOn(f.db,'transaction').mockImplementation(work=>transaction(sql=>work({
+    async query<T extends QueryResultRow>(text:string,values?:unknown[]){
+      query.mock.calls.push([text,values]);
+      if(text.includes('date >= $3::date AND date <')){
+        const archived=await sql.query('SELECT count(*)::int AS n FROM research_replay_points');
+        expect(archived.rows[0]?.n).toBeGreaterThan(0);
+      }
+      return sql.query<T>(text,values);
+    },
+  })));
   vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, options) => {
     const body = JSON.parse(options!.body as string);
     expect(body.cohort).toBe("public_dataset");

@@ -7,6 +7,7 @@ import { tokenHash } from "../security.js";
 import { createInput, createOrder } from "./orders.js";
 import { fail, idSchema, note } from "./shared.js";
 import { publicOrigin } from "./tables.js";
+import { inBranch } from '../branch-context.js';
 
 const token = z.string().regex(/^[a-f0-9]{64}$/);
 export async function guestOrder(sql: Sql, trackingHash: string) {
@@ -84,6 +85,16 @@ export function guestRouter(db: Database, config: Config) {
     legacyHeaders: false,
     message: { error: "TABLE_ORDER_LIMIT" },
   });
+  r.use(['/tables/:token','/tables/:token/orders','/orders/:token'],async(req,res,next)=>{
+    const value=token.parse(req.params.token);
+    const tracking=req.baseUrl.startsWith('/api/guest/orders');
+    const row=(await db.query(tracking
+      ? 'SELECT b.id,b.is_active FROM orders o JOIN branches b ON b.id=o.branch_id WHERE o.guest_tracking_hash=$1'
+      : 'SELECT b.id,b.is_active FROM dining_tables t JOIN branches b ON b.id=t.branch_id WHERE t.qr_token=$1 AND t.is_active',
+      [tracking?tokenHash(value):value])).rows[0];
+    fail(row&&(tracking||row.is_active),404,tracking?'ORDER_NOT_FOUND':'TABLE_UNAVAILABLE');
+    inBranch({ids:[row.id],write:row.is_active,master:false},next);
+  });
   r.get("/tables/:token", async (req, res) => {
     const qr = token.parse(req.params.token);
     const table = (
@@ -95,7 +106,7 @@ export function guestRouter(db: Database, config: Config) {
     fail(table, 404, "TABLE_UNAVAILABLE");
     const products = (
       await db.query(
-        "SELECT p.id,p.category_id,p.name,p.description,p.price_satang,p.image_url,p.is_available FROM products p WHERE p.is_available AND NOT p.is_archived AND EXISTS(SELECT 1 FROM recipes r WHERE r.product_id=p.id) ORDER BY p.name,p.id",
+        "SELECT p.id,p.category_id,p.name,p.description,p.price_satang,p.image_url,p.is_available FROM branch_catalog p WHERE p.is_available AND NOT p.is_archived AND EXISTS(SELECT 1 FROM recipes r WHERE r.product_id=p.id) ORDER BY p.name,p.id",
       )
     ).rows;
     const groups = (

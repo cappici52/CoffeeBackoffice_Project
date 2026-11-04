@@ -89,7 +89,7 @@ export async function requirements(
   const recipes = ids.length
     ? (
         await db.query<RecipeLine>(
-          "SELECT ri.product_id,ri.ingredient_id,i.name,i.unit,ri.qty,i.current_stock FROM recipe_ingredients ri JOIN ingredients i ON i.id=ri.ingredient_id WHERE ri.product_id=ANY($1::uuid[]) AND i.is_active",
+          "SELECT ri.product_id,ri.ingredient_id,i.name,i.unit,ri.qty,i.current_stock FROM recipe_ingredients ri JOIN stock_ingredients i ON i.id=ri.ingredient_id WHERE ri.product_id=ANY($1::uuid[]) AND i.is_active",
           [ids],
         )
       ).rows

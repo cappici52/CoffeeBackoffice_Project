@@ -29,6 +29,7 @@ beforeAll(async () => {
   for (const role of ['manager', 'cashier', 'kitchen'] as const) {
     await fixture.db.query('INSERT INTO users (id, name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5)', [randomUUID(), role, `${role}@example.com`, hash, role]);
   }
+  await fixture.db.query("INSERT INTO user_branches(user_id,branch_id) SELECT id,'00000000-0000-4000-8000-000000000016' FROM users WHERE role<>'owner' ON CONFLICT DO NOTHING");
   app = createApp(fixture.db, readConfig({ DATABASE_URL: 'postgresql://test:test@localhost/test', APP_ORIGIN: origin }));
   for (const role of ['owner', 'manager', 'cashier', 'kitchen'] as const) {
     cookies[role] = await login(`${role}@example.com`);

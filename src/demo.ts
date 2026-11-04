@@ -3,10 +3,12 @@ import { readConfig } from "./config.js";
 import { connectDatabase } from "./db.js";
 import { businessDate, moveStock, record } from "./shop/shared.js";
 import { menuPhotos } from "./shop/menu-photos.js";
+import { assertDemoIsolation } from './demo-isolation.js';
 
 const config = readConfig();
 if (config.NODE_ENV === "production")
   throw new Error("Demo seeding is disabled in production");
+assertDemoIsolation(config.DATABASE_URL,config.NODE_ENV);
 const db = connectDatabase(config.DATABASE_URL);
 try {
   await db.transaction(async (sql) => {
@@ -251,6 +253,7 @@ try {
         "INSERT INTO users (id,name,email,password_hash,role) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(email) DO NOTHING",
         [randomUUID(), name, `${role}@example.com`, actor.password_hash, role],
       );
+    await sql.query("INSERT INTO user_branches(user_id,branch_id) SELECT id,'00000000-0000-4000-8000-000000000016' FROM users WHERE email IN ('manager@example.com','cashier@example.com','kitchen@example.com') ON CONFLICT DO NOTHING");
     await record(sql, actor.id, "demo.seeded", "demo", randomUUID(), {
       products: definitions.length,
       history_days: 84,

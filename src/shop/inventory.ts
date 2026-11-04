@@ -25,11 +25,15 @@ export function inventoryRouter(
     auth,
     manage,
   );
+  r.use(['/ingredients','/recipes'],(req,res,next)=>{
+    if(['POST','DELETE','PUT'].includes(req.method))fail(res.locals.user.role==='owner',403,'CENTRAL_MASTER_REQUIRES_OWNER');
+    next();
+  });
   r.get("/ingredient-catalog", async (_req, res) =>
     res.json({
       ingredients: (
         await db.query(
-          "SELECT * FROM ingredients WHERE is_active ORDER BY name,id",
+          "SELECT * FROM stock_ingredients WHERE is_active ORDER BY name,id",
         )
       ).rows,
     }),
@@ -55,13 +59,13 @@ export function inventoryRouter(
       "is_active AND name ILIKE $1 AND (NOT $2::boolean OR current_stock <= reorder_point)";
     const rows = (
       await db.query(
-        `SELECT * FROM ingredients WHERE ${filter} ORDER BY name,id LIMIT $3 OFFSET $4`,
+        `SELECT * FROM stock_ingredients WHERE ${filter} ORDER BY name,id LIMIT $3 OFFSET $4`,
         [...params, p.page_size, (p.page - 1) * p.page_size],
       )
     ).rows;
     const total = (
       await db.query(
-        `SELECT count(*)::int AS count FROM ingredients WHERE ${filter}`,
+        `SELECT count(*)::int AS count FROM stock_ingredients WHERE ${filter}`,
         params,
       )
     ).rows[0]?.count;
@@ -94,11 +98,12 @@ export function inventoryRouter(
       .strict()
       .parse(req.body);
     await db.transaction(async (sql) => {
-      const result = await sql.query(
-        "UPDATE ingredients SET name=$1,reorder_point=$2,cost_satang=$3,version=version+1 WHERE id=$4 AND version=$5 AND is_active RETURNING id",
-        [p.name, p.reorder_point, p.cost_satang, id, p.expected_version],
-      );
+      const current=(await sql.query('SELECT name,cost_satang FROM ingredients WHERE id=$1 AND is_active',[id])).rows[0];
+      fail(current,404,'NOT_FOUND');
+      if(res.locals.user.role!=='owner')fail(current.name===p.name&&Number(current.cost_satang)===p.cost_satang,403,'CENTRAL_MASTER_REQUIRES_OWNER');
+      const result=await sql.query('UPDATE branch_stock SET reorder_point=$1,version=version+1 WHERE ingredient_id=$2 AND branch_id=coffee_current_branch() AND version=$3 RETURNING ingredient_id',[p.reorder_point,id,p.expected_version]);
       fail(result.rows[0], 409, "VERSION_CONFLICT");
+      if(res.locals.user.role==='owner')await sql.query('UPDATE ingredients SET name=$1,cost_satang=$2 WHERE id=$3',[p.name,p.cost_satang,id]);
       await record(
         sql,
         res.locals.user,
@@ -152,7 +157,7 @@ export function inventoryRouter(
     await db.transaction(async (sql) => {
       const i = (
         await sql.query(
-          "SELECT id FROM ingredients WHERE id=$1 AND is_active FOR UPDATE",
+          "SELECT id FROM ingredients WHERE id=$1 AND is_active",
           [p.ingredient_id],
         )
       ).rows[0];

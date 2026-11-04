@@ -44,7 +44,7 @@ export async function history(
           AND date <= coalesce($3::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 1)
           AND date < (now() AT TIME ZONE 'Asia/Bangkok')::date
         UNION ALL
-        SELECT c.date,p.id,0,0,'actual' FROM day_closings c CROSS JOIN products p
+        SELECT c.date,p.id,0,0,'actual' FROM day_closings c CROSS JOIN branch_catalog p
         WHERE c.date >= coalesce($2::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 120)
           AND c.date <= coalesce($3::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 1)
           AND c.date < (now() AT TIME ZONE 'Asia/Bangkok')::date
@@ -64,7 +64,7 @@ export async function history(
           AND o.simulation_run_id IS NOT NULL)
           OR EXISTS(SELECT 1 FROM day_closings c WHERE c.date=d.date AND c.simulation_run_id IS NOT NULL)) AS simulated,
         CASE WHEN d.qty>0 THEN d.revenue/d.qty/100.0 ELSE p.price_satang/100.0 END AS unit_price
-        FROM daily d JOIN products p ON p.id=d.product_id ORDER BY d.date,d.product_id`,
+        FROM daily d JOIN branch_catalog p ON p.id=d.product_id ORDER BY d.date,d.product_id`,
       [
         mode,
         options.from ?? null,
@@ -166,7 +166,7 @@ export async function generateForecasts(
   );
   const products = (
     await db.query(
-      "SELECT id FROM products WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY id",
+      "SELECT id FROM branch_catalog WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY id",
       [productId ?? null],
     )
   ).rows.map((p) => p.id as string);
@@ -260,7 +260,7 @@ export async function generateForecasts(
         ],
       );
       await sql.query(
-        "INSERT INTO forecasts (id,forecast_date,product_id,predicted_qty,lower_qty,upper_qty,model_version,history_source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (forecast_date,product_id) DO UPDATE SET predicted_qty=excluded.predicted_qty,lower_qty=excluded.lower_qty,upper_qty=excluded.upper_qty,model_version=excluded.model_version,history_source=excluded.history_source,generated_at=now()",
+        "INSERT INTO forecasts (id,forecast_date,product_id,predicted_qty,lower_qty,upper_qty,model_version,history_source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (branch_id,forecast_date,product_id) DO UPDATE SET predicted_qty=excluded.predicted_qty,lower_qty=excluded.lower_qty,upper_qty=excluded.upper_qty,model_version=excluded.model_version,history_source=excluded.history_source,generated_at=now()",
         [
           randomUUID(),
           row.date,
@@ -333,7 +333,7 @@ export function forecastsRouter(
       .parse(req.query);
     const products = (
       await db.query(
-        "SELECT id,name FROM products WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY name",
+        "SELECT id,name FROM branch_catalog WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY name",
         [input.product_id ?? null],
       )
     ).rows;
@@ -345,7 +345,7 @@ export function forecastsRouter(
     );
     const flags = (
       await db.query(
-        "SELECT q.*,q.date::text AS date,p.name AS product_name FROM forecast_day_quality q JOIN products p ON p.id=q.product_id WHERE q.date BETWEEN $1::date-180 AND $1::date+30 AND ($2::uuid IS NULL OR q.product_id=$2) ORDER BY q.date DESC,p.name LIMIT 200",
+        "SELECT q.*,q.date::text AS date,p.name AS product_name FROM forecast_day_quality q JOIN branch_catalog p ON p.id=q.product_id WHERE q.date BETWEEN $1::date-180 AND $1::date+30 AND ($2::uuid IS NULL OR q.product_id=$2) ORDER BY q.date DESC,p.name LIMIT 200",
         [businessDate(), input.product_id ?? null],
       )
     ).rows;
@@ -379,7 +379,7 @@ export function forecastsRouter(
     await db.transaction(async (sql) => {
       fail(
         (
-          await sql.query("SELECT id FROM products WHERE id=$1", [
+          await sql.query("SELECT id FROM branch_catalog WHERE id=$1", [
             input.product_id,
           ])
         ).rows.length,
@@ -387,7 +387,7 @@ export function forecastsRouter(
         "NOT_FOUND",
       );
       await sql.query(
-        "INSERT INTO forecast_day_quality(date,product_id,kind,note,updated_by) VALUES($1,$2,$3,$4,$5) ON CONFLICT(date,product_id) DO UPDATE SET kind=excluded.kind,note=excluded.note,updated_by=excluded.updated_by,updated_at=now()",
+        "INSERT INTO forecast_day_quality(date,product_id,kind,note,updated_by) VALUES($1,$2,$3,$4,$5) ON CONFLICT(branch_id,date,product_id) DO UPDATE SET kind=excluded.kind,note=excluded.note,updated_by=excluded.updated_by,updated_at=now()",
         [
           input.date,
           input.product_id,
@@ -494,7 +494,7 @@ export function forecastsRouter(
         .slice(0, 10);
     const products = (
       await db.query(
-        "SELECT id FROM products WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY id",
+        "SELECT id FROM branch_catalog WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY id",
         [input.product_id ?? null],
       )
     ).rows.map((p) => p.id as string);
@@ -610,7 +610,7 @@ export function forecastsRouter(
           await db.query(
             `SELECT p.*,p.forecast_date::text AS date,m.name AS product_name,
       r.generated_at
-      FROM forecast_run_points p JOIN forecast_runs r ON r.id=p.run_id JOIN products m ON m.id=p.product_id
+      FROM forecast_run_points p JOIN forecast_runs r ON r.id=p.run_id JOIN branch_catalog m ON m.id=p.product_id
       WHERE p.run_id=$4 AND p.forecast_date BETWEEN $1::date AND $2::date AND ($3::uuid IS NULL OR p.product_id=$3)
       ORDER BY p.forecast_date,m.name`,
             [...params, displayedRunId],
@@ -621,7 +621,7 @@ export function forecastsRouter(
             `SELECT f.*,f.forecast_date::text AS date,p.name AS product_name,
       (SELECT x.diagnostics FROM forecast_run_points x JOIN forecast_runs r ON r.id=x.run_id
        WHERE x.product_id=f.product_id AND x.forecast_date=f.forecast_date ORDER BY r.generated_at DESC,r.id DESC LIMIT 1) AS diagnostics
-      FROM forecasts f JOIN products p ON p.id=f.product_id WHERE f.forecast_date BETWEEN $1::date AND $2::date
+      FROM forecasts f JOIN branch_catalog p ON p.id=f.product_id WHERE f.forecast_date BETWEEN $1::date AND $2::date
       AND ($3::uuid IS NULL OR product_id=$3) ORDER BY f.forecast_date,p.name`,
             params,
           )
@@ -926,7 +926,7 @@ export function forecastsRouter(
     });
     const catalog = (
       await db.query(
-        "SELECT id,name FROM products WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY name",
+        "SELECT id,name FROM branch_catalog WHERE NOT is_archived AND ($1::uuid IS NULL OR id=$1) ORDER BY name",
         [input.product_id ?? null],
       )
     ).rows;

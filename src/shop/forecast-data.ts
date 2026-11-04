@@ -111,7 +111,7 @@ export async function dataset(
     FROM delivered d LEFT JOIN day_closings c ON c.date=d.date
     UNION ALL
     SELECT c.date,p.id,0,0,'actual',c.simulation_run_id IS NOT NULL,false,true
-    FROM day_closings c CROSS JOIN products p
+    FROM day_closings c CROSS JOIN branch_catalog p
     WHERE p.id=ANY($2::uuid[]) AND c.date BETWEEN $4::date AND least($5::date,$1::date-1)
       AND (p.forecast_since<=c.date OR EXISTS(SELECT 1 FROM shop_simulation_products sp WHERE sp.run_id=c.simulation_run_id AND sp.product_id=p.id))
       AND NOT EXISTS(SELECT 1 FROM delivered d WHERE d.date=c.date AND d.product_id=p.id)
@@ -121,7 +121,7 @@ export async function dataset(
   ) SELECT o.date::text,o.product_id,o.qty,o.source,o.simulated,o.mixed,o.is_closed,
       CASE WHEN o.qty>0 THEN o.revenue/o.qty/100.0 ELSE p.price_satang/100.0 END AS unit_price,
       coalesce(q.kind,'normal') AS kind
-    FROM observed o JOIN products p ON p.id=o.product_id LEFT JOIN forecast_day_quality q ON q.date=o.date AND q.product_id=o.product_id
+    FROM observed o JOIN branch_catalog p ON p.id=o.product_id LEFT JOIN forecast_day_quality q ON q.date=o.date AND q.product_id=o.product_id
     ORDER BY o.date,o.product_id`,
     [
       today,

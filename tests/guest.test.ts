@@ -65,6 +65,7 @@ beforeAll(async () => {
       "INSERT INTO users (id,name,email,password_hash,role) VALUES ($1,$2,$3,$4,$2)",
       [randomUUID(), role, role + "@example.com", hash],
     );
+  await fixture.db.query("INSERT INTO user_branches(user_id,branch_id) SELECT id,'00000000-0000-4000-8000-000000000016' FROM users WHERE role<>'owner' ON CONFLICT DO NOTHING");
   async function login(role: string) {
     const r = await request(app)
       .post("/api/auth/login")

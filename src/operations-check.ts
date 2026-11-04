@@ -58,12 +58,12 @@ try {
   );
   const stock = (
     await db.query(
-      "SELECT count(*) n FROM ingredients WHERE is_active AND current_stock<=reorder_point",
+      "SELECT count(*) n FROM branch_stock s JOIN ingredients i ON i.id=s.ingredient_id JOIN branches b ON b.id=s.branch_id WHERE b.is_active AND i.is_active AND s.current_stock<=s.reorder_point",
     )
   ).rows[0]!.n;
   report(
     Number(stock) ? "WARN" : "PASS",
-    `Ingredients at/below reorder point: ${stock}`,
+    `Branch/ingredient balances at/below reorder point: ${stock}`,
   );
   const demo = (
     await db.query("SELECT count(*) n FROM sales_daily WHERE source='demo'")
@@ -79,7 +79,7 @@ try {
   ).rows[0]!.n;
   report(
     Number(demoUsers) ? "WARN" : "PASS",
-    `Active sample staff accounts: ${demoUsers}; review passwords/access before opening`,
+    `Accounts using development example emails: ${demoUsers}; provenance and current use require review; no account is classified for deletion`,
   );
   const unpaid = (
     await db.query(
