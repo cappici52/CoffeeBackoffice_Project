@@ -43,6 +43,7 @@ try{
   research_datasets:(await db.query('SELECT count(*)::int AS n FROM research_datasets')).rows[0].n};
  blockers.retained_stock_snapshot_mismatch=balances.filter(b=>b.retained_last_balance!==null&&Number(b.retained_last_balance)!==Number(b.after_marked_cleanup)).length;
  const research={format:'synthetic-workflow-preservation-v1',label:'SYNTHETIC_WORKFLOW_ARCHIVE_NOT_PRODUCTION_SALES',captured_at:new Date().toISOString(),
+  legacy_demo_history:(await db.query("SELECT branch_id,date::text,product_id,qty,revenue_satang,source FROM sales_daily WHERE source='demo' ORDER BY branch_id,date,product_id")).rows,
   fulfilled_sales:(await db.query(`SELECT o.branch_id,(o.completed_at AT TIME ZONE 'Asia/Bangkok')::date::text AS date,i.product_id,sum(i.qty) AS qty,sum(i.qty::bigint*i.unit_price_satang) AS revenue_satang
    FROM orders o JOIN order_items i ON i.order_id=o.id WHERE o.simulation_run_id IS NOT NULL AND o.status='completed' GROUP BY 1,2,3 ORDER BY 1,2,3`)).rows,
   simulation_runs:(await db.query('SELECT to_jsonb(r) AS row FROM shop_simulation_runs r ORDER BY id')).rows.map(r=>r.row),
@@ -54,7 +55,7 @@ try{
   note:'Preservation export only. Original predictions and input snapshots retained; no refitting, evaluation or relabeling as genuine sales. Public Replay datasets remain unchanged in their separate tables.'};
  const researchRaw=JSON.stringify(research);
  const report={generated_at:new Date().toISOString(),mode:'READ_ONLY_NO_EXECUTE_MODE',execution_status:Object.values(blockers).some(v=>v>0)?'BLOCKED_PROVENANCE_OR_STOCK_REVIEW':'BLOCKED_PENDING_EXPLICIT_DELETION_APPROVAL',negative_balances_if_demo_opening_removed:balances.filter(b=>Number(b.after_also_removing_demo_opening)<0).length,user_decision:'Preserve nine unmarked orders and related transactions; retain ten legacy demo opening receipts with pending-count labeling. Proposed balance is the retained ledger, not a verified physical count.',candidate_counts:counts,blockers,
-  research_preservation:{file:'synthetic-workflow-research-archive.json',sha256:createHash('sha256').update(researchRaw).digest('hex'),fulfilled_product_days:research.fulfilled_sales.length,issued_runs:research.issued_runs.length,issued_points:research.issued_points.length},
+  research_preservation:{file:'synthetic-workflow-research-archive.json',sha256:createHash('sha256').update(researchRaw).digest('hex'),legacy_demo_rows:research.legacy_demo_history.length,fulfilled_product_days:research.fulfilled_sales.length,issued_runs:research.issued_runs.length,issued_points:research.issued_points.length},
   preserved,projected_balances:balances,
   policy:['No destructive SQL was executed, including in backup verification databases.',
    'Potential removal order after separate approval: marked order logs/items/payments/movements/closings, marked orders, explicitly demo and exactly reconciled generated sales summaries.',
@@ -65,6 +66,7 @@ try{
    'Do not rewrite retained historical movement snapshots. An approved physical count/cutover must use an explicit audited reconciliation, retaining original quantities and provenance.',
    'Before execution create a fresh verified backup, compare candidate IDs/counts/hash and stop if provenance or balances changed.'],
   candidate_sha256:createHash('sha256').update(JSON.stringify(candidates)).digest('hex')};
+ report.plan_sha256=createHash('sha256').update(JSON.stringify({candidate_sha256:report.candidate_sha256,preserved,balances,blockers,stock_policy:report.user_decision})).digest('hex');
  await db.query('COMMIT');
  const root=resolve('.local/cleanup-dry-run',new Date().toISOString().replace(/[:.]/g,'-'));await mkdir(root,{recursive:true});
  await writeFile(resolve(root,'candidate-records.json'),JSON.stringify(candidates,null,2),{flag:'wx',mode:0o600});
@@ -79,6 +81,7 @@ try{
   ...balances.filter(b=>Number(b.current_stock)!==Number(b.after_marked_cleanup)).map(b=>`| ${b.code} | ${b.name} | ${b.current_stock} | ${b.after_marked_cleanup} | ${b.unit} |`),'',
   'Provenance and retained-snapshot mismatch counts: '+JSON.stringify(blockers),
   'Candidate manifest SHA-256: '+report.candidate_sha256,
+  'Reviewed plan SHA-256 (including retained counts and stock projections): '+report.plan_sha256,
   'Research preservation SHA-256: '+report.research_preservation.sha256,'',
   'See candidate-records.json for exact IDs, report.json for all branch projections, and synthetic-workflow-research-archive.json for preserved outcomes/predictions. Keep all immutable archives and public Replay datasets in the application database.','',
   'Execution remains blocked until explicit deletion approval. Recheck this manifest and create a fresh verified backup before an approved transaction.'];
