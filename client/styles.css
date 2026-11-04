@@ -474,6 +474,7 @@ small,
 .tabs button {
   border-color: var(--border);
   padding: 11px 20px;
+  transition-property: border-color;
 }
 .segmented {
   display: flex;
@@ -487,6 +488,7 @@ small,
   flex: 1;
   border-color: transparent;
   background: transparent;
+  transition-property: border-color;
 }
 .segmented button.selected {
   background: var(--primary);
