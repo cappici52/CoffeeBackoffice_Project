@@ -87,3 +87,11 @@ npm run db:restore -- .local/backups/coffee-เวลาที่สำรอง
 ## Forecast v5 operations
 
 See [active architecture and APIs](forecast-v5.md). Run migrations after a verified backup; migration 014 is additive and keeps old forecasts. Keep Node and FastAPI at the same version. Worker needs yesterday's closing after 02:00 Bangkok and creates all three horizons atomically; a missing closing waits and failures retry. `FORECAST_SAFETY_FACTOR` defaults to 1 (1–2 supported); the dashboard can override its view without changing saved snapshots. New v5 models refit from saved business inputs and do not require offline ProjectA artifacts/runtime caches. Do not confuse a retrospective analysis with a prediction actually issued in the past. Genuine accuracy requires future customer outcomes; simulation and old-pipeline results remain separately labeled.
+
+## Warehouse extension (2026-11-04)
+
+The maintained current guide is [Project completion status](project-completion-status.md). Operational simulation cleanup has executed only after separate explicit approval. New additive migrations implement stocktaking, lot/expiry tracking, supplier purchasing/partial receipts, branch transfers and expense history. Normal startup still never seeds demo sales. Use the inventory tabs for these workflows, and preserve the disclosed unknown provenance/cost/expiry of legacy stock until reviewed.
+
+For manual acceptance use `/acceptance` and [the participant template](acceptance-session-template.md); physical printer testing uses `/printer-test` and [the device checklist](printer-acceptance.md). Neither page is evidence that unavailable participants/hardware were tested. Future genuine-sales validation follows [the prospective collection protocol](prospective-validation.md).
+
+`npm run test:load` creates a retained isolated QA schema and verifies operational source counts/stock hashes; it must never be substituted with production traffic generation. Current local measurements and limitations are in the completion guide. Backup verification databases and QA schemas are retained; deleting them requires a separate reviewed decision.

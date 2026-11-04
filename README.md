@@ -10,7 +10,7 @@
 
 [ผลทดสอบ](docs/multi-branch-validation.md) · [ไฟล์ที่เปลี่ยนทั้งหมด](docs/multi-branch-changed-files.md)
 
-**ยังไม่มีการลบข้อมูลจำลอง** เก็บ 9 ออเดอร์ที่ผู้ใช้เลือกไว้ทั้งหมด พร้อมข้อมูลวิจัยและ forecast archives การล้างข้อมูลต้องมี backup ที่ตรวจแล้ว แผนตรวจนับ/ตัดยอดสต็อก และการอนุมัติชัดเจนก่อน คำสั่ง `npm run data:cleanup:dry-run` อ่านข้อมูลอย่างเดียว ไม่มีโหมด execute และ startup ไม่สร้าง demo transactions อัตโนมัติ
+**ล้างข้อมูลจำลองตามแผนที่อนุมัติแล้ว** เก็บ 9 ออเดอร์ ยอดตั้งต้น 10 รายการพร้อมป้ายรอตรวจนับ และข้อมูลวิจัย/forecast archives ครบ ระบบไม่สร้าง demo transactions อัตโนมัติ ดู [สถานะงาน 1–13 และข้อจำกัด](docs/project-completion-status.md)
 
 ## สิ่งที่ใช้งานได้
 
@@ -174,3 +174,7 @@ Use the project's Python environment: `python forecast-service/coffee_sales_data
 ## Public-data forecast demonstration
 
 [Presentation walkthrough, architecture, measured baseline comparison and limitations](docs/forecast-presentation-demo.md). Open `/forecast/replay`, select the fixed 30-day preset, generate immutable forecasts, then explicitly reveal held-out actuals. The page also provides per-menu uncertainty bands and a clearly labeled illustrative recipe/stock/revenue preview without writing to operational stock.
+
+## Warehouse and validation work (2026-11-04)
+
+[Current status of items 1–13, preserved-data proofs, measured concurrency and external validation still pending](docs/project-completion-status.md). Inventory now includes audited counts, FEFO lots/expiry, purchasing/partial receipts, atomic branch transfers, supplier lead-time planning and owner-only valuation/expenses. `/acceptance` records manual test evidence without inventing participants; `/printer-test` provides 58/80mm calibration previews. `npm run test:load` uses a retained isolated QA schema and verifies source stock/order preservation.

@@ -68,8 +68,8 @@ Normal server/local/Docker startup never invokes demo creation. Optional demo/re
 * Tests: branch operations, legacy preservation, demo isolation; explicit fixture memberships, stronger Replay instrumentation and browser branch flows.
 * Documentation: target/plan, this guide, cleanup report, README, DESIGN.md and UX-CONTRACT.md. No Python engine/artifact/evaluation files changed.
 
-## Limits
+## Current extension and limits
 
-No stock-transfer workflow is implemented. Independent balances and branch-tagged movements provide the foundation; future transfers require authorization for both branches and atomic linked outgoing/incoming records. Supplier purchasing, branch-specific cost valuation and per-branch role variation are outside this change. Costs/units/recipes and account roles remain central.
+The authorized warehouse extension now implements immediate atomic stock transfers, suppliers/partial purchase receipts, expiry-aware lots, branch valuation and operating expenses. See [current completion status](project-completion-status.md) for permissions, preservation checks and limits. Account roles and menu/recipe units remain central; per-branch role variation and in-transit shipping are not implemented.
 
-Cleanup needs explicit deletion approval. The user chose to retain ten provisional opening receipts pending physical count; reviewed retained-ledger balances are listed in the private dry-run. Legacy simulation/seed-stock warnings remain visible. Verification databases and QA schemas are retained deliberately; removing them also needs approval. No external deployment or production-scale load test is claimed.
+The separately approved operational simulation cleanup is complete. Nine unmarked orders, ten pending-count opening receipts and all forecasting/research evidence remain. Physical counting, actual user acceptance and physical printer validation are still pending because participants/devices/counts were not supplied. Verification databases and QA schemas remain retained. Local concurrency measurements exist, but no external deployment or production-scale capacity certification is claimed.

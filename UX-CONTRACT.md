@@ -120,3 +120,13 @@ The authoritative extension is docs/multi-branch-target-spec.md; architecture an
 ## Public forecast demonstration
 
 The existing `/forecast/replay` route owns the presentation flow. It defaults to fixed-origin forecasting, requests a forecast-only result and exposes a separate explicit reveal action. QueryState handles loading/retry; saved rounds and view selections use the existing URL/resource patterns. Full-run scores do not change with the chart's menu filter. The optional baseline overlay is labeled separately from the selected forecast. Recipe/price/stock controls are explicitly illustrative local previews with no business mutations, and unknown product mappings are disclosed and excluded. See `docs/forecast-presentation-demo.md` for API compatibility, interval limits and evaluation protocol.
+
+## Warehouse and manual acceptance flow ledger
+
+- Stocktakes: blank counts → draft snapshot → review delta → confirm; reject intervening stock changes, preserve immutable confirmation and idempotent retry.
+- Lots: explicit receipt/cost/expiry or disclosed unknown metadata → FEFO sale allocation; expired stock requires explicit waste and cannot satisfy a sale.
+- Purchasing: owner-maintained suppliers → branch PO → partial receipt; preserve received quantities and actual prices when cancelling remaining goods.
+- Transfers: actor authorized for both active branches → atomic outgoing/incoming movements, matching lot cost/expiry and retained history.
+- Expenses: owner-only entry with request recovery → reasoned void; never overwrite the original amount/date/category. Valuation discloses unknown costs and does not claim net profit.
+- Replenishment: saved non-simulation shop forecast → supplier calendar lead time → urgent gap and review-window preview; uncounted/incomplete data is disclosed and no PO is created automatically.
+- Acceptance: not-run by default → manual observations/participant code required for a tested outcome → private JSON export; a browser check is not real-user/device evidence.

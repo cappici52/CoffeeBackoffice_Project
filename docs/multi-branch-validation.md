@@ -1,3 +1,5 @@
+> Historical validation record. For current features, cleanup status and remaining external validation, see [Project completion status — 2026-11-04](project-completion-status.md).
+
 # Multi-branch validation — 2026-11-04
 
 ## Results
