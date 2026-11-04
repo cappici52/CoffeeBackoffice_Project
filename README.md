@@ -170,3 +170,7 @@ Historical Replay now also accepts ihelon Coffee Sales V21, alongside the retain
 [Demand segmentation and density assessment](docs/coffee-sales-demand-segmentation.md) groups products using each origin's past sales frequency/volume, reports all candidate errors by group and volume-weighted metrics, and tests a prior-only category selector. It also audits the fictional/synthetic Maven Roasters source as a separate dense-data experiment. Production selection remains unchanged.
 
 Use the project's Python environment: `python forecast-service/coffee_sales_dataset.py --download`, then the existing `npm run dataset:import -- .local/public-datasets/ihelon-coffee-sales/prepared.json`. `npm run dataset:coffee` / `npm run dataset:evaluate -- --prepared ...` are aliases when that environment is active. Browser checks: `npm run test:coffee-replay-ui` and `npm run test:public-replay-ui`. Public data and evaluation do not change the operational forecasting model or stock. Cross-dataset WAPE is not evidence of model improvement.
+
+## Public-data forecast demonstration
+
+[Presentation walkthrough, architecture, measured baseline comparison and limitations](docs/forecast-presentation-demo.md). Open `/forecast/replay`, select the fixed 30-day preset, generate immutable forecasts, then explicitly reveal held-out actuals. The page also provides per-menu uncertainty bands and a clearly labeled illustrative recipe/stock/revenue preview without writing to operational stock.
