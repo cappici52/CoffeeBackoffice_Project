@@ -38,6 +38,7 @@ type Dataset = {
       date_from: string;
       date_to: string;
       active_days: number;
+      label?: string;
       missing_dates: string[];
     }[];
     report: {
@@ -46,6 +47,7 @@ type Dataset = {
       date_from: string;
       date_to: string;
       limitations: string[];
+      target?: string;
       zero_policy: string;
       price_policy: string;
     };
@@ -256,13 +258,13 @@ export default function HistoricalReplay() {
               </Select>
               <Select
                 disabled={generating}
-                label="สาขาในชุดข้อมูล"
+                label="สาขา / สตรีมข้อมูล"
                 value={outlet.id}
                 onChange={(e) => change("outlet", e.target.value)}
               >
                 {selected.metadata.outlets.map((o) => (
                   <option key={o.id} value={o.id}>
-                    {o.id}
+                    {o.label ?? o.id}
                   </option>
                 ))}
               </Select>
@@ -313,7 +315,7 @@ export default function HistoricalReplay() {
             <Submit>เริ่ม Historical Replay</Submit>
           </Form>
           <p className="caption muted">
-            เช่น เริ่ม 1 ก.ย. → ฝึกถึง 31 ส.ค. ·
+            ฝึกเฉพาะข้อมูลก่อนวันเริ่มทดสอบ ·
             ใช้โมเดลและเกณฑ์เลือกวิธีเดียวกับระบบร้าน
           </p>
           <details className="section-details">
@@ -339,19 +341,16 @@ export default function HistoricalReplay() {
             <p>
               {dateText(selected.metadata.report.date_from)}–
               {dateText(selected.metadata.report.date_to)} ·{" "}
-              {number(selected.metadata.report.raw_transactions, 0)} ใบเสร็จ ·{" "}
+              {number(selected.metadata.report.raw_transactions, 0)} แถวข้อมูล ·{" "}
               {number(selected.metadata.report.item_occurrences, 0)}{" "}
-              รายการสินค้า
+              รายการที่นับได้
             </p>
+            <p>{selected.metadata.report.target}</p>
+            <p>{selected.metadata.report.zero_policy}</p>
+            <p>{selected.metadata.report.price_policy}</p>
             <p>
-              นับรายการสินค้าจาก Items ที่ตรวจยอดตรงกับ TotalItem
-              ราคาตะกร้าและราคาในแค็ตตาล็อกไม่ใช้เป็นตัวแปรฝึก
-              ไม่มีข้อมูลสูตรหรือสต็อกจริงของร้านต้นทาง
-            </p>
-            <p>
-              วันที่สาขามีใบเสร็จแต่สินค้าไม่มีรายการ หลังเริ่มพบสินค้านั้น
-              ใช้ศูนย์แบบอนุมาน วันที่ไม่มีใบเสร็จทั้งสาขาคือไม่ทราบยอด
-              ไม่ยืนยันว่าสินค้าพร้อมขายตลอดวัน
+              ข้อมูลชุดนี้ใช้พยากรณ์และวัดผล
+              ไม่มีการเชื่อมสูตรหรือสต็อกของร้านต้นทาง
             </p>
             <ul>
               {selected.metadata.report.limitations.map((s) => (

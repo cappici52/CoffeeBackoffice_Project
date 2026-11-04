@@ -9,8 +9,32 @@ import AxeBuilder from "@axe-core/playwright";
 import { serializeForecastHistory } from "../dist/shop/forecast-snapshot.js";
 
 // Browser plugin is unavailable; use installed Edge/Chromium. Only research writes are authorized here.
+const coffee = process.argv.includes("--coffee");
+const profile = coffee
+  ? {
+      source: "https://www.kaggle.com/datasets/ihelon/coffee-sales",
+      cutoff: "2025-02-22",
+      end: "2025-03-23",
+      trainingTo: "2025-02-21",
+      outlet: "index_1",
+      expected: 240,
+      invalidCutoff: "2025-03-10",
+    }
+  : {
+      source: "https://data.mendeley.com/datasets/kcgf45y24m/2",
+      cutoff: "2025-09-01",
+      end: "2025-09-30",
+      trainingTo: "2025-08-31",
+      outlet: "SHOP001",
+      expected: 2820,
+      invalidCutoff: "2025-09-15",
+    };
 const base = process.env.APP_ORIGIN ?? "http://localhost:3001",
-  output = resolve(".local/public-datasets/evidence");
+  output = resolve(
+    coffee
+      ? ".local/public-datasets/ihelon-coffee-sales/evidence"
+      : ".local/public-datasets/evidence",
+  );
 await mkdir(output, { recursive: true });
 const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 async function operationalSnapshot() {
@@ -58,12 +82,26 @@ try {
   await expect(
     page.getByLabel("Dataset / Source", { exact: true }),
   ).toBeVisible();
+  const imported = (
+    await (await context.request.get(base + "/api/forecasts/datasets")).json()
+  ).datasets;
+  assert(
+    imported.some((d) => d.metadata.doi === "10.17632/kcgf45y24m.2"),
+    "Mendeley must remain available",
+  );
+  const selected = imported.find(
+    (d) => d.metadata.source_url === profile.source,
+  );
+  assert(selected, "Requested imported dataset must exist");
+  await page
+    .getByLabel("Dataset / Source", { exact: true })
+    .selectOption(selected.id);
   await page
     .getByLabel("วันเริ่มทดสอบ (as-of)", { exact: true })
-    .fill("2025-09-01");
+    .fill(profile.cutoff);
   await page
-    .getByLabel("สาขาในชุดข้อมูล", { exact: true })
-    .selectOption("SHOP001");
+    .getByLabel("สาขา / สตรีมข้อมูล", { exact: true })
+    .selectOption(profile.outlet);
   await page.getByLabel("สินค้าในชุดข้อมูล", { exact: true }).selectOption("");
   const predicted = page.waitForResponse(
     (r) => r.url().endsWith("/api/forecasts/backtest"),
@@ -77,11 +115,11 @@ try {
   const result = await response.json();
   assert.equal(result.kind, "historical_replay");
   assert.equal(result.data_mode, "PUBLIC_DATASET");
-  assert.equal(result.run.cutoff, "2025-09-01");
-  assert.equal(result.date_to, "2025-09-30");
-  assert.equal(result.run.metadata.training_to, "2025-08-31");
-  assert.equal(result.coverage.expected, 2820);
-  assert.equal(result.score.samples, 2820);
+  assert.equal(result.run.cutoff, profile.cutoff);
+  assert.equal(result.date_to, profile.end);
+  assert.equal(result.run.metadata.training_to, profile.trainingTo);
+  assert.equal(result.coverage.expected, profile.expected);
+  assert.equal(result.score.samples, profile.expected);
   assert(
     result.run.input_history.every(
       (r) => r.date < result.run.cutoff && r.unit_price === 0,
@@ -124,6 +162,9 @@ try {
       path: resolve(output, `replay-${width}.png`),
       fullPage: true,
     });
+    await page
+      .locator(".chart-panel")
+      .screenshot({ path: resolve(output, `replay-chart-${width}.png`) });
   }
   await page.getByText("คะแนนยอดรวมรายวัน", { exact: true }).click();
   await page
@@ -143,7 +184,7 @@ try {
   // Failure retains the previous saved result; retry with a valid shorter horizon.
   await page
     .getByLabel("วันเริ่มทดสอบ (as-of)", { exact: true })
-    .fill("2025-09-15");
+    .fill(profile.invalidCutoff);
   const bad = page.waitForResponse((r) =>
     r.url().endsWith("/api/forecasts/backtest"),
   );
@@ -159,7 +200,7 @@ try {
   ).toBeVisible();
   await page
     .getByLabel("วันเริ่มทดสอบ (as-of)", { exact: true })
-    .fill("2025-09-01");
+    .fill(profile.cutoff);
   await page.getByLabel("ระยะ Replay", { exact: true }).selectOption("1");
   const retry = page.waitForResponse(
     (r) => r.url().endsWith("/api/forecasts/backtest"),
@@ -187,9 +228,9 @@ try {
     .getByText("แหล่งข้อมูล สิทธิ์ใช้งาน และข้อจำกัด", { exact: true })
     .click();
   await expect(
-    page.getByRole("link", { name: "CC BY 4.0", exact: true }),
+    page.getByRole("link", { name: selected.metadata.license, exact: true }),
   ).toBeVisible();
-  await page.getByLabel("สาขาในชุดข้อมูล", { exact: true }).focus();
+  await page.getByLabel("สาขา / สตรีมข้อมูล", { exact: true }).focus();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Escape");
   // Empty/no-dataset state is exercised without changing the database.
