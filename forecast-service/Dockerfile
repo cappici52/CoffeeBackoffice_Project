@@ -3,7 +3,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm 
 WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-COPY app.py model.py selection.py ./
+COPY app.py model.py selection.py engine.py forecast_errors.py ./
 COPY artifacts ./artifacts
 RUN useradd --create-home forecast && mkdir runtime && chown forecast:forecast runtime
 USER forecast

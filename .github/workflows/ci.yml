@@ -77,6 +77,13 @@ jobs:
           docker compose exec -e SEED_OWNER_EMAIL=owner@example.com -e SEED_OWNER_PASSWORD=CI-container-password-123 api node dist/seed.js
           docker compose exec api node dist/demo.js
           node -e "fetch('http://localhost:3001').then(async r=>{if(!r.ok||!(await r.text()).includes('Coffee Backoffice'))process.exit(1)})"
+      - name: Docker failure diagnostics
+        if: failure()
+        env:
+          POSTGRES_DB: coffee_demo_ci
+        run: |
+          docker compose ps --all
+          docker compose logs --no-color --tail 100
       - name: Stop Docker stack
         env:
           POSTGRES_DB: coffee_demo_ci
