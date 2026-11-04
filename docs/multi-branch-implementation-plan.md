@@ -14,3 +14,5 @@ Forecast experimentation is paused. Preserve Python models, public research and 
 10. Stop before any destructive cleanup and request explicit approval against a concrete backup/audit/dry-run. No automatic deletion or demo regeneration.
 
 Initial read-only audit: 10,515 orders, of which 10,506 explicitly marked simulation and nine unmarked; 10,042 marked payments, 35,634 marked movements and 211 marked closings. Preserve all four user accounts and research datasets. Full private record manifest remains under `.local/cleanup-audit`; do not commit credentials, QR capabilities, bank images or database dumps.
+
+User review decisions: preserve all nine unmarked orders and their relationships; retain ten legacy opening receipts with pending-count labeling. No deletion approval has been given. The final dry-run proposes only removal of confirmed generated operational rows and restoration of reviewed retained-ledger balances, preserving all forecasting data.
