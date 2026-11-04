@@ -63,3 +63,7 @@ Physical acceptance and actual customer outcomes remain external prerequisites, 
 ## Validation summary
 
 Final local automated regression: **124 tests / 26 files passed**, TypeScript checks and production build passed. The expanded browser suite passed **37 workflow groups** in a retained isolated native PostgreSQL schema, including stocktakes, FEFO receipts, partial purchasing, transfers, valuation/expenses, lead-time readiness, mobile overflow/accessibility, printer preview and manual acceptance export. Final focused tests additionally cover explicit non-perishable expiry status, immutable posted history, insufficient-history readiness and simulation exclusion. The strict UI audit reports zero findings. No physical-device or independent real-user acceptance result is implied.
+
+Final post-extension recovery verification: `.local/backups/coffee-2026-11-04T14-14-09-962Z.dump`, SHA-256 `ab7f5195a113c3c961e70a402fe51a4bd764553b3de7c3b1e6425ff35d331ca5`, restored into a new verification database with all **48** table counts and migration checksums matching; source unchanged and no verification deletions.
+
+GitHub's Linux browser run caught transient tab contrast during background-color animation when selection changed. The shared tabs/segmented controls now transition border color only, keeping text/background contrast stable throughout selection; the accessibility check remains enabled.
