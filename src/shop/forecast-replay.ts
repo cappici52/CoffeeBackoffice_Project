@@ -6,6 +6,7 @@ import { dateSchema, idSchema, fail } from "./shared.js";
 import { requestForecast } from "./forecast-client.js";
 import { serializeForecastHistory } from "./forecast-snapshot.js";
 import { metrics, intervalMetrics } from "./forecast-metrics.js";
+import { replayBaseline, type ReplayBaseline } from "./replay-baseline.js";
 
 export const publicReplayInput = z
   .object({
@@ -14,6 +15,7 @@ export const publicReplayInput = z
     product_id: idSchema.optional(),
     cutoff: dateSchema,
     replay_mode: z.enum(["fixed", "rolling"]).default("fixed"),
+    reveal_actual: z.boolean().default(true),
     horizon: z.union([z.literal(1), z.literal(7), z.literal(30)]).default(30),
     history_days: z
       .union([z.literal(30), z.literal(90), z.literal(180)])
@@ -35,7 +37,7 @@ export type ResearchMetadata = {
 const add = (date: string, days: number) =>
   new Date(Date.parse(date) + days * 86400000).toISOString().slice(0, 10);
 
-export async function getPublicReplay(db: Database, id: string) {
+export async function getPublicReplay(db: Database, id: string, revealActual = true) {
   const run = (
     await db.query(
       "SELECT *,cutoff::text AS cutoff FROM research_replay_runs WHERE id=$1",
@@ -55,7 +57,7 @@ export async function getPublicReplay(db: Database, id: string) {
     )
   ).rows;
   // This held-out query runs only AFTER the immutable predictions have committed.
-  const actual = (
+  const actual = revealActual ? (
     await db.query(
       `SELECT date::text,product_id,qty,quality FROM research_daily_demand
    WHERE dataset_id=$1 AND outlet_id=$2 AND date >= $3::date AND date < $3::date+$4::int AND product_id=ANY($5::uuid[]) ORDER BY date,product_id`,
@@ -67,7 +69,11 @@ export async function getPublicReplay(db: Database, id: string) {
         [...new Set(points.map((p) => p.product_id))],
       ],
     )
-  ).rows;
+  ).rows : [];
+  const history = run.input_history as { date: string; product_id: string; qty: number }[];
+  const baseline: ReplayBaseline[] = run.metadata.benchmark_predictions ??
+    (run.metadata.replay_mode === "rolling" ? [] : replayBaseline(history, run.cutoff, run.horizon));
+  const baselineLookup = new Map(baseline.map(p => [p.date + ":" + p.product_id, p.predicted_qty]));
   const lookup = new Map(actual.map((r) => [r.date + ":" + r.product_id, r]));
   const rows = points.map((p) => {
     const truth = lookup.get(p.date + ":" + p.product_id),
@@ -80,6 +86,7 @@ export async function getPublicReplay(db: Database, id: string) {
       actual_qty: truth ? Number(truth.qty) : null,
       actual_quality: truth?.quality ?? "unknown",
       error: truth ? prediction.predicted_qty - Number(truth.qty) : null,
+      baseline_qty: baselineLookup.get(p.date + ":" + p.product_id) ?? null,
     };
   });
   const pairs = rows
@@ -118,11 +125,23 @@ export async function getPublicReplay(db: Database, id: string) {
     data_mode: "PUBLIC_DATASET",
     run,
     dataset,
+    actual_revealed: revealActual,
+    history,
     rows,
     score: metrics(pairs),
     aggregate_score: metrics(dailyPairs),
     interval: intervalMetrics(pairs),
     by_product: perProduct,
+    benchmark: {
+      name: "ยอดวันเดียวกันในสัปดาห์ล่าสุดที่มีข้อมูล",
+      score: metrics(rows.filter(r => r.actual_qty !== null && r.baseline_qty !== null)
+        .map(r => ({ actual: r.actual_qty!, predicted: r.baseline_qty! }))),
+      aggregate_score: metrics([...new Set(rows.map(r => r.date))].flatMap(date => {
+        const day = rows.filter(r => r.date === date);
+        return day.every(r => r.actual_qty !== null && r.baseline_qty !== null)
+          ? [{ actual: day.reduce((s,r) => s + r.actual_qty!, 0), predicted: day.reduce((s,r) => s + r.baseline_qty!, 0) }] : [];
+      })),
+    },
     coverage: {
       expected: rows.length,
       matched: pairs.length,
@@ -187,15 +206,17 @@ export async function runPublicReplay(
     source: "actual",
   }));
   const rollingRuns: string[] = [];
+  const benchmark: ReplayBaseline[] = [];
   // Each daily forecast commits before its actual is read. Later origins may
   // learn from earlier replay days, never from their own target or later days.
   const rollingForecasts: Awaited<ReturnType<typeof requestForecast>> = [];
   if (input.replay_mode === "rolling") {
     for (let day = 0; day < input.horizon; day++) {
       const child = await runPublicReplay(db, config, {
-        ...input, replay_mode: "fixed", cutoff: add(input.cutoff, day), horizon: 1,
+        ...input, reveal_actual: false, replay_mode: "fixed", cutoff: add(input.cutoff, day), horizon: 1,
       }, actor);
       rollingRuns.push(child.run.id as string);
+      benchmark.push(...child.run.metadata.benchmark_predictions);
       const saved = await db.query(
         "SELECT prediction FROM research_replay_points WHERE run_id=$1 ORDER BY date,product_id",
         [child.run.id],
@@ -231,6 +252,7 @@ export async function runPublicReplay(
           pipeline: "coffee-demand-v5",
           replay_mode: input.replay_mode,
           rolling_run_ids: rollingRuns,
+          benchmark_predictions: input.replay_mode === "rolling" ? benchmark : replayBaseline(inputHistory, input.cutoff, input.horizon),
           history_days: input.history_days,
           training_from: inputHistory[0]!.date,
           training_to: inputHistory.at(-1)!.date,
@@ -263,5 +285,5 @@ export async function runPublicReplay(
       ],
     );
   });
-  return getPublicReplay(db, id);
+  return getPublicReplay(db, id, input.reveal_actual);
 }

@@ -319,7 +319,8 @@ export function forecastsRouter(
     });
   });
   r.get("/forecasts/replays/:id", async (req, res) => {
-    res.json(await getPublicReplay(db, idSchema.parse(req.params.id)));
+    const query = z.object({ reveal: z.enum(["true", "false"]).default("true") }).parse(req.query);
+    res.json(await getPublicReplay(db, idSchema.parse(req.params.id), query.reveal === "true"));
   });
   r.get("/forecasts/data", async (req, res) => {
     const input = z

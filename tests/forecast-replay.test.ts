@@ -219,6 +219,15 @@ test("public replay has exclusive cutoff, immutable predictions before truth rea
         .current_stock,
     ),
   ).toBe(111);
+  const concealed = await request(app).get("/api/forecasts/replays/" + id + "?reveal=false")
+    .set("Cookie", cookie).expect(200);
+  expect(concealed.body.actual_revealed).toBe(false);
+  expect(concealed.body.score.samples).toBe(0);
+  expect(concealed.body.benchmark.score.samples).toBe(0);
+  expect(concealed.body.rows.every((r: { actual_qty: unknown; error: unknown }) => r.actual_qty === null && r.error === null)).toBe(true);
+  expect(concealed.body.history.every((r: { date: string }) => r.date < "2025-09-01")).toBe(true);
+  expect(concealed.body.rows.map((r: { predicted_qty: number }) => r.predicted_qty)).toEqual(response.body.rows.map((r: { predicted_qty: number }) => r.predicted_qty));
+  expect(response.body.benchmark.score).toEqual(response.body.score);
 });
 
 test("public replay rejects future-only selection, wrong outlet, bad coverage and unauthenticated access", async () => {
@@ -279,4 +288,29 @@ test("rolling replay archives daily origins and never trains on its target or fu
   const children = await f.db.query("SELECT horizon FROM research_replay_runs WHERE id=ANY($1::uuid[])", [response.body.run.metadata.rolling_run_ids]);
   expect(children.rows).toHaveLength(7);
   expect(children.rows.every(r => r.horizon === 1)).toBe(true);
+});
+
+test("presentation generation commits a forecast without querying held-out sales until explicit reveal", async () => {
+  const query = vi.spyOn(f.db, "query");
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, options) => {
+    const body = JSON.parse(options!.body as string);
+    expect(body.history.every((r: { date: string }) => r.date < body.date_from)).toBe(true);
+    return new Response(JSON.stringify([{
+      date: body.date_from, product_id: productId, predicted_qty: 10,
+      lower: 5, upper: 15, model_version: "mean-7-v1", history_source: "actual",
+      diagnostics: { origin: "2025-08-31", history_days: 31, reason: "test", selection: {}, pipeline: "coffee-demand-v5", training_cohort: "public_dataset" },
+    }]), { status: 200 });
+  });
+  const created = await request(app).post("/api/forecasts/backtest")
+    .set("Origin", origin).set("Cookie", cookie)
+    .send({ dataset_id: datasetId, outlet_id: "A", cutoff: "2025-09-01", horizon: 1, reveal_actual: false }).expect(200);
+  expect(created.body.actual_revealed).toBe(false);
+  expect(created.body.rows[0].actual_qty).toBeNull();
+  expect(created.body.score.samples).toBe(0);
+  expect(query.mock.calls.some(([sql]) => sql.includes("date >= $3::date AND date <"))).toBe(false);
+  const revealed = await request(app).get(`/api/forecasts/replays/${created.body.run.id}?reveal=true`)
+    .set("Cookie", cookie).expect(200);
+  expect(revealed.body.rows[0]).toMatchObject({ actual_qty: 999, predicted_qty: 10, lower: 5, upper: 15 });
+  expect(revealed.body.interval).toMatchObject({ samples: 1, nominal: 80, coverage: 0 });
+  expect(revealed.body.run.history_sha256).toBe(created.body.run.history_sha256);
 });
