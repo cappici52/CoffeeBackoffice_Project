@@ -44,6 +44,9 @@ import {
   useConfirm,
 } from "./ui";
 import type { Role, User } from "./types";
+import { BranchProvider,BranchSelector,useBranch } from './branches';
+const Branches=lazy(()=>import('./pages/Branches'));
+const BranchProducts=lazy(()=>import('./pages/BranchProducts'));
 const Pos = lazy(() => import("./pages/Pos"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Kds = lazy(() => import("./pages/Kds"));
@@ -64,11 +67,13 @@ export const useAuth = () => useContext(AuthContext);
 const LiveContext = createContext({ connected: false, revision: 0, offset: 0 });
 export const useLive = () => useContext(LiveContext);
 function LiveProvider({ children }: { children: ReactNode }) {
+  const branch=useBranch();
   const [connected, setConnected] = useState(false);
   const [revision, setRevision] = useState(0);
   const [offset, setOffset] = useState(0);
   useEffect(() => {
-    const stream = new EventSource("/api/events");
+    if(branch.id==='all')return;
+    const stream = new EventSource('/api/events?branch_id='+encodeURIComponent(branch.id));
     stream.onopen = () => setConnected(true);
     stream.onerror = () => setConnected(false);
     stream.onmessage = (e) => {
@@ -137,6 +142,8 @@ function Login({ onLogin }: { onLogin: (user: User) => void }) {
   );
 }
 const navigation = [
+  {to:'/branches',label:'สาขา',icon:Coffee,roles:['owner','manager']},
+  {to:'/branch-products',label:'เมนูประจำสาขา',icon:BookOpen,roles:['owner','manager']},
   {
     to: "/tables",
     label: "โต๊ะ / QR",
@@ -199,14 +206,15 @@ function Only({ roles, children }: { roles: Role[]; children: ReactNode }) {
   return children;
 }
 function Shell({ logout }: { logout: () => Promise<void> }) {
+  const branch=useBranch();
   const [failure, setFailure] = useState("");
   const { user } = useAuth();
   const live = useLive();
-  const shopContext = useResource<{ contains_simulation: boolean }>(
+  const shopContext = useResource<{ contains_simulation: boolean;contains_demo_stock?:boolean }>(
     "/shop-context",
   );
   const queue = useResource<{ unpaid: number; qr_unpaid: number }>(
-    user.role === "kitchen" ? null : "/orders/summary",
+    user.role === "kitchen"||branch.id==='all' ? null : "/orders/summary",
   );
   useEffect(queue.reload, [queue.reload, live.revision]);
   useEffect(shopContext.reload, [shopContext.reload, live.revision]);
@@ -227,9 +235,10 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
         <Link className="brand" to={user.role === "kitchen" ? "/kds" : "/pos"}>
           Coffee<span>Backoffice</span>
         </Link>
+        <BranchSelector/>
         <nav aria-label="เมนูหลัก">
           {navigation
-            .filter((n) => n.roles.includes(user.role))
+            .filter((n) => n.roles.includes(user.role)&&(n.to!=='/menu'||user.role==='owner')&&(branch.id!=='all'||['/branches','/reports','/users'].includes(n.to)))
             .map((n) => (
               <NavLink key={n.to} to={n.to}>
                 <n.icon size={20} />
@@ -286,31 +295,32 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
             {dateText(new Date().toISOString())}
           </time>
           <span
-            className={"connection " + (live.connected ? "online" : "offline")}
+            className={"connection " + (branch.id==='all'?'':live.connected ? "online" : "offline")}
             role="status"
           >
-            {live.connected ? <Wifi size={16} /> : <WifiOff size={16} />}
+            {branch.id==='all'?<BarChart3 size={16}/>:live.connected ? <Wifi size={16} /> : <WifiOff size={16} />}
             <span>
-              {live.connected
+              {branch.id==='all'?'รายงานรวม':live.connected
                 ? "เชื่อมต่อแล้ว"
                 : "ขาดการเชื่อมต่อ · กำลังลองใหม่"}
             </span>
           </span>
         </header>
         <main id="content" className="page">
-          {shopContext.data?.contains_simulation && (
+          {(shopContext.data?.contains_simulation||shopContext.data?.contains_demo_stock) && (
             <Notice tone="warning">
               <details>
-                <summary>ข้อมูลร้านมีรายการจำลอง</summary>
+                <summary>{shopContext.data.contains_simulation?'ข้อมูลร้านมีรายการจำลอง':'สต็อกมียอดตั้งต้นตัวอย่างที่ต้องตรวจสอบ'}</summary>
                 <p>
-                  ฐานข้อมูลนี้มีรายการจำลองการขาย
+                  {shopContext.data.contains_simulation?<>ฐานข้อมูลนี้มีรายการจำลองการขาย
                   รายงานยอดขายและสต็อกรวมรายการจำลองด้วย
-                  รายการเหล่านี้ไม่ใช่การขายหรือรับเงินจริง
+                  รายการเหล่านี้ไม่ใช่การขายหรือรับเงินจริง</>:<>ยอดตั้งต้นสต็อกยังมีข้อมูลตัวอย่าง กรุณาตรวจนับและยืนยันยอดก่อนใช้งานจริง ประวัติขายที่เก็บไว้ไม่ถูกแก้ไข</>}
                 </p>
               </details>
             </Notice>
           )}
           {failure && <Notice tone="danger">{failure}</Notice>}
+          {branch.id==='all'&&!['/reports','/branches','/users','/account'].some(p=>location.pathname.startsWith(p))?<Notice>เลือกสาขาเพื่อใช้งานหน้านี้ หรือ <Link to="/reports">เปิดรายงานรวม</Link></Notice>:
           <Suspense
             fallback={
               <div className="loading">
@@ -319,6 +329,8 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
             }
           >
             <Routes>
+              <Route path="/branches" element={<Only roles={['owner','manager']}><Branches/></Only>}/>
+              <Route path="/branch-products" element={<Only roles={['owner','manager']}><BranchProducts/></Only>}/>
               <Route
                 path="/tables"
                 element={
@@ -356,7 +368,7 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
               <Route
                 path="/menu"
                 element={
-                  <Only roles={["owner", "manager"]}>
+                  <Only roles={["owner"]}>
                     <Menu />
                   </Only>
                 }
@@ -419,7 +431,7 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
                 }
               />
             </Routes>
-          </Suspense>
+          </Suspense>}
         </main>
       </div>
     </div>
@@ -434,6 +446,7 @@ function Session() {
     const data = await api<{ user: User }>("/auth/me");
     setUser(data.user);
   }
+  async function logout(){await mutate('/auth/logout','POST');setUser(null);navigate('/');}
   useEffect(() => {
     void refresh()
       .catch((e) => {
@@ -470,17 +483,14 @@ function Session() {
     );
   return (
     <AuthContext value={{ user, refresh }}>
-      <LiveProvider>
-        <Shell
-          logout={async () => {
-            await mutate("/auth/logout", "POST");
-            setUser(null);
-            navigate("/");
-          }}
-        />
-      </LiveProvider>
+      <BranchProvider user={user} logout={logout}>
+        <Workspace logout={logout}/>
+      </BranchProvider>
     </AuthContext>
   );
+}
+function Workspace({logout}:{logout:()=>Promise<void>}){
+ const branch=useBranch();return <LiveProvider key={branch.id}><Shell logout={logout}/></LiveProvider>;
 }
 export function App() {
   const location = useLocation();

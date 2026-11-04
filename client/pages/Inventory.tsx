@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Plus } from "lucide-react";
+import { useAuth } from '../App';
 import {
   dateText,
   money,
@@ -49,6 +50,7 @@ const movementLabels: Record<string, string> = {
   return: "คืนสต็อก",
 };
 export default function Inventory() {
+  const owner=useAuth().user.role==='owner';
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") ?? "ingredients";
   const page = Math.max(1, Number(params.get("page")) || 1);
@@ -95,7 +97,7 @@ export default function Inventory() {
         </div>
         <div className="row">
           <button onClick={() => setMove(true)}>รับเข้า / ของเสีย</button>
-          {tab === "ingredients" && (
+          {tab === "ingredients" && owner && (
             <button className="primary" onClick={() => setEditor("new")}>
               <Plus size={18} />
               เพิ่มวัตถุดิบ
@@ -178,7 +180,7 @@ export default function Inventory() {
                               แก้ไข
                             </button>
                             <button
-                              disabled={busy}
+                              disabled={busy||!owner}
                               className="ghost danger-text"
                               onClick={() =>
                                 void (async () => {
@@ -322,6 +324,7 @@ export default function Inventory() {
             <Input
               label="ชื่อวัตถุดิบ"
               name="name"
+              readOnly={!owner}
               required
               maxLength={120}
               defaultValue={editor === "new" ? "" : editor.name}
@@ -348,6 +351,7 @@ export default function Inventory() {
             <Input
               label="ต้นทุนต่อ 1 หน่วย (บาท)"
               name="cost"
+              readOnly={!owner}
               type="number"
               step="0.000001"
               min={0}
@@ -474,6 +478,7 @@ function RecipeForm({
   onSaved: () => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
+  const canEdit=useAuth().user.role==='owner';
   const [items, setItems] = useState<RecipeIngredient[]>(
     recipe?.ingredients ?? [],
   );
@@ -509,7 +514,7 @@ function RecipeForm({
         toast("บันทึกสูตรแล้ว");
       }}
     >
-      <div className="section-head">
+      <fieldset className="recipe-fields" disabled={!canEdit}><legend className="sr-only">สูตรกลาง</legend><div className="section-head">
         <h2>วัตถุดิบต่อ 1 หน่วยขาย</h2>
         <button
           type="button"
@@ -654,7 +659,7 @@ function RecipeForm({
         การแก้สูตรมีผลกับออเดอร์ใหม่เท่านั้น ออเดอร์ที่สร้างแล้วเก็บสูตร ณ
         เวลาสั่งไว้
       </Notice>
-      <Submit>บันทึกสูตร</Submit>
+      </fieldset>{canEdit?<Submit>บันทึกสูตร</Submit>:<Notice>สูตรกลางแก้ไขได้โดยเจ้าของร้านเท่านั้น</Notice>}
     </Form>
   );
 }

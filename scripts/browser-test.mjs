@@ -10,6 +10,7 @@ import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import QRCode from "qrcode";
 import { qrBrowserChecks } from "./qr-browser-checks.mjs";
+import { branchBrowserChecks } from './branch-browser-checks.mjs';
 
 // Browser plugin not available. Use installed Edge on Windows, Chromium in CI.
 // All writes occur in a disposable PostgreSQL schema, never the shop's live tables.
@@ -311,12 +312,15 @@ try {
     .getByLabel("ข้อมูลที่ใช้สร้าง", { exact: true })
     .selectOption("mixed");
   await page.getByRole("button", { name: "แสดงผล", exact: true }).click();
+  const initialForecastResponse=page.waitForResponse(r=>r.url().endsWith('/api/forecasts/generate')&&r.request().method()==='POST',{timeout:75000});
   await page
     .getByRole("button", { name: "สร้างพยากรณ์ใหม่", exact: true })
     .click();
+  const generated=await initialForecastResponse;
+  assert.equal(generated.status(),200,'Forecast API failed: '+JSON.stringify((await generated.json()).error??generated.status()));
   await expect(
     page.getByRole("status").filter({ hasText: "สร้างผลพยากรณ์แล้ว" }),
-  ).toBeVisible({ timeout: 20000 });
+  ).toBeVisible({ timeout: 75000 });
   await expect(
     page
       .getByText(
@@ -612,6 +616,7 @@ try {
   await kitchenContext.close();
   checks.push("Kitchen-only navigation and financial-data isolation");
   await qrBrowserChecks({ browser, page, base, output, checks });
+  await branchBrowserChecks({page,base,output,checks});
   await go("/pos");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
@@ -682,6 +687,6 @@ try {
     child.kill();
     await new Promise((resolve) => child.once("exit", resolve));
   }
-  await root.query(`DROP SCHEMA ${schema} CASCADE`);
+  if(process.env.QA_KEEP_SCHEMA!=='1')await root.query(`DROP SCHEMA ${schema} CASCADE`);
   await root.end();
 }

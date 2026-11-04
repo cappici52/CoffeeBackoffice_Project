@@ -33,7 +33,9 @@ import {
   usePagedRows,
 } from "../ui";
 import type { Report } from "../types";
+import { useBranch } from '../branches';
 export default function Reports() {
+  const branch=useBranch();
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const from = params.get("from") ?? addDays(today(), -6);
@@ -70,7 +72,7 @@ export default function Reports() {
             </button>
           ))}
         </div>
-        <button onClick={() => setClose(true)}>ปิดวันขาย</button>
+        <button disabled={branch.id==='all'} title={branch.id==='all'?'เลือกสาขาก่อนปิดวันขาย':undefined} onClick={() => setClose(true)}>ปิดวันขาย</button>
       </div>
       <Form
         noValidate
@@ -136,6 +138,7 @@ export default function Reports() {
             คืนเงินในช่วงนี้ {report.refunds.count} รายการ ·{" "}
             {money(report.refunds.amount_satang)} · วันและเวลาอิงประเทศไทย
           </p>
+          {!!report.branches?.length&&<section className="table-panel branch-summary"><h2>ผลประกอบการแยกสาขา</h2><div className="table-scroll"><table><caption className="sr-only">ยอดขายและสต็อกแยกสาขาตามช่วงวันที่เลือก</caption><thead><tr><th>สาขา</th><th>ออเดอร์ที่สร้าง</th><th>รับชำระแล้ว</th><th>ยอดรับชำระ</th><th>วัตถุดิบใกล้หมด</th></tr></thead><tbody>{report.branches.map(b=><tr key={b.id}><th scope="row">{b.name}</th><td>{number(b.placed_orders)}</td><td>{number(b.paid_orders)}</td><td>{money(b.revenue_satang)}</td><td>{number(b.low_stock_items)}</td></tr>)}</tbody></table></div></section>}
           <div className="chart-pair">
             <section className="chart-panel">
               <h2>ยอดขายรายวัน</h2>

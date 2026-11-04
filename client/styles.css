@@ -1799,3 +1799,8 @@ details summary {
   object-fit: contain;
   border-radius: var(--radius);
 }
+.branch-selector { margin: 0.75rem 1.25rem 1.25rem; min-width: 0; }
+.branch-selector select { width: 100%; min-width: 0; }
+.branch-summary h2 { margin: 0; padding: 1rem 1.25rem; }
+.recipe-fields { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 1rem; }
+@media (max-width: 900px) { .branch-selector { margin-inline: 0; } }

@@ -18,7 +18,9 @@ import {
   useToast,
 } from "../ui";
 import type { Role, User } from "../types";
+import { useBranch } from '../branches';
 export default function UserAdmin() {
+  const branch=useBranch();
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const page = Math.max(1, Number(params.get("page")) || 1);
@@ -40,7 +42,7 @@ export default function UserAdmin() {
             ? "จัดการบัญชีแคชเชียร์และครัว / บาร์"
             : "จัดการบัญชีและสิทธิ์การใช้งาน"}
         </p>
-        <button className="primary" onClick={() => setEditor("new")}>
+        <button className="primary" disabled={branch.id==='all'} title={branch.id==='all'?'เลือกสาขาก่อนเพิ่มผู้ใช้งาน':undefined} onClick={() => setEditor("new")}>
           <Plus size={18} />
           เพิ่มผู้ใช้งาน
         </button>
