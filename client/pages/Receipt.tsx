@@ -1,10 +1,11 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams,useSearchParams } from "react-router-dom";
 import { Printer } from "lucide-react";
 import { dateText, money, orderNo, useResource } from "../lib";
-import { Notice, QueryState } from "../ui";
+import { Notice, QueryState,Select } from "../ui";
 import type { Order } from "../types";
 export default function Receipt() {
   const { id } = useParams();
+  const [params,setParams]=useSearchParams(),paper=params.get('paper')==='58'?'58':'80';
   const resource = useResource<{ order: Order }>("/orders/" + id);
   const o = resource.data?.order;
   return (
@@ -13,6 +14,8 @@ export default function Receipt() {
         <Link className="button" to="/orders">
           กลับหน้าออเดอร์
         </Link>
+        <Select label="กระดาษใบเสร็จ" value={paper} onChange={e=>setParams({paper:e.target.value})}><option value="58">58 mm</option><option value="80">80 mm</option></Select>
+        <Link className="button" to={'/printer-test?paper='+paper}>ทดสอบเครื่องพิมพ์</Link>
         <button
           className="primary"
           disabled={!o}
@@ -24,7 +27,7 @@ export default function Receipt() {
       </div>
       <QueryState {...resource} retry={resource.reload} />
       {o && (
-        <article className="receipt">
+        <article className="receipt" data-paper={paper}>
           <h2>Coffee Backoffice</h2>
           <p>
             {o.payment_status === "paid"

@@ -3,7 +3,7 @@ import type { Database, Sql } from './db.js';
 import { ApiError } from './security.js';
 
 export const LEGACY_BRANCH='00000000-0000-4000-8000-000000000016';
-export type BranchScope={ ids:string[]; write:boolean; master:boolean; actorId?:string };
+export type BranchScope={ ids:string[]; write:boolean; master:boolean; actorId?:string;actorRole?:string };
 const storage=new AsyncLocalStorage<BranchScope>();
 export const branchScope=()=>storage.getStore();
 export const inBranch=<T>(scope:BranchScope,work:()=>T):T=>storage.run(scope,work);
@@ -14,8 +14,8 @@ export function branchDatabase(db:Database):Database {
     const branches=await sql.query(`SELECT b.id FROM branches b WHERE b.id=ANY($1::uuid[]) AND (NOT $2::boolean OR b.is_active) FOR SHARE`,[scope.ids,scope.write]);
     if(branches.rows.length!==scope.ids.length)throw new ApiError(403,'BRANCH_INACTIVE');
     if(scope.actorId){
-      const actor=(await sql.query(`SELECT u.role FROM users u WHERE u.id=$1 AND u.is_active AND (u.role='owner' OR NOT EXISTS(
-        SELECT 1 FROM unnest($2::uuid[]) id WHERE NOT EXISTS(SELECT 1 FROM user_branches m WHERE m.user_id=u.id AND m.branch_id=id))) FOR SHARE`,[scope.actorId,scope.ids])).rows[0];
+      const actor=(await sql.query(`SELECT u.role FROM users u WHERE u.id=$1 AND u.is_active AND ($3::text IS NULL OR u.role=$3) AND (u.role='owner' OR NOT EXISTS(
+        SELECT 1 FROM unnest($2::uuid[]) id WHERE NOT EXISTS(SELECT 1 FROM user_branches m WHERE m.user_id=u.id AND m.branch_id=id))) FOR SHARE`,[scope.actorId,scope.ids,scope.actorRole??null])).rows[0];
       if(!actor)throw new ApiError(403,'BRANCH_FORBIDDEN');
       if(scope.master&&actor.role!=='owner')throw new ApiError(403,'FORBIDDEN');
     }

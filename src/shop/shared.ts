@@ -65,6 +65,8 @@ export async function moveStock(
   reason: string,
   orderId: string | null = null,
   stocktakeId: string | null = null,
+  lotId: string | null = null,
+  transferId: string | null = null,
 ) {
   const r = await sql.query(
     "UPDATE branch_stock SET current_stock = current_stock + $1, version=version+1 WHERE ingredient_id=$2 AND branch_id=coffee_current_branch() AND current_stock + $1 >= 0 RETURNING current_stock",
@@ -72,7 +74,7 @@ export async function moveStock(
   );
   fail(r.rows[0], 409, "INSUFFICIENT_STOCK");
   await sql.query(
-    "INSERT INTO stock_movements (id,ingredient_id,type,qty,balance_after,reason,ref_order_id,created_by,stocktake_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+    "INSERT INTO stock_movements (id,ingredient_id,type,qty,balance_after,reason,ref_order_id,created_by,stocktake_id,lot_id,transfer_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
     [
       randomUUID(),
       ingredientId,
@@ -83,6 +85,8 @@ export async function moveStock(
       orderId,
       typeof actor === "string" ? actor : actor.id,
       stocktakeId,
+      lotId,
+      transferId,
     ],
   );
 }

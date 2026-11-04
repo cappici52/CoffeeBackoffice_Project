@@ -58,6 +58,8 @@ const HistoricalReplay = lazy(() => import("./pages/HistoricalReplay"));
 const UserAdmin = lazy(() => import("./pages/Users"));
 const Account = lazy(() => import("./pages/Account"));
 const Receipt = lazy(() => import("./pages/Receipt"));
+const PrinterTest = lazy(()=>import('./pages/PrinterTest'));
+const Acceptance = lazy(()=>import('./pages/Acceptance'));
 const Tables = lazy(() => import("./pages/Tables"));
 const Customer = lazy(() => import("./pages/Customer"));
 const AuthContext = createContext<{ user: User; refresh: () => Promise<void> }>(
@@ -222,7 +224,7 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
   const confirm = useConfirm();
   const heading =
     navigation.find((n) => location.pathname.startsWith(n.to))?.label ??
-    (location.pathname.startsWith("/receipt") ? "ใบเสร็จ" : "บัญชีของฉัน");
+    (location.pathname==='/acceptance'?'บันทึกผลทดสอบ':location.pathname==='/printer-test'?'ทดสอบเครื่องพิมพ์':location.pathname.startsWith("/receipt") ? "ใบเสร็จ" : "บัญชีของฉัน");
   useEffect(() => {
     document.title = heading + " · Coffee Backoffice";
   }, [heading]);
@@ -365,6 +367,8 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
                 }
               />
               <Route path="/kds" element={<Kds />} />
+              <Route path="/printer-test" element={<Only roles={['owner','manager','cashier']}><PrinterTest /></Only>} />
+              <Route path="/acceptance" element={<Only roles={['owner','manager']}><Acceptance /></Only>} />
               <Route
                 path="/menu"
                 element={

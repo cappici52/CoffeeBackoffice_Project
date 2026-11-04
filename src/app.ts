@@ -9,6 +9,10 @@ import { ApiError } from "./security.js";
 import { catalogRouter } from "./shop/catalog.js";
 import { inventoryRouter } from "./shop/inventory.js";
 import { stocktakesRouter } from './shop/stocktakes.js';
+import { lotsRouter } from './shop/lots.js';
+import { purchasingRouter } from './shop/purchasing.js';
+import { transfersRouter } from './shop/transfers.js';
+import { replenishmentRouter } from './shop/replenishment.js';
 import { ordersRouter } from "./shop/orders.js";
 import { reportsRouter } from "./shop/reports.js";
 import { forecastsRouter } from "./shop/forecasts.js";
@@ -126,6 +130,10 @@ export function createApp(db: Database, config: Config) {
     ),
   );
   app.use('/api',stocktakesRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
+  app.use('/api',lotsRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
+  app.use('/api',purchasingRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
+  app.use('/api',transfersRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
+  app.use('/api',replenishmentRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
   const frontend = resolve("dist/client");
   if (existsSync(frontend)) {
     app.use(express.static(frontend));
@@ -172,6 +180,9 @@ export function createApp(db: Database, config: Config) {
       if ("code" in error && error.code === "23514") {
         res.status(400).json({ error: "INVALID_VALUE" });
         return;
+      }
+      if ('code' in error && error.code === 'P9001') {
+        res.status(409).json({error:'EXPIRED_OR_INSUFFICIENT_LOT_STOCK'});return;
       }
       if ('code' in error && error.code === '42501') {
         res.status(403).json({error:'BRANCH_PERMISSION_REQUIRED'});return;

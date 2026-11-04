@@ -1,0 +1,55 @@
+import request from 'supertest';
+import { randomUUID } from 'node:crypto';
+import { test,expect } from 'vitest';
+import { testDatabase } from './database.js';
+import { migrate } from '../src/migrate.js';
+import { seedOwner } from '../src/seed.js';
+import { createApp } from '../src/app.js';
+import { readConfig } from '../src/config.js';
+import { businessDate } from '../src/shop/shared.js';
+
+test('partial purchasing and atomic transfers preserve quantities, costs, expiry and idempotency',async()=>{
+ const f=await testDatabase();try{
+  await migrate(f.db);await seedOwner(f.db,'buyer@example.com','Test-buyer-password-123');
+  const app=createApp(f.db,readConfig({DATABASE_URL:'postgresql://test:test@localhost/test'}));
+  const login=await request(app).post('/api/auth/login').set('Origin','http://localhost:3001').send({email:'buyer@example.com',password:'Test-buyer-password-123'}).expect(200);
+  const cookie=login.headers['set-cookie']![0]!.split(';')[0]!,ingredient=randomUUID();
+  await f.db.query("INSERT INTO ingredients(id,name,unit) VALUES($1,'Purchasing fixture','g')",[ingredient]);
+  const post=(path:string,body:unknown)=>request(app).post('/api'+path).set('Cookie',cookie).set('Origin','http://localhost:3001').send(body as object);
+  const supplier=await post('/suppliers',{name:'Fixture supplier',phone:'',lead_time_days:2}).expect(201);
+  const po=await post('/purchase-orders',{supplier_id:supplier.body.id,expected_on:businessDate(),note:'Fixture PO',lines:[{ingredient_id:ingredient,qty:10,unit_cost_satang:2}]}).expect(201);
+  const line=(await f.db.query('SELECT id FROM purchase_order_lines WHERE order_id=$1',[po.body.id])).rows[0]!.id;
+  const partial={request_key:randomUUID(),lines:[{line_id:line,qty:4,lot_code:'First',expires_on:'2099-02-01',unit_cost_satang:3}]};
+  const received=await post(`/purchase-orders/${po.body.id}/receive`,partial).expect(201);
+  expect((await post(`/purchase-orders/${po.body.id}/receive`,partial).expect(201)).body.id).toBe(received.body.id);
+  await post(`/purchase-orders/${po.body.id}/receive`,{...partial,request_key:randomUUID(),lines:[{...partial.lines[0],qty:7}]}).expect(409);
+  await post(`/purchase-orders/${po.body.id}/receive`,{request_key:randomUUID(),lines:[{line_id:line,qty:6,lot_code:'Second',expires_on:'2099-03-01',unit_cost_satang:4}]}).expect(201);
+  expect((await f.db.query('SELECT status FROM purchase_orders WHERE id=$1',[po.body.id])).rows[0]!.status).toBe('closed');
+  const target='00000000-0000-4000-8000-000000000017';
+  const transfer={target_branch_id:target,ingredient_id:ingredient,qty:3,reason:'Fixture transfer',request_key:randomUUID()};
+  const sent=await post('/stock-transfers',transfer).expect(201);
+  expect((await post('/stock-transfers',transfer).expect(201)).body.id).toBe(sent.body.id);
+  await post('/stock-transfers',{...transfer,qty:4}).expect(409);
+  const balances=(await f.db.query('SELECT branch_id,current_stock FROM branch_stock WHERE ingredient_id=$1',[ingredient])).rows;
+  expect(Number(balances.find(b=>b.branch_id===target)!.current_stock)).toBe(3);
+  expect(balances.reduce((s,b)=>s+Number(b.current_stock),0)).toBe(10);
+  const lots=(await f.db.query('SELECT * FROM inventory_lots WHERE branch_id=$1 AND ingredient_id=$2',[target,ingredient])).rows;
+  expect(lots).toHaveLength(1);expect(Number(lots[0]!.unit_cost_satang)).toBe(3);
+  expect(String(lots[0]!.expires_on)).toContain('2099');
+  const expense={date:businessDate(),category:'Fixture utility',amount_satang:100,note:'Fixture expense',request_key:randomUUID()};
+  const e=await post('/operating-expenses',expense).expect(201);
+  await expect(f.db.query('UPDATE operating_expenses SET amount_satang=1 WHERE id=$1',[e.body.id])).rejects.toThrow();
+  await expect(f.db.query('UPDATE purchase_receipt_lines SET qty=1 WHERE receipt_id=$1',[received.body.id])).rejects.toThrow();
+  expect((await post('/operating-expenses',expense).expect(201)).body.id).toBe(e.body.id);
+  await post(`/operating-expenses/${e.body.id}/void`,{reason:'Fixture void'}).expect(204);
+  expect((await f.db.query('SELECT voided_at FROM operating_expenses WHERE id=$1',[e.body.id])).rows[0]!.voided_at).toBeTruthy();
+  const manager=randomUUID();
+  await f.db.query("INSERT INTO users(id,name,email,password_hash,role) SELECT $1,'Scoped manager','scoped@example.com',password_hash,'manager' FROM users WHERE email='buyer@example.com'",[manager]);
+  await f.db.query("INSERT INTO user_branches(user_id,branch_id) VALUES($1,'00000000-0000-4000-8000-000000000016')",[manager]);
+  const mlogin=await request(app).post('/api/auth/login').set('Origin','http://localhost:3001').send({email:'scoped@example.com',password:'Test-buyer-password-123'}).expect(200);
+  const mc=mlogin.headers['set-cookie']![0]!.split(';')[0]!;
+  await request(app).post('/api/stock-transfers').set('Cookie',mc).set('Origin','http://localhost:3001').send({...transfer,request_key:randomUUID()}).expect(403);
+  await request(app).get('/api/inventory-valuation').set('Cookie',mc).expect(403);
+  await request(app).get('/api/operating-expenses/summary?date_from='+businessDate()+'&date_to='+businessDate()).set('Cookie',cookie).set('X-Branch-Id','all').expect(200);
+ }finally{await f.close();}
+},30000);

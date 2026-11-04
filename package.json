@@ -22,6 +22,7 @@
     "db:demo": "tsx src/demo.ts",
     "forecast:worker": "tsx src/forecast-worker.ts",
     "test:e2e": "node scripts/browser-test.mjs",
+    "test:load": "npm run build && node scripts/benchmark-operations.mjs --isolated",
     "simulation:sales": "npm run build && node scripts/simulate-sales.mjs",
     "simulation:report": "node scripts/simulation-report.mjs",
     "simulation:preview": "node scripts/simulation-preview.mjs",

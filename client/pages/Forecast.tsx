@@ -864,6 +864,7 @@ export default function Forecast() {
                     <th scope="col">ล่วงหน้า</th>
                     <th scope="col">ตัวอย่าง</th>
                     <th scope="col">MAE</th>
+                    <th scope="col">RMSE</th>
                     <th scope="col">WAPE</th>
                     <th scope="col">Bias</th>
                   </tr>
@@ -879,6 +880,7 @@ export default function Forecast() {
                       <td>{e.lead_days} วัน</td>
                       <td>{e.samples}</td>
                       <td>{e.mae === null ? "—" : number(e.mae)}</td>
+                      <td>{e.rmse === null ? "—" : number(e.rmse)}</td>
                       <td>{e.wape === null ? "—" : number(e.wape) + "%"}</td>
                       <td>{e.bias === null ? "—" : number(e.bias)}</td>
                     </tr>

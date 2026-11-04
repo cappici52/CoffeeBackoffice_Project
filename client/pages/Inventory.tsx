@@ -1,6 +1,12 @@
 import { useState } from "react";
 import Stocktakes from './Stocktakes';
-import { useSearchParams } from "react-router-dom";
+import Lots from './Lots';
+import Purchasing from './Purchasing';
+import Transfers from './Transfers';
+import InventoryFinance from './InventoryFinance';
+import Replenishment from './Replenishment';
+import { useBranch } from '../branches';
+import { Link,useSearchParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useAuth } from '../App';
 import {
@@ -50,8 +56,11 @@ const movementLabels: Record<string, string> = {
   sale: "ขาย",
   return: "คืนสต็อก",
   adjustment: "ปรับยอดจากการตรวจนับ",
+  transfer_out: "โอนออกสาขา",
+  transfer_in: "รับโอนจากสาขา",
 };
 export default function Inventory() {
+  const branch=useBranch();
   const owner=useAuth().user.role==='owner';
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") ?? "ingredients";
@@ -88,9 +97,15 @@ export default function Inventory() {
             ["recipes", "สูตรการทำ"],
             ["movements", "เคลื่อนไหวสต็อก"],
             ["stocktakes", "ตรวจนับสต็อก"],
+            ["lots", "ล็อต / วันหมดอายุ"],
+            ["purchasing", "จัดซื้อ"],
+            ["transfers", "โอนสาขา"],
+            ["replenishment", "แผนสั่งเพิ่ม"],
+            ...(owner ? [["finance", "ต้นทุน / ค่าใช้จ่าย"]] : []),
           ].map(([value, label]) => (
             <button
               key={value}
+              disabled={branch.id==='all' && ['stocktakes','lots','purchasing','transfers','recipes','replenishment'].includes(value!)}
               className={tab === value ? "selected" : ""}
               onClick={() => setParams({ tab: value! })}
             >
@@ -99,7 +114,8 @@ export default function Inventory() {
           ))}
         </div>
         <div className="row">
-          <button onClick={() => setMove(true)}>รับเข้า / ของเสีย</button>
+          <Link className="button" to="/acceptance">บันทึกผลทดสอบ</Link>
+          <button disabled={branch.id==='all'} onClick={() => setMove(true)}>รับเข้า / ของเสีย</button>
           {tab === "ingredients" && owner && (
             <button className="primary" onClick={() => setEditor("new")}>
               <Plus size={18} />
@@ -109,7 +125,13 @@ export default function Inventory() {
         </div>
       </div>
       {error && <Notice tone="danger">{error}</Notice>}
-      {tab === 'stocktakes' && <Stocktakes />}
+      {branch.id==='all' && ['stocktakes','lots','purchasing','transfers','replenishment'].includes(tab) && <Notice>เลือกสาขาเดียวเพื่อทำรายการสต็อกหรือจัดซื้อ</Notice>}
+      {tab === 'stocktakes' && branch.id!=='all' && <Stocktakes />}
+      {tab === 'lots' && branch.id!=='all' && <Lots />}
+      {tab === 'purchasing' && branch.id!=='all' && <Purchasing />}
+      {tab === 'transfers' && branch.id!=='all' && <Transfers />}
+      {tab === 'replenishment' && branch.id!=='all' && <Replenishment />}
+      {tab === 'finance' && owner && <InventoryFinance />}
       {tab === "ingredients" && (
         <>
           <div className="toolbar">

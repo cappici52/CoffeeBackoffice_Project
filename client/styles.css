@@ -1804,3 +1804,13 @@ details summary {
 .branch-summary h2 { margin: 0; padding: 1rem 1.25rem; }
 .recipe-fields { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 1rem; }
 @media (max-width: 900px) { .branch-selector { margin-inline: 0; } }
+
+.receipt[data-paper="58"] {
+  max-width: 58mm;
+  padding: 6mm 2mm;
+}
+.receipt[data-paper="58"] h2 { font-size: 18px; }
+@media print {
+  .receipt[data-paper="58"] { width: 58mm; max-width: 58mm; padding: 6mm 2mm; }
+  .receipt[data-paper="80"] { width: 80mm; max-width: 80mm; }
+}

@@ -24,10 +24,10 @@ export function branchMiddleware(db:Database):RequestHandler {
     const branch=all?null:branches.find(b=>b.id===(requested??branches.find(b=>b.is_active)?.id));
     fail(all?branches.length:branch,403,'BRANCH_FORBIDDEN');
     if(branch&&!branch.is_active)fail(['GET','HEAD'].includes(req.method)&&['owner','manager'].includes(user.role),403,'BRANCH_INACTIVE');
-    const aggregatePaths=['/reports','/ingredients','/stock-movements','/shop-context','/audit-logs'];
+    const aggregatePaths=['/reports','/ingredients','/stock-movements','/shop-context','/audit-logs','/inventory-valuation','/operating-expenses'];
     if(all)fail(['GET','HEAD'].includes(req.method)&&aggregatePaths.some(p=>req.path===p||req.path.startsWith(p+'/')),400,'SELECT_SINGLE_BRANCH');
     res.locals.branch=branch;res.locals.branchIds=all?branches.map(b=>b.id):[branch!.id];
-    inBranch({ids:res.locals.branchIds,write:!all&&Boolean(branch?.is_active),master:!all&&user.role==='owner',actorId:user.id},next);
+    inBranch({ids:res.locals.branchIds,write:!all&&Boolean(branch?.is_active),master:!all&&user.role==='owner',actorId:user.id,actorRole:user.role},next);
   };
 }
 const fields=z.object({name:z.string().trim().min(1).max(120),code:z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,30}$/),
