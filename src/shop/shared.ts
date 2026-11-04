@@ -85,6 +85,12 @@ export async function moveStock(
   );
 }
 export const roundQty = (n: number) => Math.round(n * 1000) / 1000;
+// Shared read locks preserve recipe/price snapshots without locking nullable joined views.
+// Multiple branches can sell concurrently; only catalog edits need an exclusive lock.
+export async function lockProduct(sql:Sql,id:string,write=false,branchOnly=false){
+  const key=branchOnly?"'branch-product:'||coffee_current_branch()::text||':'||$1::text":"'product:'||$1::text";
+  await sql.query(`SELECT ${write?'pg_advisory_xact_lock':'pg_advisory_xact_lock_shared'}(hashtextextended(${key},16))`,[id]);
+}
 export function businessDate(date = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Bangkok",

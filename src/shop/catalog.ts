@@ -13,6 +13,7 @@ import {
   quantity,
   record,
   text,
+  lockProduct,
 } from "./shared.js";
 
 const option = z
@@ -244,6 +245,7 @@ export function catalogRouter(
       .strict()
       .parse(req.body);
     await db.transaction(async (sql) => {
+      await lockProduct(sql,id,true);
       const current = (
         await sql.query(
           "SELECT * FROM products WHERE id=$1 AND NOT is_archived FOR UPDATE",
@@ -286,6 +288,7 @@ export function catalogRouter(
       .strict()
       .parse(req.body);
     await db.transaction(async (sql) => {
+      await lockProduct(sql,id,true);
       const r = await sql.query(
         "UPDATE products SET is_archived=true,is_available=false,version=version+1 WHERE id=$1 AND version=$2 AND NOT is_archived RETURNING id",
         [id, expected_version],

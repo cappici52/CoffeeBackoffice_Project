@@ -67,7 +67,7 @@ export function createApp(db: Database, config: Config) {
   app.get("/api/shop-context", auth.authenticate, async (_req, res) => {
     const row = (
       await db.query(
-        "SELECT EXISTS(SELECT 1 FROM orders WHERE simulation_run_id IS NOT NULL) AS contains_simulation",
+        "SELECT EXISTS(SELECT 1 FROM orders WHERE simulation_run_id IS NOT NULL) AS contains_simulation,EXISTS(SELECT 1 FROM stock_movements WHERE reason='ยอดตั้งต้นข้อมูลตัวอย่าง') AS contains_demo_stock",
       )
     ).rows[0];
     res.json(row);

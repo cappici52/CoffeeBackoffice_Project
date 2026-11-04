@@ -1,7 +1,7 @@
 import { Router, type RequestHandler } from 'express';
 import { z } from 'zod';
 import type { Database } from '../db.js';
-import { fail, idSchema, money, record } from './shared.js';
+import { fail, idSchema, money, record, lockProduct } from './shared.js';
 
 export function branchProductsRouter(db:Database,manage:RequestHandler) {
  const r=Router();r.use('/branch-products',manage);
@@ -12,6 +12,7 @@ export function branchProductsRouter(db:Database,manage:RequestHandler) {
  r.put('/branch-products/:id',async(req,res)=>{
   const id=idSchema.parse(req.params.id),p=z.object({price_satang:money.nullable(),is_available:z.boolean().nullable(),expected_version:z.number().int().min(0)}).strict().parse(req.body);
   await db.transaction(async sql=>{
+   await lockProduct(sql,id);await lockProduct(sql,id,true,true);
    fail((await sql.query('SELECT id FROM products WHERE id=$1 AND NOT is_archived',[id])).rows[0],404,'NOT_FOUND');
    const row=(await sql.query(`INSERT INTO branch_products(product_id,price_satang,is_available) SELECT $1,$2,$3 WHERE $4=0
     ON CONFLICT(branch_id,product_id) DO UPDATE SET price_satang=excluded.price_satang,is_available=excluded.is_available,version=branch_products.version+1

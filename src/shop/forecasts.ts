@@ -30,22 +30,22 @@ export async function history(
         SELECT (o.completed_at AT TIME ZONE 'Asia/Bangkok')::date AS date,i.product_id,
           sum(i.qty) AS qty,sum(i.qty::bigint*i.unit_price_satang) AS revenue_satang,'actual' AS source
         FROM orders o JOIN order_items i ON i.order_id=o.id
-        WHERE o.completed_at IS NOT NULL AND o.status='completed' GROUP BY 1,2
+        WHERE o.branch_id=coffee_current_branch() AND o.completed_at IS NOT NULL AND o.status='completed' GROUP BY 1,2
       ), observations AS (
         SELECT date,product_id,qty,revenue_satang,source FROM fulfilled
         WHERE date >= coalesce($2::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 120)
           AND date <= coalesce($3::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 1)
           AND date < (now() AT TIME ZONE 'Asia/Bangkok')::date
-          AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM day_closings c WHERE c.date=fulfilled.date))
+          AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM day_closings c WHERE c.branch_id=coffee_current_branch() AND c.date=fulfilled.date))
         UNION ALL
         SELECT date,product_id,qty,revenue_satang,source FROM sales_daily
-        WHERE source='demo' AND $1='mixed'
+        WHERE branch_id=coffee_current_branch() AND source='demo' AND $1='mixed'
           AND date >= coalesce($2::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 120)
           AND date <= coalesce($3::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 1)
           AND date < (now() AT TIME ZONE 'Asia/Bangkok')::date
         UNION ALL
         SELECT c.date,p.id,0,0,'actual' FROM day_closings c CROSS JOIN branch_catalog p
-        WHERE c.date >= coalesce($2::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 120)
+        WHERE c.branch_id=coffee_current_branch() AND c.date >= coalesce($2::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 120)
           AND c.date <= coalesce($3::date,(now() AT TIME ZONE 'Asia/Bangkok')::date - 1)
           AND c.date < (now() AT TIME ZONE 'Asia/Bangkok')::date
           AND (p.forecast_since <= c.date OR EXISTS (
@@ -58,11 +58,11 @@ export async function history(
           CASE WHEN bool_or(source='actual') THEN 'actual' ELSE 'demo' END AS source
         FROM observations GROUP BY date,product_id
       ) SELECT d.date::text,d.product_id,p.name AS product_name,d.qty,d.source,
-        EXISTS(SELECT 1 FROM day_closings c WHERE c.date=d.date) AS is_closed,
+        EXISTS(SELECT 1 FROM day_closings c WHERE c.branch_id=coffee_current_branch() AND c.date=d.date) AS is_closed,
         (EXISTS(SELECT 1 FROM orders o JOIN order_items i ON i.order_id=o.id
-          WHERE i.product_id=d.product_id AND (o.completed_at AT TIME ZONE 'Asia/Bangkok')::date=d.date
+          WHERE o.branch_id=coffee_current_branch() AND i.product_id=d.product_id AND (o.completed_at AT TIME ZONE 'Asia/Bangkok')::date=d.date
           AND o.simulation_run_id IS NOT NULL)
-          OR EXISTS(SELECT 1 FROM day_closings c WHERE c.date=d.date AND c.simulation_run_id IS NOT NULL)) AS simulated,
+          OR EXISTS(SELECT 1 FROM day_closings c WHERE c.branch_id=coffee_current_branch() AND c.date=d.date AND c.simulation_run_id IS NOT NULL)) AS simulated,
         CASE WHEN d.qty>0 THEN d.revenue/d.qty/100.0 ELSE p.price_satang/100.0 END AS unit_price
         FROM daily d JOIN branch_catalog p ON p.id=d.product_id ORDER BY d.date,d.product_id`,
       [

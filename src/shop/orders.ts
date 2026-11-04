@@ -12,6 +12,7 @@ import {
   pagination,
   record,
   roundQty,
+  lockProduct,
 } from "./shared.js";
 
 interface IngredientSnapshot {
@@ -228,6 +229,9 @@ export async function createOrder(
     const orderId = randomUUID();
     let total = 0;
     const snapshots = [];
+    for(const id of [...new Set(input.items.map(i=>i.product_id))].sort()){
+      await lockProduct(sql,id);await lockProduct(sql,id,false,true);
+    }
     for (const line of input.items) {
       const p = (
         await sql.query(

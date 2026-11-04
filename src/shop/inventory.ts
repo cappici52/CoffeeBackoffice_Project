@@ -12,6 +12,7 @@ import {
   quantity,
   record,
   text,
+  lockProduct,
 } from "./shared.js";
 
 export function inventoryRouter(
@@ -250,6 +251,7 @@ export function inventoryRouter(
       )
       .parse(req.body);
     await db.transaction(async (sql) => {
+      await lockProduct(sql,id,true);
       const product = (
         await sql.query(
           "SELECT id FROM products WHERE id=$1 AND NOT is_archived FOR UPDATE",

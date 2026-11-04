@@ -5,7 +5,10 @@ import { createApp } from '../src/app.js';
 import { migrate } from '../src/migrate.js';
 import { readConfig } from '../src/config.js';
 import { seedOwner } from '../src/seed.js';
-import { LEGACY_BRANCH } from '../src/branch-context.js';
+import { LEGACY_BRANCH,branchDatabase,inBranch } from '../src/branch-context.js';
+import { history } from '../src/shop/forecasts.js';
+import { dataset } from '../src/shop/forecast-data.js';
+import { newToken } from '../src/security.js';
 import { businessDate } from '../src/shop/shared.js';
 import { testDatabase } from './database.js';
 
@@ -93,4 +96,32 @@ test('concurrent branch transactions keep both stock balances and scoped reads i
  await Promise.all([send('post','/orders',a,staff).send(order()).expect(201),send('post','/orders',b).send(order()).expect(201)]);
  expect(await stock(a)).toBe(beforeA-10);expect(await stock(b)).toBe(beforeB-10);
  await send('put','/recipes/'+product,a,manager).send({expected_version:1,ingredients:[],steps:[]}).expect(403);
+});
+test('forecast histories stay branch-local even when a privileged legacy caller omits a scope',async()=>{
+ await send('post','/orders',b).send({...order(),items:[{product_id:product,qty:2}]}).expect(201);
+ const yesterday=new Date(Date.parse(businessDate())-86400000).toISOString().slice(0,10);
+ await fixture.db.query("UPDATE orders SET status='completed',completed_at=$1::date::timestamp AT TIME ZONE 'Asia/Bangkok' WHERE branch_id=ANY($2::uuid[])",[yesterday,[a,b]]);
+ const actor=(await fixture.db.query("SELECT id FROM users WHERE role='owner'")).rows[0]!.id;
+ for(const branch of [a,b])await fixture.db.query("INSERT INTO day_closings(branch_id,date,closed_by,summary) VALUES($1,$2,$3,'{}')",[branch,yesterday,actor]);
+ const legacy=await history(fixture.db,'actual');expect(legacy).toHaveLength(1);expect(Number(legacy[0]!.qty)).toBe(2);
+ const scoped=branchDatabase(fixture.db);
+ await inBranch({ids:[b],write:false,master:false},async()=>{
+  const other=await history(scoped,'actual');expect(other).toHaveLength(1);expect(Number(other[0]!.qty)).toBe(4);
+  const training=await dataset(scoped,[product],'genuine');expect(training.rows).toHaveLength(1);expect(training.rows[0]!.qty).toBe(4);
+ });
+});
+test('table QR capabilities resolve their own branch and price, regardless of forged branch headers',async()=>{
+ await send('post','/tables',a).send({name:'1'}).expect(201);
+ const table=(await send('post','/tables',b).send({name:'1'}).expect(201)).body.id;
+ const listed=(await send('get','/tables',b).expect(200)).body.tables.find((t:any)=>t.id===table);
+ const menu=(await request(app).get('/api/guest/tables/'+listed.qr_token).set('X-Branch-Id',a).expect(200)).body;
+ expect(menu.products.find((p:any)=>p.id===product).price_satang).toBe(7000);
+ const key=randomUUID(),tracking=newToken();
+ await request(app).post('/api/guest/tables/'+listed.qr_token+'/orders').set('Origin',origin).set('X-Branch-Id',a)
+  .send({request_key:key,tracking_token:tracking,expected_total_satang:7000,items:[{product_id:product,qty:1}]}).expect(201);
+ expect((await fixture.db.query('SELECT branch_id FROM orders WHERE request_key=$1',[key])).rows[0]?.branch_id).toBe(b);
+ const branch=(await send('get','/branches').expect(200)).body.branches.find((x:any)=>x.id===b);
+ await send('patch','/branches/'+b).send({name:branch.name,code:branch.code,is_active:false,expected_version:branch.version}).expect(204);
+ await request(app).get('/api/guest/tables/'+listed.qr_token).expect(404);
+ await request(app).get('/api/guest/orders/'+tracking).expect(200);
 });

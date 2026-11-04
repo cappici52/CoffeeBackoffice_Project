@@ -102,26 +102,26 @@ export async function dataset(
       bool_or(o.simulation_run_id IS NOT NULL) AS simulated,
       bool_or(o.simulation_run_id IS NOT NULL) AND bool_or(o.simulation_run_id IS NULL) AS mixed
     FROM orders o JOIN order_items i ON i.order_id=o.id
-    WHERE o.completed_at >= $4::date::timestamp AT TIME ZONE 'Asia/Bangkok'
+    WHERE o.branch_id=coffee_current_branch() AND o.completed_at >= $4::date::timestamp AT TIME ZONE 'Asia/Bangkok'
       AND o.status='completed'
       AND o.completed_at < (least($5::date,$1::date-1)+1)::timestamp AT TIME ZONE 'Asia/Bangkok'
       AND i.product_id=ANY($2::uuid[]) GROUP BY 1,2
   ), observed AS (
     SELECT d.date,d.product_id,d.qty,d.revenue,'actual' AS source,d.simulated,d.mixed,c.date IS NOT NULL AS is_closed
-    FROM delivered d LEFT JOIN day_closings c ON c.date=d.date
+    FROM delivered d LEFT JOIN day_closings c ON c.date=d.date AND c.branch_id=coffee_current_branch()
     UNION ALL
     SELECT c.date,p.id,0,0,'actual',c.simulation_run_id IS NOT NULL,false,true
     FROM day_closings c CROSS JOIN branch_catalog p
-    WHERE p.id=ANY($2::uuid[]) AND c.date BETWEEN $4::date AND least($5::date,$1::date-1)
+    WHERE c.branch_id=coffee_current_branch() AND p.id=ANY($2::uuid[]) AND c.date BETWEEN $4::date AND least($5::date,$1::date-1)
       AND (p.forecast_since<=c.date OR EXISTS(SELECT 1 FROM shop_simulation_products sp WHERE sp.run_id=c.simulation_run_id AND sp.product_id=p.id))
       AND NOT EXISTS(SELECT 1 FROM delivered d WHERE d.date=c.date AND d.product_id=p.id)
     UNION ALL
     SELECT date,product_id,qty,revenue_satang,'demo',false,false,true FROM sales_daily
-    WHERE source='demo' AND $3::boolean AND product_id=ANY($2::uuid[]) AND date BETWEEN $4::date AND least($5::date,$1::date-1)
+    WHERE branch_id=coffee_current_branch() AND source='demo' AND $3::boolean AND product_id=ANY($2::uuid[]) AND date BETWEEN $4::date AND least($5::date,$1::date-1)
   ) SELECT o.date::text,o.product_id,o.qty,o.source,o.simulated,o.mixed,o.is_closed,
       CASE WHEN o.qty>0 THEN o.revenue/o.qty/100.0 ELSE p.price_satang/100.0 END AS unit_price,
       coalesce(q.kind,'normal') AS kind
-    FROM observed o JOIN branch_catalog p ON p.id=o.product_id LEFT JOIN forecast_day_quality q ON q.date=o.date AND q.product_id=o.product_id
+    FROM observed o JOIN branch_catalog p ON p.id=o.product_id LEFT JOIN forecast_day_quality q ON q.branch_id=coffee_current_branch() AND q.date=o.date AND q.product_id=o.product_id
     ORDER BY o.date,o.product_id`,
     [
       today,
