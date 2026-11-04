@@ -104,7 +104,9 @@ try {
     1,
   );
   await assert.rejects(
-    restoreDatabase(sourceUrl.toString(), file, sourceName),
+    // Use an allowed restore name so this checks the self-target guard,
+    // independently of the separate database-name validation below.
+    restoreDatabase(targetUrl.toString(), file, targetName),
     /configured database/,
   );
   await assert.rejects(
