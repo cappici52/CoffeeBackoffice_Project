@@ -136,3 +136,9 @@ The tests cover real column mapping, quantity reconciliation, duplicates/nulls/b
 | `client/forecast-view.ts`, `client/lib.ts` | Reuse chart with minimal structural inputs; replay timeout/error messages |
 | `scripts/check-public-replay.mjs`, `package.json` | Presentation UI/isolation QA and prepare/import/test commands |
 | `docs/forecast-dataset-addendum.md`, `docs/research/mendeley-verification.json`, this guide, README, DESIGN, UX contract | Requirements, verified source facts, presentation instructions and final limitations |
+
+## Rolling daily Replay
+
+Historical Replay now defaults to Rolling: each target day is a separate 1-day forecast using only earlier observations. Each child run commits immutable predictions and its input snapshot before reading its target actual. A parent run links all child IDs and displays the combined chart and scores. Missing days remain absent; predictions never replace missing actuals. The parent's input snapshot describes the initial origin; subsequent training inputs and hashes are preserved in the linked child runs. Failed requests can leave valid completed child runs in history; they are not deleted.
+
+Select **ครั้งเดียว** to reproduce earlier fixed-origin 1/7/30-day experiments. Do not compare Rolling 1-day scores directly with fixed 30-day scores as evidence of model improvement: their information sets differ. Existing results and production model selection are unchanged. The chart identifies the protocol and all model versions. Rolling can still be flat when the selected model and available history support a constant estimate; no artificial variation is added. Rolling makes up to 30 sequential service calls and takes longer.

@@ -66,6 +66,7 @@ type Replay = {
     history_sha256: string;
     metadata: {
       pipeline: string;
+      replay_mode?: "fixed" | "rolling";
       history_days: number;
       training_from: string;
       training_to: string;
@@ -216,6 +217,7 @@ export default function HistoricalReplay() {
                 cutoff: String(fd.get("cutoff")),
                 horizon: Number(fd.get("horizon")),
                 history_days: Number(fd.get("history_days")),
+                replay_mode: String(fd.get("replay_mode")),
                 ...(product ? { product_id: product } : {}),
               };
               setGenerating(true);
@@ -233,6 +235,7 @@ export default function HistoricalReplay() {
                     cutoff: values.cutoff,
                     horizon: String(values.horizon),
                     history: String(values.history_days),
+                    mode: values.replay_mode,
                     run: saved.run.id,
                   },
                   { flushSync: true },
@@ -244,6 +247,11 @@ export default function HistoricalReplay() {
             }}
           >
             <div className="form-grid">
+              <Select name="replay_mode" label="รูปแบบพยากรณ์" disabled={generating}
+                defaultValue={params.get("mode") ?? "rolling"}>
+                <option value="rolling">Rolling: พยากรณ์วันถัดไปใหม่ทุกวัน</option>
+                <option value="fixed">ครั้งเดียว: พยากรณ์ทั้งช่วงล่วงหน้า</option>
+              </Select>
               <Select
                 disabled={generating}
                 label="Dataset / Source"
@@ -315,8 +323,7 @@ export default function HistoricalReplay() {
             <Submit>เริ่ม Historical Replay</Submit>
           </Form>
           <p className="caption muted">
-            ฝึกเฉพาะข้อมูลก่อนวันเริ่มทดสอบ ·
-            ใช้โมเดลและเกณฑ์เลือกวิธีเดียวกับระบบร้าน
+            Rolling ใช้ข้อมูลก่อนแต่ละวันและบันทึกผลแยกรอบ · ครั้งเดียวใช้ข้อมูลก่อนวันเริ่มทดสอบเท่านั้น · Rolling ใช้เวลานานกว่า
           </p>
           <details className="section-details">
             <summary>แหล่งข้อมูล สิทธิ์ใช้งาน และข้อจำกัด</summary>
@@ -452,6 +459,12 @@ export default function HistoricalReplay() {
           </details>
           <section className="chart-panel">
             <h2>Actual vs Forecast</h2>
+            <p className="caption muted">
+              {data.run.metadata.replay_mode === "rolling"
+                ? "Rolling 1 วัน · อัปเดตด้วยข้อมูลถึงวันก่อนหน้าแต่ละวัน"
+                : `พยากรณ์ล่วงหน้า ${data.run.horizon} วันครั้งเดียว · ข้อมูลก่อน ${dateText(data.run.cutoff)}`}
+              {" · "}โมเดล: {[...new Set(data.rows.map(r => r.model_version))].join(", ")}
+            </p>
             <div className="chart forecast-chart">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chart}>

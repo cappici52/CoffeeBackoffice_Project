@@ -13,6 +13,7 @@ export const publicReplayInput = z
     outlet_id: z.string().trim().min(1).max(100),
     product_id: idSchema.optional(),
     cutoff: dateSchema,
+    replay_mode: z.enum(["fixed", "rolling"]).default("fixed"),
     horizon: z.union([z.literal(1), z.literal(7), z.literal(30)]).default(30),
     history_days: z
       .union([z.literal(30), z.literal(90), z.literal(180)])
@@ -185,7 +186,24 @@ export async function runPublicReplay(
     unit_price: 0,
     source: "actual",
   }));
-  const forecasts = await requestForecast(
+  const rollingRuns: string[] = [];
+  // Each daily forecast commits before its actual is read. Later origins may
+  // learn from earlier replay days, never from their own target or later days.
+  const rollingForecasts: Awaited<ReturnType<typeof requestForecast>> = [];
+  if (input.replay_mode === "rolling") {
+    for (let day = 0; day < input.horizon; day++) {
+      const child = await runPublicReplay(db, config, {
+        ...input, replay_mode: "fixed", cutoff: add(input.cutoff, day), horizon: 1,
+      }, actor);
+      rollingRuns.push(child.run.id as string);
+      const saved = await db.query(
+        "SELECT prediction FROM research_replay_points WHERE run_id=$1 ORDER BY date,product_id",
+        [child.run.id],
+      );
+      rollingForecasts.push(...saved.rows.map(r => r.prediction));
+    }
+  }
+  const forecasts = input.replay_mode === "rolling" ? rollingForecasts : await requestForecast(
     config,
     input.cutoff,
     add(input.cutoff, input.horizon - 1),
@@ -211,6 +229,8 @@ export async function runPublicReplay(
         snapshot,
         JSON.stringify({
           pipeline: "coffee-demand-v5",
+          replay_mode: input.replay_mode,
+          rolling_run_ids: rollingRuns,
           history_days: input.history_days,
           training_from: inputHistory[0]!.date,
           training_to: inputHistory.at(-1)!.date,

@@ -127,7 +127,7 @@ export async function api<T>(
   try {
     const timeout =
       path === "/forecasts/backtest"
-        ? 190_000
+        ? 190_000 * (options.body && typeof options.body === "string" && JSON.parse(options.body).replay_mode === "rolling" ? Math.min(30, Number(JSON.parse(options.body).horizon) || 1) : 1)
         : path === "/forecasts/generate"
           ? 70_000
           : 25_000;

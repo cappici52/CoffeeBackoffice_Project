@@ -79,6 +79,8 @@ beforeAll(async () => {
 }, 30000);
 afterEach(() => vi.restoreAllMocks());
 afterAll(async () => f?.close());
+
+
 test("research import is idempotent, immutable, reconciled and isolated from live products", async () => {
   expect(await importPublicDataset(f.db, payload)).toMatchObject({
     imported: true,
@@ -243,4 +245,38 @@ test("public replay rejects future-only selection, wrong outlet, bad coverage an
     .set("Cookie", cookie)
     .expect(200);
   expect(list.body.datasets[0].data_mode).toBe("PUBLIC_DATASET");
+});
+
+test("rolling replay archives daily origins and never trains on its target or future", async () => {
+  await importPublicDataset(f.db, payload);
+  const origins: string[] = [];
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, options) => {
+    const body = JSON.parse(options!.body as string);
+    origins.push(body.date_from);
+    expect(body.date_to).toBe(body.date_from);
+    expect(body.history.every((r: { date: string }) => r.date < body.date_from)).toBe(true);
+    if (body.date_from === "2025-09-02") {
+      expect(body.history.some((r: { qty: number }) => r.qty === 999)).toBe(true);
+    }
+    return new Response(JSON.stringify([{
+      date: body.date_from, product_id: productId,
+      predicted_qty: body.history.at(-1).qty, lower: null, upper: null,
+      model_version: "last-value-v1", history_source: "actual",
+      diagnostics: { origin: body.history.at(-1).date, history_days: 31,
+        reason: "test", selection: {}, pipeline: "coffee-demand-v5", training_cohort: "public_dataset" },
+    }]), { status: 200 });
+  });
+  const response = await request(app).post("/api/forecasts/backtest")
+    .set("Origin", origin).set("Cookie", cookie)
+    .send({ dataset_id: datasetId, outlet_id: "A", cutoff: "2025-09-01", horizon: 7, replay_mode: "rolling" })
+    .expect(200);
+  expect(origins).toHaveLength(7);
+  expect(response.body.run.metadata.rolling_run_ids).toHaveLength(7);
+  expect(response.body.rows[0].predicted_qty).toBe(10);
+  expect(response.body.rows[1].predicted_qty).toBe(999);
+  expect(response.body.rows[1].actual_qty).toBeNull();
+  expect(response.body.rows[3].predicted_qty).toBe(0);
+  const children = await f.db.query("SELECT horizon FROM research_replay_runs WHERE id=ANY($1::uuid[])", [response.body.run.metadata.rolling_run_ids]);
+  expect(children.rows).toHaveLength(7);
+  expect(children.rows.every(r => r.horizon === 1)).toBe(true);
 });

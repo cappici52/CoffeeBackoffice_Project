@@ -107,6 +107,8 @@ try {
     (r) => r.url().endsWith("/api/forecasts/backtest"),
     { timeout: 190000 },
   );
+  // Preserve the fixed-origin protocol of the existing evaluation evidence.
+  await page.locator('select[name="replay_mode"]').selectOption("fixed");
   await page
     .getByRole("button", { name: "เริ่ม Historical Replay", exact: true })
     .click();
