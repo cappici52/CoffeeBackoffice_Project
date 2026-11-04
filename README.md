@@ -150,3 +150,9 @@ npm run local:lan
 ```
 
 เครื่องนี้นำเข้าข้อมูลไว้แล้ว ไม่ต้องนำเข้าซ้ำเพื่อสาธิต ดู [คู่มือข้อมูล การแบ่ง train/test ผลที่วัดได้ ข้อจำกัด และขั้นตอนนำเสนอ](docs/public-dataset-replay.md) ทดสอบหน้าจอด้วย `npm run test:public-replay-ui` ซึ่งสร้างเฉพาะ research runs และตรวจว่าข้อมูลร้านไม่เปลี่ยน ผลย้อนหลังไม่ใช่ความแม่นยำล่วงหน้าของร้านที่เพิ่งเปิดใช้งาน
+
+## Coffee Sales: additional public dataset
+
+Historical Replay now also accepts ihelon Coffee Sales V21, alongside the retained Mendeley dataset. The source is publisher-described vending-machine data, with one recorded event per row and unknown full-stream missing dates. [Inspection, menu list, preprocessing, 1/7/30-day model comparisons, product/total analysis, visualization and presentation guide](docs/coffee-sales-v5-evaluation.md).
+
+Use the project's Python environment: `python forecast-service/coffee_sales_dataset.py --download`, then the existing `npm run dataset:import -- .local/public-datasets/ihelon-coffee-sales/prepared.json`. `npm run dataset:coffee` / `npm run dataset:evaluate -- --prepared ...` are aliases when that environment is active. Browser checks: `npm run test:coffee-replay-ui` and `npm run test:public-replay-ui`. Public data and evaluation do not change the operational forecasting model or stock. Cross-dataset WAPE is not evidence of model improvement.
