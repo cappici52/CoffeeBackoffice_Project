@@ -8,6 +8,7 @@ import { usersRouter } from "./users.js";
 import { ApiError } from "./security.js";
 import { catalogRouter } from "./shop/catalog.js";
 import { inventoryRouter } from "./shop/inventory.js";
+import { stocktakesRouter } from './shop/stocktakes.js';
 import { ordersRouter } from "./shop/orders.js";
 import { reportsRouter } from "./shop/reports.js";
 import { forecastsRouter } from "./shop/forecasts.js";
@@ -67,7 +68,7 @@ export function createApp(db: Database, config: Config) {
   app.get("/api/shop-context", auth.authenticate, async (_req, res) => {
     const row = (
       await db.query(
-        "SELECT EXISTS(SELECT 1 FROM orders WHERE simulation_run_id IS NOT NULL) AS contains_simulation,EXISTS(SELECT 1 FROM stock_movements WHERE reason='ยอดตั้งต้นข้อมูลตัวอย่าง') AS contains_demo_stock",
+        "SELECT EXISTS(SELECT 1 FROM orders WHERE simulation_run_id IS NOT NULL) AS contains_simulation,EXISTS(SELECT 1 FROM stock_movements m JOIN branch_stock s ON s.branch_id=m.branch_id AND s.ingredient_id=m.ingredient_id WHERE m.reason='ยอดตั้งต้นข้อมูลตัวอย่าง' AND s.counted_at IS NULL) AS contains_demo_stock",
       )
     ).rows[0];
     res.json(row);
@@ -124,6 +125,7 @@ export function createApp(db: Database, config: Config) {
       auth.requireRoles("owner", "manager"),
     ),
   );
+  app.use('/api',stocktakesRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
   const frontend = resolve("dist/client");
   if (existsSync(frontend)) {
     app.use(express.static(frontend));

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Stocktakes from './Stocktakes';
 import { useSearchParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useAuth } from '../App';
@@ -48,6 +49,7 @@ const movementLabels: Record<string, string> = {
   waste: "ของเสีย",
   sale: "ขาย",
   return: "คืนสต็อก",
+  adjustment: "ปรับยอดจากการตรวจนับ",
 };
 export default function Inventory() {
   const owner=useAuth().user.role==='owner';
@@ -85,6 +87,7 @@ export default function Inventory() {
             ["ingredients", "วัตถุดิบ"],
             ["recipes", "สูตรการทำ"],
             ["movements", "เคลื่อนไหวสต็อก"],
+            ["stocktakes", "ตรวจนับสต็อก"],
           ].map(([value, label]) => (
             <button
               key={value}
@@ -106,6 +109,7 @@ export default function Inventory() {
         </div>
       </div>
       {error && <Notice tone="danger">{error}</Notice>}
+      {tab === 'stocktakes' && <Stocktakes />}
       {tab === "ingredients" && (
         <>
           <div className="toolbar">

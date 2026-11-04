@@ -558,6 +558,14 @@ try {
     page.getByRole("status").filter({ hasText: "บันทึกสต็อกแล้ว" }),
   ).toBeVisible();
   checks.push("Stock receipt form");
+    await page.getByRole('button',{name:'ตรวจนับสต็อก',exact:true}).click();
+    await page.getByLabel(/^เมล็ดกาแฟ \(g\) · ระบบ /).fill('1500');
+    await page.getByLabel('เหตุผล / บันทึกการตรวจนับ',{exact:true}).fill('Isolated QA count fixture, not a shop physical count');
+    await page.getByRole('button',{name:'บันทึกใบตรวจนับฉบับร่าง',exact:true}).click();
+    await page.getByRole('button',{name:'ยืนยันยอดนับและปรับสต็อก',exact:true}).click();
+    await page.getByRole('button',{name:'ยืนยันและปรับยอด',exact:true}).click();
+    await expect(page.getByRole('button',{name:'ยืนยันยอดนับและปรับสต็อก',exact:true})).toHaveCount(0);
+    checks.push('Explicit stocktake fixture, reviewed signed reconciliation and confirmed count status in isolated schema');
   await go("/users");
   await page
     .getByRole("button", { name: "เพิ่มผู้ใช้งาน", exact: true })
