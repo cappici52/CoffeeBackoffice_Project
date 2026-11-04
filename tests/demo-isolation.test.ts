@@ -6,6 +6,8 @@ test('demo creation is rejected on operational databases and every production ta
  expect(()=>assertDemoIsolation('postgresql://test:test@localhost/coffee_backoffice','development')).toThrow();
  expect(()=>assertDemoIsolation('postgresql://test:test@localhost/coffee_demo_qa','production')).toThrow();
  expect(()=>assertDemoIsolation('postgresql://test:test@localhost/coffee_demo_qa','development')).not.toThrow();
+ expect(()=>assertDemoIsolation('postgresql://test:test@localhost/coffee_test_backup_'+ 'a'.repeat(32),'test')).not.toThrow();
+ expect(()=>assertDemoIsolation('postgresql://test:test@localhost/coffee_restore_fixture_'+ 'a'.repeat(32),'test')).toThrow();
  expect(()=>assertDemoIsolation('postgresql://test:test@localhost/coffee?options=-csearch_path%3De2e_'+ 'a'.repeat(32),'test')).not.toThrow();
  expect(()=>assertDemoIsolation('postgresql://test:test@localhost/coffee?options=-csearch_path%3Dpublic','test')).toThrow();
 });

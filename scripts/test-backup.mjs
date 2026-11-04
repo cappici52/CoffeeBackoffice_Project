@@ -10,7 +10,7 @@ import { backupDatabase, restoreDatabase } from "./database-backup.mjs";
 
 // Creates and drops only these generated databases; never migrates or seeds the shop.
 const suffix = randomUUID().replaceAll("-", "");
-const sourceName = "coffee_restore_fixture_" + suffix;
+const sourceName = "coffee_test_backup_" + suffix;
 const targetName = "coffee_restore_test_" + suffix;
 const root = new pg.Client({ connectionString: process.env.DATABASE_URL });
 const sourceUrl = new URL(process.env.DATABASE_URL);
@@ -142,7 +142,7 @@ try {
   await source?.end();
   await target?.end();
   for (const name of [targetName, sourceName]) {
-    assert.match(name, /^coffee_restore_(test|fixture)_[a-f0-9]{32}$/);
+    assert.match(name, /^coffee_(restore_test|test_backup)_[a-f0-9]{32}$/);
     await root.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
   }
   await root.end();
