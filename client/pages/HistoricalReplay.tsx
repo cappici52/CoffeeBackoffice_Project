@@ -3,6 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   ComposedChart,
   Line,
+  Area,
+  ReferenceLine,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -16,11 +18,13 @@ import {
   Submit,
   QueryState,
   Notice,
+  CheckField,
   usePagedRows,
 } from "../ui";
 import { mutate, useResource, number, dateText, addDays } from "../lib";
 import { forecastChart } from "../forecast-view";
 import type { ForecastMetrics } from "../types";
+import ReplayPreparation from "./ReplayPreparation";
 
 type Dataset = {
   id: string;
@@ -78,6 +82,11 @@ type Replay = {
   date_to: string;
   score: ForecastMetrics;
   aggregate_score: ForecastMetrics;
+  actual_revealed: boolean;
+  history: { date: string; product_id: string; qty: number }[];
+  benchmark: { name: string; score: ForecastMetrics; aggregate_score: ForecastMetrics };
+  interval: { samples: number; nominal: number; coverage: number | null; mean_width: number | null };
+  by_product: (ForecastMetrics & { product_id: string })[];
   coverage: {
     expected: number;
     matched: number;
@@ -89,6 +98,7 @@ type Replay = {
     product_id: string;
     product_name: string;
     predicted_qty: number;
+    baseline_qty: number | null;
     lower: number | null;
     upper: number | null;
     actual_qty: number | null;
@@ -117,6 +127,8 @@ function download(value: unknown, name: string) {
 export default function HistoricalReplay() {
   const [params, setParams] = useSearchParams();
   const [generating, setGenerating] = useState(false);
+  const [revealedRun, setRevealedRun] = useState<string | null>(null);
+  const [showBaseline, setShowBaseline] = useState(false);
   const datasets = useResource<{ datasets: Dataset[] }>("/forecasts/datasets");
   const runs = useResource<{
     runs: {
@@ -124,7 +136,7 @@ export default function HistoricalReplay() {
       created_at: string;
       dataset_id: string;
       product_id: string | null;
-      metadata: { history_days: number };
+      metadata: { history_days: number; replay_mode?: "fixed" | "rolling" };
       cutoff: string;
       horizon: number;
       outlet_id: string;
@@ -132,7 +144,7 @@ export default function HistoricalReplay() {
   }>("/forecasts/replays");
   const selected =
     datasets.data?.datasets.find((d) => d.id === params.get("dataset")) ??
-    datasets.data?.datasets[0];
+    datasets.data?.datasets.find(d => d.metadata.source_url.includes("/ihelon/coffee-sales")) ?? datasets.data?.datasets[0];
   const outlet =
     selected?.metadata.outlets.find((o) => o.id === params.get("outlet")) ??
     selected?.metadata.outlets[0];
@@ -140,19 +152,23 @@ export default function HistoricalReplay() {
     params.get("cutoff") ?? (outlet ? addDays(outlet.date_to, -29) : "");
   const product = params.get("product") ?? "";
   const run = params.get("run");
-  const result = useResource<Replay>(run ? "/forecasts/replays/" + run : null),
+  const result = useResource<Replay>(run ? "/forecasts/replays/" + run + "?reveal=" + (revealedRun === run) : null),
     data = result.data;
+  const view = params.get("view") ?? "";
+  const visible = data?.rows.filter(r => !view || r.product_id === view) ?? [];
+  const productCount = new Set(visible.map(r => r.product_id)).size;
+  const visibleIds = new Set(visible.map(r => r.product_id));
   const rows = usePagedRows(data?.rows ?? [], run ?? "");
   const chart = data
     ? forecastChart(
-        data.date_from,
+        addDays(data.date_from, -30),
         data.date_to,
-        data.rows.map((r) => ({
+        visible.map((r) => ({
           ...r,
           lower_qty: r.lower,
           upper_qty: r.upper,
         })),
-        data.rows
+        [...data.history.filter(r => visibleIds.has(r.product_id)).map(r => ({ ...r, actual_qty: r.qty })), ...visible]
           .filter((r) => r.actual_qty !== null)
           .map((r) => ({
             date: r.date,
@@ -160,8 +176,15 @@ export default function HistoricalReplay() {
             qty: r.actual_qty!,
             is_closed: true,
           })),
-        new Set(data.rows.map((r) => r.product_id)).size,
-      )
+        productCount,
+      ).map(r => ({ ...r, history: r.date < data.date_from ? r.actual : undefined,
+        actual: r.date < data.date_from ? undefined : r.actual,
+        baseline: (() => {
+          const points = visible.filter(p => p.date === r.date);
+          return points.length && points.every(p => p.baseline_qty !== null)
+            ? points.reduce((s,p) => s + p.baseline_qty!, 0) : undefined;
+        })(),
+        interval: productCount === 1 ? r.interval : undefined }))
     : [];
   const chosen =
     data?.rows.filter(
@@ -188,7 +211,7 @@ export default function HistoricalReplay() {
         </Link>
       </div>
       <p className="caption muted">
-        ทดสอบข้อมูลย้อนหลังที่โมเดลยังไม่เห็น · แยกจากยอดขาย สต็อก และคะแนนร้าน
+        สาธิตพยากรณ์อนาคตจากวันในอดีต · ข้อมูลสาธารณะ แยกจากยอดขายและสต็อกร้าน
       </p>
       <QueryState {...datasets} retry={datasets.reload} />
       {datasets.data?.datasets.length === 0 && (
@@ -199,6 +222,7 @@ export default function HistoricalReplay() {
       )}
       {selected && outlet && (
         <>
+          <button type="button" disabled={generating} onClick={() => setParams({ dataset: selected.id, outlet: outlet.id, cutoff: addDays(outlet.date_to, -29), horizon: "30", history: "180", mode: "fixed" })}>ตั้งค่าสาธิต 30 วัน · ช่วงท้ายชุดข้อมูล</button>
           <Form
             key={
               selected.id +
@@ -206,7 +230,7 @@ export default function HistoricalReplay() {
               product +
               cutoff +
               (params.get("horizon") ?? "30") +
-              (params.get("history") ?? "180")
+              (params.get("history") ?? "180") + (params.get("mode") ?? "fixed")
             }
             noValidate
             guard={false}
@@ -218,6 +242,7 @@ export default function HistoricalReplay() {
                 horizon: Number(fd.get("horizon")),
                 history_days: Number(fd.get("history_days")),
                 replay_mode: String(fd.get("replay_mode")),
+                reveal_actual: false,
                 ...(product ? { product_id: product } : {}),
               };
               setGenerating(true);
@@ -248,7 +273,7 @@ export default function HistoricalReplay() {
           >
             <div className="form-grid">
               <Select name="replay_mode" label="รูปแบบพยากรณ์" disabled={generating}
-                defaultValue={params.get("mode") ?? "rolling"}>
+                defaultValue={params.get("mode") ?? "fixed"}>
                 <option value="rolling">Rolling: พยากรณ์วันถัดไปใหม่ทุกวัน</option>
                 <option value="fixed">ครั้งเดียว: พยากรณ์ทั้งช่วงล่วงหน้า</option>
               </Select>
@@ -320,7 +345,7 @@ export default function HistoricalReplay() {
                 <option value="180">180 วัน</option>
               </Select>
             </div>
-            <Submit>เริ่ม Historical Replay</Submit>
+            <Submit>สร้างพยากรณ์</Submit>
           </Form>
           <p className="caption muted">
             Rolling ใช้ข้อมูลก่อนแต่ละวันและบันทึกผลแยกรอบ · ครั้งเดียวใช้ข้อมูลก่อนวันเริ่มทดสอบเท่านั้น · Rolling ใช้เวลานานกว่า
@@ -384,6 +409,7 @@ export default function HistoricalReplay() {
                   cutoff: r.cutoff,
                   horizon: String(r.horizon),
                   history: String(r.metadata.history_days),
+                  mode: r.metadata.replay_mode ?? "fixed",
                   run: r.id,
                 },
                 { flushSync: true },
@@ -404,7 +430,7 @@ export default function HistoricalReplay() {
       {data && (
         <>
           <p>
-            ผลย้อนหลัง · {data.dataset.name} · {data.run.outlet_id} ·{" "}
+            สาธิต ณ {dateText(addDays(data.run.cutoff, -1))} · {data.dataset.name} · {data.run.outlet_id} · พยากรณ์{" "}
             {dateText(data.date_from)}–{dateText(data.date_to)}
           </p>
           <p className="caption muted">
@@ -413,7 +439,23 @@ export default function HistoricalReplay() {
             {dateText(data.run.created_at, true)} ·
             ไม่ใช่ผลวัดล่วงหน้าของร้านที่ใช้งานจริง
           </p>
+          {!data.actual_revealed && <div className="section-head">
+            <p>บันทึกพยากรณ์แล้ว · ยอดจริงในช่วงทดสอบยังไม่ถูกส่งมายังหน้าจอ</p>
+            <button type="button" className="primary" onClick={() => setRevealedRun(data.run.id)}>เปิดยอดขายจริง</button>
+          </div>}
+          <div className="metrics">
+            <div><span>คาดว่าจะขายใน {data.run.horizon} วัน</span><strong>{number(data.rows.reduce((s,r) => s + r.predicted_qty, 0))}</strong><small>หน่วยสินค้า · ตามนิยามของชุดข้อมูล</small></div>
+            {(() => {
+              const days = chart.filter(r => r.forecast !== undefined);
+              const high = [...days].sort((a,b) => b.forecast! - a.forecast!)[0];
+              const low = [...days].sort((a,b) => a.forecast! - b.forecast!)[0];
+              const flat = high && low && high.forecast === low.forecast;
+              return flat ? <div><span>รูปแบบรายวัน · ตามเมนูที่ดู</span><strong>{number(high.forecast)} ต่อวัน</strong><small>โมเดลรอบนี้ให้ค่าคงที่ · ดูวิธีและคะแนนเลือกโมเดลด้านล่าง</small></div> : <><div><span>วันที่คาดว่าสูงสุด · ตามเมนูที่ดู</span><strong>{high ? number(high.forecast) : "—"}</strong><small>{high ? dateText(high.date) : ""}</small></div><div><span>วันที่คาดว่าต่ำสุด · ตามเมนูที่ดู</span><strong>{low ? number(low.forecast) : "—"}</strong><small>{low ? dateText(low.date) : ""}</small></div></>;
+            })()}
+          </div>
+          {data.actual_revealed && <>
           <p className="caption muted">คะแนนรายสินค้า / วัน</p>
+          <p className="caption muted">คะแนนของทั้งรอบ · การเลือกเมนูในกราฟไม่เปลี่ยนชุดประเมิน</p>
           <div className="metrics">
             {(["mae", "rmse", "wape", "bias"] as const).map((key) => (
               <div key={key}>
@@ -457,17 +499,40 @@ export default function HistoricalReplay() {
               · {data.aggregate_score.samples} วัน
             </p>
           </details>
+          <details className="section-details"><summary>เทียบ baseline และคะแนนรายเมนู</summary>
+            <p className="caption muted">{data.benchmark.name} · หากไม่มีวันตรงกันใช้ค่าเฉลี่ยย้อนหลัง 28 วัน · วัดในช่วงและคู่ข้อมูลเดียวกัน</p>
+            <div className="table-scroll" role="region" tabIndex={0} aria-label="คะแนนเทียบ baseline"><table>
+              <caption>ผลในช่วงทดสอบ ไม่ใช้เลือกโมเดลย้อนหลัง</caption>
+              <thead><tr>{["วิธี / ระดับ", "MAE", "RMSE", "WAPE", "Bias", "คู่ข้อมูล"].map(t => <th scope="col" key={t}>{t}</th>)}</tr></thead>
+              <tbody>{[
+                { name: "โมเดลที่เลือก · รายสินค้า", score: data.score },
+                { name: "Baseline · รายสินค้า", score: data.benchmark.score },
+                { name: "โมเดลที่เลือก · ยอดรวมรายวัน", score: data.aggregate_score },
+                { name: "Baseline · ยอดรวมรายวัน", score: data.benchmark.aggregate_score },
+                ...data.by_product.map(p => ({ name: data.dataset.products.find(r => r.id === p.product_id)?.name ?? p.product_id, score: p })),
+              ].map(r => <tr key={r.name}><th scope="row">{r.name}</th>{(["mae","rmse","wape","bias"] as const).map(k => <td key={k}>{r.score[k] === null ? "—" : number(r.score[k]) + (k === "wape" ? "%" : "")}</td>)}<td>{r.score.samples}</td></tr>)}</tbody>
+            </table></div>
+            <p className="caption muted">ช่วงพยากรณ์รายสินค้าเป้าหมาย {data.interval.nominal}% · ครอบคลุมยอดจริง {data.interval.coverage === null ? "ยังวัดไม่ได้" : number(data.interval.coverage) + "%"} จาก {data.interval.samples} คู่ที่มีช่วงค่า · ไม่รับประกันความครอบคลุมของร้านอื่น</p>
+          </details>
+          </>}
           <section className="chart-panel">
-            <h2>Actual vs Forecast</h2>
+            <h2>{data.actual_revealed ? "Actual vs Forecast" : "ประวัติและพยากรณ์อนาคต"}</h2>
+            <Select label="ดูผลเมนู" value={view} onChange={e => setParams(previous => { const next = new URLSearchParams(previous); next.set("view", e.target.value); return next; })}>
+              <option value="">ยอดรวมสินค้าที่พยากรณ์</option>
+              {chosen.map(p => <option key={p.product_id} value={p.product_id}>{p.product_name}</option>)}
+            </Select>
+            <CheckField label="แสดงเส้น baseline เพื่อเปรียบเทียบ" checked={showBaseline} onChange={e => setShowBaseline(e.target.checked)} />
             <p className="caption muted">
               {data.run.metadata.replay_mode === "rolling"
                 ? "Rolling 1 วัน · อัปเดตด้วยข้อมูลถึงวันก่อนหน้าแต่ละวัน"
                 : `พยากรณ์ล่วงหน้า ${data.run.horizon} วันครั้งเดียว · ข้อมูลก่อน ${dateText(data.run.cutoff)}`}
-              {" · "}โมเดล: {[...new Set(data.rows.map(r => r.model_version))].join(", ")}
+              {" · "}โมเดล: {[...new Set(visible.map(r => r.model_version))].join(", ")}
             </p>
             <div className="chart forecast-chart">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chart}>
+                  <ReferenceLine x={data.date_from} stroke="var(--warning)" strokeDasharray="3 3" label={{ value: "เริ่มพยากรณ์", fill: "var(--warning)", position: "insideTopRight" }} />
+                  <Area name="ช่วงพยากรณ์เป้าหมาย 80%" dataKey="interval" stroke="none" fill="var(--primary)" fillOpacity={0.16} isAnimationActive={false} connectNulls={false} />
                   <CartesianGrid
                     stroke="var(--border)"
                     strokeDasharray="3 5"
@@ -486,6 +551,9 @@ export default function HistoricalReplay() {
                     }}
                   />
                   <Line
+                    name="ประวัติก่อนวันพยากรณ์" dataKey="history" stroke="var(--text)" dot={false} connectNulls={false} isAnimationActive={false}
+                  />
+                  <Line
                     name="Actual"
                     dataKey="actual"
                     stroke="var(--text)"
@@ -502,6 +570,7 @@ export default function HistoricalReplay() {
                     connectNulls={false}
                     isAnimationActive={false}
                   />
+                  {showBaseline && <Line name="Baseline · สัปดาห์ล่าสุด" dataKey="baseline" stroke="var(--warning)" strokeDasharray="2 5" dot={false} connectNulls={false} isAnimationActive={false} />}
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -509,7 +578,10 @@ export default function HistoricalReplay() {
               เส้นทึบ = Actual · เส้นประ = Forecast · หน่วยรายการสินค้า ·
               ช่องว่างคงเป็นไม่ทราบยอด
             </p>
+            <p className="caption muted">{productCount === 1 ? "ช่วงเป้าหมาย 80% ประเมินจากข้อผิดพลาดก่อนวันพยากรณ์ หากข้อมูลไม่พอจะไม่แสดง" : "เลือกเมนูเพื่อดูช่วงพยากรณ์ 80% · ไม่บวกขอบเขตรายเมนูเป็นช่วงยอดรวม"}</p>
           </section>
+          <ReplayPreparation key={data.run.id} rows={data.rows} from={data.date_from} horizon={data.run.horizon} />
+          {data.actual_revealed && <>
           <p className="caption muted">
             จับคู่ {data.coverage.matched}/{data.coverage.expected} · ไม่ทราบยอด{" "}
             {data.coverage.missing} · ศูนย์แบบอนุมาน{" "}
@@ -571,6 +643,7 @@ export default function HistoricalReplay() {
             </table>
           </div>
           {rows.controls}
+          </>}
           <details className="section-details">
             <summary>Model selected และคะแนนเลือกวิธีภายในช่วงฝึก</summary>
             <p className="caption muted">

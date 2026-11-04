@@ -31,9 +31,8 @@ const profile = coffee
     };
 const base = process.env.APP_ORIGIN ?? "http://localhost:3001",
   output = resolve(
-    coffee
-      ? ".local/public-datasets/ihelon-coffee-sales/evidence"
-      : ".local/public-datasets/evidence",
+    ".local/forecast-demo", new Date().toISOString().replaceAll(":", "-"),
+    coffee ? "coffee" : "mendeley",
   );
 await mkdir(output, { recursive: true });
 const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -110,11 +109,20 @@ try {
   // Preserve the fixed-origin protocol of the existing evaluation evidence.
   await page.locator('select[name="replay_mode"]').selectOption("fixed");
   await page
-    .getByRole("button", { name: "เริ่ม Historical Replay", exact: true })
+    .getByRole("button", { name: "สร้างพยากรณ์", exact: true })
     .click();
   const response = await predicted;
   assert.equal(response.status(), 200);
-  const result = await response.json();
+  const concealed = await response.json();
+  assert.equal(concealed.actual_revealed, false);
+  assert.equal(concealed.score.samples, 0);
+  assert(concealed.rows.every(r => r.actual_qty === null && r.error === null));
+  await expect(page.getByRole("heading", { name: "ประวัติและพยากรณ์อนาคต", exact: true })).toBeVisible();
+  await page.screenshot({ path: resolve(output, "before-reveal.png"), fullPage: true });
+  const reveal = page.waitForResponse(r => r.url().includes(`/forecasts/replays/${concealed.run.id}?reveal=true`));
+  await page.getByRole("button", { name: "เปิดยอดขายจริง", exact: true }).click();
+  const result = await (await reveal).json();
+  assert.deepEqual(result.rows.map(r => r.predicted_qty), concealed.rows.map(r => r.predicted_qty));
   assert.equal(result.kind, "historical_replay");
   assert.equal(result.data_mode, "PUBLIC_DATASET");
   assert.equal(result.run.cutoff, profile.cutoff);
@@ -169,6 +177,14 @@ try {
       .screenshot({ path: resolve(output, `replay-chart-${width}.png`) });
   }
   await page.getByText("คะแนนยอดรวมรายวัน", { exact: true }).click();
+  await page.getByText("เทียบ baseline และคะแนนรายเมนู", { exact: true }).click();
+  await page.getByText("แผนเตรียมวัตถุดิบ · สูตร ราคา และสต็อกสมมติ", { exact: true }).click();
+  await page.getByText("แก้สมมติฐานสูตร ราคา และสต็อก", { exact: true }).click();
+  await page.getByLabel("สต็อกสมมติ · นมสด (ml)", { exact: true }).fill("0");
+  await page.getByLabel("ดูผลเมนู", { exact: true }).selectOption(result.rows[0].product_id);
+  await page.getByLabel("แสดงเส้น baseline เพื่อเปรียบเทียบ", { exact: true }).check();
+  await expect(page.locator(".chart-panel .recharts-line-curve")).toHaveCount(4);
+  await page.locator(".chart-panel").screenshot({ path: resolve(output, "product-interval.png") });
   await page
     .getByText("Model selected และคะแนนเลือกวิธีภายในช่วงฝึก", { exact: true })
     .click();
@@ -191,7 +207,7 @@ try {
     r.url().endsWith("/api/forecasts/backtest"),
   );
   await page
-    .getByRole("button", { name: "เริ่ม Historical Replay", exact: true })
+    .getByRole("button", { name: "สร้างพยากรณ์", exact: true })
     .click();
   assert.equal((await bad).status(), 400);
   await expect(
@@ -209,7 +225,7 @@ try {
     { timeout: 190000 },
   );
   await page
-    .getByRole("button", { name: "เริ่ม Historical Replay", exact: true })
+    .getByRole("button", { name: "สร้างพยากรณ์", exact: true })
     .click();
   const retried = await retry;
   assert.equal(retried.status(), 200);

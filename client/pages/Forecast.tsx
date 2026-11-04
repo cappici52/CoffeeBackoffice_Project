@@ -195,7 +195,7 @@ export default function Forecast() {
       <div className="section-head">
         <h2 className="section-title">สร้างพยากรณ์</h2>
         <Link className="button" to="/forecast/replay">
-          Historical Replay · ข้อมูลสาธารณะ
+          สาธิตพยากรณ์ · ข้อมูลสาธารณะ
         </Link>
       </div>
       <div className="forecast-controls">
