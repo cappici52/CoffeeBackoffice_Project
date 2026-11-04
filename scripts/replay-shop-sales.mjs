@@ -22,11 +22,11 @@ import {
 } from "./simulation-plan.mjs";
 
 if (
-  !process.argv.includes("--main-shop") ||
+  !process.argv.includes("--isolated-demo") ||
   process.env.NODE_ENV === "production"
 )
   throw new Error(
-    "Explicit --main-shop is required on a local development shop",
+    "Operational replay is restricted to --isolated-demo on a separate demonstration database",
   );
 const config = readConfig();
 const target = new URL(config.DATABASE_URL);
@@ -35,8 +35,8 @@ assert(
   "Local database required",
 );
 assert(
-  !/coffee_(sim|restore)_|test/i.test(target.pathname),
-  "Use the configured main shop, not a sandbox",
+  /^\/(coffee_demo_|coffee_sim_|coffee_test_)[a-z0-9_]+$/i.test(target.pathname),
+  "Use an isolated demo database; the actual shop is forbidden",
 );
 const RealDate = Date,
   startedAt = new RealDate(),

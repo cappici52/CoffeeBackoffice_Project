@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:18-alpine
     environment:
-      POSTGRES_DB: coffee
+      POSTGRES_DB: ${POSTGRES_DB:-coffee}
       POSTGRES_USER: coffee
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coffee_dev_only}
     ports:
@@ -10,7 +10,7 @@ services:
     volumes:
       - coffee_pg:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U coffee -d coffee"]
+      test: ["CMD-SHELL", "pg_isready -U coffee -d ${POSTGRES_DB:-coffee}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -21,7 +21,7 @@ services:
       PORT: 3001
       APP_ORIGIN: http://localhost:3001
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:3001}
-      DATABASE_URL: postgresql://coffee:${POSTGRES_PASSWORD:-coffee_dev_only}@db:5432/coffee
+      DATABASE_URL: postgresql://coffee:${POSTGRES_PASSWORD:-coffee_dev_only}@db:5432/${POSTGRES_DB:-coffee}
       FORECAST_SERVICE_URL: http://forecast:8001
     ports:
       - "127.0.0.1:3001:3001"
@@ -49,7 +49,7 @@ services:
     build: .
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://coffee:${POSTGRES_PASSWORD:-coffee_dev_only}@db:5432/coffee
+      DATABASE_URL: postgresql://coffee:${POSTGRES_PASSWORD:-coffee_dev_only}@db:5432/${POSTGRES_DB:-coffee}
       FORECAST_SERVICE_URL: http://forecast:8001
     depends_on:
       api:

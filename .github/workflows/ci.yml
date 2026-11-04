@@ -67,12 +67,18 @@ jobs:
           npm run test:e2e
       - run: docker compose config --quiet
       - name: Build and start the complete Docker stack
+        env:
+          POSTGRES_DB: coffee_demo_ci
         run: docker compose up --build --wait --wait-timeout 180
       - name: Bootstrap and smoke-test container
+        env:
+          POSTGRES_DB: coffee_demo_ci
         run: |
           docker compose exec -e SEED_OWNER_EMAIL=owner@example.com -e SEED_OWNER_PASSWORD=CI-container-password-123 api node dist/seed.js
           docker compose exec api node dist/demo.js
           node -e "fetch('http://localhost:3001').then(async r=>{if(!r.ok||!(await r.text()).includes('Coffee Backoffice'))process.exit(1)})"
       - name: Stop Docker stack
+        env:
+          POSTGRES_DB: coffee_demo_ci
         if: always()
         run: docker compose down

@@ -5,6 +5,7 @@ import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
+import { prepareBranchRole,restoreBranchGrants } from './branch-backup-access.mjs';
 import pg from "pg";
 
 export async function digest(file) {
@@ -188,6 +189,7 @@ export async function restoreDatabase(url, file, database) {
   await source.connect();
   try {
     // CREATE (never DROP/--clean): an existing database fails safely, even in a race.
+    await prepareBranchRole(source,manifest);
     await source.query(`CREATE DATABASE "${database}" TEMPLATE template0`);
   } finally {
     await source.end();
@@ -227,6 +229,7 @@ export async function restoreDatabase(url, file, database) {
   });
   await restored.connect();
   try {
+    await restoreBranchGrants(restored,manifest);
     const actual = await inventory(restored);
     if (JSON.stringify(actual) !== JSON.stringify(manifest.tables))
       throw new Error(
