@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import { Router, type RequestHandler } from "express";
 import { z } from "zod";
 import type { Database, Sql } from "../db.js";
-import { branchScope } from '../branch-context.js';
 import {
   businessDate,
   dateRange,
@@ -92,25 +91,12 @@ export function reportsRouter(
   r.use(["/reports", "/audit-logs"], auth);
   r.get("/reports", manage, async (req, res) => {
     const input = dateRange.parse(req.query);
-    const report=await salesSummary(
+    res.json(await salesSummary(
         db,
         input.date_from,
         input.date_to,
         res.locals.user.role === "owner",
-      );
-    const branches=(await db.query(`WITH paid AS (
-      SELECT branch_id,count(*)::int AS paid_orders,sum(amount_satang)::bigint AS revenue_satang FROM payments
-      WHERE status='paid' AND (paid_at AT TIME ZONE 'Asia/Bangkok')::date BETWEEN $1::date AND $2::date GROUP BY branch_id
-    ), placed AS (
-      SELECT branch_id,count(*)::int AS placed_orders FROM orders WHERE (created_at AT TIME ZONE 'Asia/Bangkok')::date BETWEEN $1::date AND $2::date GROUP BY branch_id
-    ), inventory AS (
-      SELECT s.branch_id,count(*) FILTER(WHERE i.is_active AND s.current_stock<=s.reorder_point)::int AS low_stock_items
-      FROM branch_stock s JOIN ingredients i ON i.id=s.ingredient_id GROUP BY s.branch_id
-    ) SELECT b.id,b.name,b.code,coalesce(p.paid_orders,0) AS paid_orders,coalesce(p.revenue_satang,0)::bigint AS revenue_satang,
-      coalesce(o.placed_orders,0) AS placed_orders,coalesce(i.low_stock_items,0) AS low_stock_items
-      FROM branches b LEFT JOIN paid p ON p.branch_id=b.id LEFT JOIN placed o ON o.branch_id=b.id LEFT JOIN inventory i ON i.branch_id=b.id
-      WHERE b.id=ANY($3::uuid[]) ORDER BY b.code`,[input.date_from,input.date_to,branchScope()?.ids??['00000000-0000-4000-8000-000000000016']])).rows;
-    res.json({...report,branches});
+      ));
   });
   r.post("/reports/close", manage, async (req, res) => {
     const input = z

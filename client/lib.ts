@@ -48,12 +48,10 @@ const errors: Record<string, string> = {
   INVALID_EXPIRY_STATUS:'เลือกไม่มีวันหมดอายุ หรือระบุวันหมดอายุอย่างใดอย่างหนึ่ง หากไม่ทราบให้เว้นทั้งสองช่อง',
   RECEIPT_EXCEEDS_ORDER:'จำนวนรับเกินยอดค้างรับในใบสั่งซื้อ กรุณาตรวจรายการล่าสุด',
   PURCHASE_NOT_OPEN:'ใบสั่งซื้อนี้รับครบหรือยกเลิกแล้ว ไม่สามารถรับเพิ่มได้',
-  TRANSFER_SAME_BRANCH:'กรุณาเลือกสาขาปลายทางต่างจากสาขาปัจจุบัน',
   REQUEST_KEY_CONFLICT:'คำขอนี้เคยใช้กับข้อมูลอื่นแล้ว กรุณาตรวจประวัติรายการก่อนสร้างรายการใหม่',
-  BRANCH_FORBIDDEN:'ไม่มีสิทธิ์ใช้งานสาขานี้ กรุณาเลือกสาขาที่ได้รับมอบหมาย',
+  BRANCH_FORBIDDEN:'ไม่มีสิทธิ์เข้าถึงข้อมูลร้าน กรุณาติดต่อเจ้าของร้าน',
   BRANCH_INACTIVE:'สาขานี้ปิดใช้งานอยู่',
-  SELECT_SINGLE_BRANCH:'กรุณาเลือกสาขาเดียวก่อนใช้งานหน้านี้',
-  BRANCH_PERMISSION_REQUIRED:'ไม่มีสิทธิ์แก้ไขข้อมูลนี้ในสาขาที่เลือก',
+  BRANCH_PERMISSION_REQUIRED:'ไม่มีสิทธิ์แก้ไขข้อมูลนี้',
   CENTRAL_MASTER_REQUIRES_OWNER:'ข้อมูลกลางแก้ไขได้โดยเจ้าของร้านเท่านั้น',
   FORECAST_SOURCE_CONFLICT:
     "ข้อมูลตัวอย่างใช้ได้เฉพาะโหมดทดลอง กรุณาเลือกชุดข้อมูลหรือโหมดให้ตรงกัน",
@@ -121,17 +119,10 @@ export class HttpError extends Error {
     );
   }
 }
-let selectedBranch='';
-let pendingBranchMutations=0;
-export const setApiBranch=(id:string)=>{selectedBranch=id;};
-export const branchMutationPending=()=>pendingBranchMutations>0;
-export const apiBranch=()=>selectedBranch;
 export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const mutation=!['GET','HEAD'].includes(options.method??'GET');
-  if(mutation)pendingBranchMutations++;
   try {
     const timeout =
       path === "/forecasts/backtest"
@@ -142,7 +133,7 @@ export async function api<T>(
     const response = await fetch("/api" + path, {
       ...options,
       credentials: "same-origin",
-      headers: { "Content-Type": "application/json", ...(selectedBranch&&!path.startsWith('/guest/')?{'X-Branch-Id':selectedBranch}:{}), ...options.headers },
+      headers: { "Content-Type": "application/json", ...options.headers },
       signal: options.signal
         ? AbortSignal.any([options.signal, AbortSignal.timeout(timeout)])
         : AbortSignal.timeout(timeout),
@@ -160,8 +151,7 @@ export async function api<T>(
     if (error instanceof HttpError) throw error;
     if (error instanceof Error && error.name === "AbortError") throw error;
     throw new Error("การเชื่อมต่อขัดข้อง กรุณาตรวจเครือข่ายแล้วลองอีกครั้ง");
-  } finally {
-    if(mutation)pendingBranchMutations--;
+
   }
 }
 export const mutate = <T>(path: string, method: string, body?: object) =>

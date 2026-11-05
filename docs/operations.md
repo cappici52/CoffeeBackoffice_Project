@@ -90,7 +90,7 @@ See [active architecture and APIs](forecast-v5.md). Run migrations after a verif
 
 ## Warehouse extension (2026-11-04)
 
-The maintained current guide is [Project completion status](project-completion-status.md). Operational simulation cleanup has executed only after separate explicit approval. New additive migrations implement stocktaking, lot/expiry tracking, supplier purchasing/partial receipts, branch transfers and expense history. Normal startup still never seeds demo sales. Use the inventory tabs for these workflows, and preserve the disclosed unknown provenance/cost/expiry of legacy stock until reviewed.
+See [single-shop operations and migration](single-shop.md) and the [earlier implementation status](project-completion-status.md). Inventory supports stocktaking, lot and expiry tracking, supplier purchasing and partial receipts, and expense history. Normal startup leaves demo sales generation disabled. Legacy stock keeps its unknown provenance, cost, and expiry until reviewed.
 
 For manual acceptance use `/acceptance` and [the participant template](acceptance-session-template.md); physical printer testing uses `/printer-test` and [the device checklist](printer-acceptance.md). Neither page is evidence that unavailable participants/hardware were tested. Future genuine-sales validation follows [the prospective collection protocol](prospective-validation.md).
 

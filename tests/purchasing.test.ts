@@ -8,7 +8,7 @@ import { createApp } from '../src/app.js';
 import { readConfig } from '../src/config.js';
 import { businessDate } from '../src/shop/shared.js';
 
-test('partial purchasing and atomic transfers preserve quantities, costs, expiry and idempotency',async()=>{
+test('partial purchasing preserves quantities, costs, expiry and idempotency',async()=>{
  const f=await testDatabase();try{
   await migrate(f.db);await seedOwner(f.db,'buyer@example.com','Test-buyer-password-123');
   const app=createApp(f.db,readConfig({DATABASE_URL:'postgresql://test:test@localhost/test'}));
@@ -25,16 +25,11 @@ test('partial purchasing and atomic transfers preserve quantities, costs, expiry
   await post(`/purchase-orders/${po.body.id}/receive`,{...partial,request_key:randomUUID(),lines:[{...partial.lines[0],qty:7}]}).expect(409);
   await post(`/purchase-orders/${po.body.id}/receive`,{request_key:randomUUID(),lines:[{line_id:line,qty:6,lot_code:'Second',expires_on:'2099-03-01',unit_cost_satang:4}]}).expect(201);
   expect((await f.db.query('SELECT status FROM purchase_orders WHERE id=$1',[po.body.id])).rows[0]!.status).toBe('closed');
-  const target='00000000-0000-4000-8000-000000000017';
-  const transfer={target_branch_id:target,ingredient_id:ingredient,qty:3,reason:'Fixture transfer',request_key:randomUUID()};
-  const sent=await post('/stock-transfers',transfer).expect(201);
-  expect((await post('/stock-transfers',transfer).expect(201)).body.id).toBe(sent.body.id);
-  await post('/stock-transfers',{...transfer,qty:4}).expect(409);
-  const balances=(await f.db.query('SELECT branch_id,current_stock FROM branch_stock WHERE ingredient_id=$1',[ingredient])).rows;
-  expect(Number(balances.find(b=>b.branch_id===target)!.current_stock)).toBe(3);
-  expect(balances.reduce((s,b)=>s+Number(b.current_stock),0)).toBe(10);
-  const lots=(await f.db.query('SELECT * FROM inventory_lots WHERE branch_id=$1 AND ingredient_id=$2',[target,ingredient])).rows;
-  expect(lots).toHaveLength(1);expect(Number(lots[0]!.unit_cost_satang)).toBe(3);
+  const balance=(await f.db.query('SELECT current_stock FROM branch_stock WHERE branch_id=coffee_current_branch() AND ingredient_id=$1',[ingredient])).rows[0]!;
+  expect(Number(balance.current_stock)).toBe(10);
+  const lots=(await f.db.query('SELECT * FROM inventory_lots WHERE branch_id=coffee_current_branch() AND ingredient_id=$1 ORDER BY expires_on',[ingredient])).rows;
+  expect(lots).toHaveLength(2);expect(Number(lots[0]!.unit_cost_satang)).toBe(3);
+  expect(lots.reduce((sum,lot)=>sum+Number(lot.remaining_qty),0)).toBe(10);
   expect(String(lots[0]!.expires_on)).toContain('2099');
   const expense={date:businessDate(),category:'Fixture utility',amount_satang:100,note:'Fixture expense',request_key:randomUUID()};
   const e=await post('/operating-expenses',expense).expect(201);
@@ -48,8 +43,7 @@ test('partial purchasing and atomic transfers preserve quantities, costs, expiry
   await f.db.query("INSERT INTO user_branches(user_id,branch_id) VALUES($1,'00000000-0000-4000-8000-000000000016')",[manager]);
   const mlogin=await request(app).post('/api/auth/login').set('Origin','http://localhost:3001').send({email:'scoped@example.com',password:'Test-buyer-password-123'}).expect(200);
   const mc=mlogin.headers['set-cookie']![0]!.split(';')[0]!;
-  await request(app).post('/api/stock-transfers').set('Cookie',mc).set('Origin','http://localhost:3001').send({...transfer,request_key:randomUUID()}).expect(403);
   await request(app).get('/api/inventory-valuation').set('Cookie',mc).expect(403);
-  await request(app).get('/api/operating-expenses/summary?date_from='+businessDate()+'&date_to='+businessDate()).set('Cookie',cookie).set('X-Branch-Id','all').expect(200);
+  await request(app).get('/api/operating-expenses/summary?date_from='+businessDate()+'&date_to='+businessDate()).set('Cookie',cookie).expect(200);
  }finally{await f.close();}
 },30000);

@@ -5,7 +5,6 @@ import { createRequire } from "node:module";
 import type { QRCode } from "jsqr";
 import type { Database } from "../db.js";
 import { fail, record } from "./shared.js";
-import { branchScope,LEGACY_BRANCH } from '../branch-context.js';
 const jsQR = createRequire(import.meta.url)("jsqr") as (
   pixels: Uint8ClampedArray,
   width: number,
@@ -30,7 +29,7 @@ export function paymentQrRouter(
       row
         ? {
             available: true,
-            image_url: "/api/payment-qr/image?v=" + row.sha256+'&branch_id='+encodeURIComponent(branchScope()?.ids[0]??LEGACY_BRANCH),
+            image_url: "/api/payment-qr/image?v=" + row.sha256,
             fixed_amount_satang: row.fixed_amount_satang,
           }
         : { available: false },

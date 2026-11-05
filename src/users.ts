@@ -3,7 +3,6 @@ import { Router, type RequestHandler } from 'express';
 import { z } from 'zod';
 import type { Database, Sql } from './db.js';
 import { ApiError, audit, canManage, emailSchema, hashPassword, passwordSchema, roles, userColumns, type User } from './security.js';
-import { authorizedBranches } from './branches.js';
 import { LEGACY_BRANCH } from './branch-context.js';
 
 export function usersRouter(db: Database, authenticate: RequestHandler, authorize: RequestHandler) {
@@ -16,14 +15,20 @@ export function usersRouter(db: Database, authenticate: RequestHandler, authoriz
     const result = await sql.query<User>(`SELECT ${userColumns} FROM users WHERE id = $1 AND is_active = true`, [id]);
     const actor = result.rows[0];
     if (!actor || !['owner', 'manager'].includes(actor.role)) throw new ApiError(403, 'FORBIDDEN');
+    if (actor.role !== 'owner' && !(await sql.query('SELECT 1 FROM user_branches WHERE user_id=$1 AND branch_id=$2', [id, LEGACY_BRANCH])).rows.length) {
+      throw new ApiError(403, 'BRANCH_FORBIDDEN');
+    }
     return actor;
   }
   router.get('/', async (req, res) => {
     const { page, page_size } = z.object({ page: z.coerce.number().int().min(1).max(1_000_000).default(1), page_size: z.coerce.number().int().min(1).max(100).default(25) }).strict().parse(req.query);
     const actor = res.locals.user as User;
-    const filter="($1='owner' OR (role IN ('cashier','kitchen') AND EXISTS(SELECT 1 FROM user_branches t JOIN user_branches a ON a.branch_id=t.branch_id WHERE t.user_id=users.id AND a.user_id=$4)))";
-    const result = await db.query<User>(`SELECT ${userColumns} FROM users WHERE ${filter} ORDER BY created_at, id LIMIT $2 OFFSET $3`, [actor.role, page_size, (page - 1) * page_size,actor.id]);
-    const count = await db.query("SELECT count(*)::int AS total FROM users WHERE ($1='owner' OR (role IN ('cashier','kitchen') AND EXISTS(SELECT 1 FROM user_branches t JOIN user_branches a ON a.branch_id=t.branch_id WHERE t.user_id=users.id AND a.user_id=$2)))", [actor.role,actor.id]);
+    const filter = `($1='owner' OR (role IN ('cashier','kitchen')
+      AND EXISTS(SELECT 1 FROM user_branches t WHERE t.user_id=users.id AND t.branch_id=$2)
+      AND EXISTS(SELECT 1 FROM user_branches a WHERE a.user_id=$3 AND a.branch_id=$2)))`;
+    const scope = [actor.role, LEGACY_BRANCH, actor.id];
+    const result = await db.query<User>(`SELECT ${userColumns} FROM users WHERE ${filter} ORDER BY created_at, id LIMIT $4 OFFSET $5`, [...scope, page_size, (page - 1) * page_size]);
+    const count = await db.query(`SELECT count(*)::int AS total FROM users WHERE ${filter}`, scope);
     res.json({ users: result.rows, page, page_size, total: count.rows[0]?.total });
   });
   router.post('/', async (req, res) => {
@@ -36,10 +41,7 @@ export function usersRouter(db: Database, authenticate: RequestHandler, authoriz
         [randomUUID(), input.name, input.email, passwordHash, input.role]);
       const created = result.rows[0]!;
       if(created.role!=='owner'){
-        const branches=await authorizedBranches({query:(text,values)=>sql.query(text,values),transaction:work=>work(sql)},actor);
-        const branch=req.get('X-Branch-Id')??branches.find(b=>b.is_active)?.id??LEGACY_BRANCH;
-        if(!branches.some(b=>b.id===branch&&b.is_active))throw new ApiError(403,'BRANCH_FORBIDDEN');
-        await sql.query('INSERT INTO user_branches(user_id,branch_id) VALUES($1,$2)',[created.id,branch]);
+        await sql.query('INSERT INTO user_branches(user_id,branch_id) VALUES($1,$2)',[created.id,LEGACY_BRANCH]);
       }
       await audit(sql, actor.id, 'user.created', created.id, { role: created.role });
       return created;
@@ -55,9 +57,8 @@ export function usersRouter(db: Database, authenticate: RequestHandler, authoriz
       const target = result.rows[0];
       if (!target) throw new ApiError(404, 'USER_NOT_FOUND');
       if(actor.role!=='owner'){
-        const access=(await sql.query(`SELECT EXISTS(SELECT 1 FROM user_branches WHERE user_id=$1) AND NOT EXISTS(
-          SELECT 1 FROM user_branches t WHERE t.user_id=$1 AND NOT EXISTS(SELECT 1 FROM user_branches a WHERE a.user_id=$2 AND a.branch_id=t.branch_id)) AS allowed`,[id,actor.id])).rows[0];
-        if(!access?.allowed)throw new ApiError(403,'BRANCH_FORBIDDEN');
+        const access = await sql.query('SELECT 1 FROM user_branches WHERE user_id=$1 AND branch_id=$2', [id, LEGACY_BRANCH]);
+        if (!access.rows.length) throw new ApiError(403, 'BRANCH_FORBIDDEN');
       }
       if (!canManage(actor.role, target.role) || !canManage(actor.role, input.role ?? target.role)) throw new ApiError(403, 'FORBIDDEN');
       if (actor.id === id && (input.is_active === false || (input.role !== undefined && input.role !== actor.role))) throw new ApiError(409, 'CANNOT_REMOVE_OWN_ACCESS');
@@ -67,6 +68,9 @@ export function usersRouter(db: Database, authenticate: RequestHandler, authoriz
       }
       const changed = await sql.query<User>(`UPDATE users SET name = $1, role = $2, is_active = $3 WHERE id = $4 RETURNING ${userColumns}`,
         [input.name ?? target.name, input.role ?? target.role, input.is_active ?? target.is_active, id]);
+      if (target.role === 'owner' && input.role && input.role !== 'owner') {
+        await sql.query('INSERT INTO user_branches(user_id,branch_id) VALUES($1,$2) ON CONFLICT DO NOTHING', [id, LEGACY_BRANCH]);
+      }
       if (input.role !== undefined || input.is_active === false) await sql.query('DELETE FROM sessions WHERE user_id = $1', [id]);
       await audit(sql, actor.id, 'user.updated', id, input);
       return changed.rows[0];

@@ -195,6 +195,13 @@ test("incomplete or malformed model output is rejected atomically", async () => 
   ).toHaveLength(1);
 });
 test("closing is immutable and prevents payments after close", async () => {
+  const pending = await post("/api/orders", {
+    request_key: randomUUID(),
+    type: "takeaway",
+    items: [{ product_id: product, qty: 1 }],
+  }).expect(201);
+  await post("/api/reports/close", { date }, manager).expect(409, { error: "OPEN_ORDERS_EXIST" });
+  await post(`/api/orders/${pending.body.order.id}/status`, { status: "cancelled", reason: "QA" }, manager).expect(200);
   await post(
     "/api/reports/close",
     { date, note: "ตรวจเงินครบแล้ว" },
@@ -208,6 +215,6 @@ test("closing is immutable and prevents payments after close", async () => {
     items: [{ product_id: product, qty: 1 }],
   }).expect(409, { error: "DAY_ALREADY_CLOSED" });
   expect((await fixture.db.query("SELECT id FROM orders")).rows).toHaveLength(
-    1,
+    2,
   );
 });

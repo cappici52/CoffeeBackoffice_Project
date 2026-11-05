@@ -5,7 +5,6 @@ import { ApiError } from './security.js';
 export const LEGACY_BRANCH='00000000-0000-4000-8000-000000000016';
 export type BranchScope={ ids:string[]; write:boolean; master:boolean; actorId?:string;actorRole?:string };
 const storage=new AsyncLocalStorage<BranchScope>();
-export const branchScope=()=>storage.getStore();
 export const inBranch=<T>(scope:BranchScope,work:()=>T):T=>storage.run(scope,work);
 const wrapped=new WeakMap<Database,Database>();
 export function branchDatabase(db:Database):Database {

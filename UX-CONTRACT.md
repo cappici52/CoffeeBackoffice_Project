@@ -1,6 +1,6 @@
 # Coffee Backoffice UX contract
 
-Thai operational product for multiple coffee shop branches: owner/manager desktops, cashier tablets and bar/kitchen touch displays. Language: Thai, currency: THB, business timezone: Asia/Bangkok. Accessibility target: WCAG 2.2 AA; automated browser checks supplement keyboard and visual checks, not a claim of a complete accessibility audit.
+Thai operational product for one coffee shop, used on owner and manager desktops, cashier tablets, and bar and kitchen touch displays. Language is Thai, currency is THB, and business timezone is Asia/Bangkok. Automated browser and keyboard checks cover selected WCAG 2.2 AA requirements.
 
 Owner-authorized main-database sales replays retain `simulation_run_id` on generated orders, payments, movements, closings and issued forecasts. `/api/shop-context` drives a canonical shared warning in the authenticated shell. Forecast runs derived from replay history retain `contains_simulated_sales`; their scores belong to the simulation group and are excluded from genuine-sales accuracy, even if `data_mode=actual` reads the order ledger. Replay dates never overlap original orders/closings, catalog data is reused unchanged, and normal server/OS clocks stay real.
 
@@ -111,11 +111,11 @@ The public cutoff is the first target date (training excludes it), unlike the in
 
 Coffee Sales is a second PUBLIC_DATASET adapter, not an operational model promotion. Source-specific quantity/zero/price text comes from immutable import metadata. The outlet/source-stream Select retains the same canonical native owner and scope behavior. `scripts/check-public-replay.mjs --coffee` checks the coffee import; the unflagged check explicitly selects and preserves Mendeley regardless of import order. Scores from a chosen saved window and pooled rolling experiments are labeled separately. See docs/coffee-sales-v5-evaluation.md.
 
-## Branch scope and cleanup (2026-11-04)
+## Shop scope and data retention
 
-`client/branches.tsx` owns branch selection through the existing shared Select/Confirm providers. Scope comes from backend-authorized branch records; API headers are validated server-side. Switching confirms discarded drafts/cart state, waits for pending mutations and remounts resources/SSE. Aggregate scope is operational reporting only. Branch management and overrides reuse Form, Modal, QueryState, pagination and Toast primitives. Owner manages central masters and branch assignments; managers operate assigned branches.
+Staff enter the shop directly. The server fixes the operational scope, checks role and membership, and rejects archived or aggregate scopes. The existing Menu page owns product price and availability. Reports and stock tabs show data for the operating shop.
 
-The authoritative extension is docs/multi-branch-target-spec.md; architecture and permissions are in docs/multi-branch.md. Data cleanup follows docs/operational-data-cleanup.md: keep nine unmarked orders, preserve research/archives, and require a verified backup, inventory cutover decision and explicit approval before deletion. New demo generation is isolated; old replay provenance remains historical evidence.
+The current architecture and permissions are in docs/single-shop.md. Data cleanup follows docs/operational-data-cleanup.md. Nine unmarked orders and the research and archive data were preserved. New demo generation is isolated.
 
 ## Public forecast demonstration
 
@@ -126,7 +126,6 @@ The existing `/forecast/replay` route owns the presentation flow. It defaults to
 - Stocktakes: blank counts → draft snapshot → review delta → confirm; reject intervening stock changes, preserve immutable confirmation and idempotent retry.
 - Lots: explicit receipt/cost/expiry or disclosed unknown metadata → FEFO sale allocation; expired stock requires explicit waste and cannot satisfy a sale.
 - Purchasing: owner-maintained suppliers → branch PO → partial receipt; preserve received quantities and actual prices when cancelling remaining goods.
-- Transfers: actor authorized for both active branches → atomic outgoing/incoming movements, matching lot cost/expiry and retained history.
 - Expenses: owner-only entry with request recovery → reasoned void; never overwrite the original amount/date/category. Valuation discloses unknown costs and does not claim net profit.
 - Replenishment: saved non-simulation shop forecast → supplier calendar lead time → urgent gap and review-window preview; uncounted/incomplete data is disclosed and no PO is created automatically.
 - Acceptance: not-run by default → manual observations/participant code required for a tested outcome → private JSON export; a browser check is not real-user/device evidence.

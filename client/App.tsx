@@ -44,9 +44,6 @@ import {
   useConfirm,
 } from "./ui";
 import type { Role, User } from "./types";
-import { BranchProvider,BranchSelector,useBranch } from './branches';
-const Branches=lazy(()=>import('./pages/Branches'));
-const BranchProducts=lazy(()=>import('./pages/BranchProducts'));
 const Pos = lazy(() => import("./pages/Pos"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Kds = lazy(() => import("./pages/Kds"));
@@ -69,13 +66,11 @@ export const useAuth = () => useContext(AuthContext);
 const LiveContext = createContext({ connected: false, revision: 0, offset: 0 });
 export const useLive = () => useContext(LiveContext);
 function LiveProvider({ children }: { children: ReactNode }) {
-  const branch=useBranch();
   const [connected, setConnected] = useState(false);
   const [revision, setRevision] = useState(0);
   const [offset, setOffset] = useState(0);
   useEffect(() => {
-    if(branch.id==='all')return;
-    const stream = new EventSource('/api/events?branch_id='+encodeURIComponent(branch.id));
+    const stream = new EventSource("/api/events");
     stream.onopen = () => setConnected(true);
     stream.onerror = () => setConnected(false);
     stream.onmessage = (e) => {
@@ -144,8 +139,6 @@ function Login({ onLogin }: { onLogin: (user: User) => void }) {
   );
 }
 const navigation = [
-  {to:'/branches',label:'สาขา',icon:Coffee,roles:['owner','manager']},
-  {to:'/branch-products',label:'เมนูประจำสาขา',icon:BookOpen,roles:['owner','manager']},
   {
     to: "/tables",
     label: "โต๊ะ / QR",
@@ -208,7 +201,6 @@ function Only({ roles, children }: { roles: Role[]; children: ReactNode }) {
   return children;
 }
 function Shell({ logout }: { logout: () => Promise<void> }) {
-  const branch=useBranch();
   const [failure, setFailure] = useState("");
   const { user } = useAuth();
   const live = useLive();
@@ -216,7 +208,7 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
     "/shop-context",
   );
   const queue = useResource<{ unpaid: number; qr_unpaid: number }>(
-    user.role === "kitchen"||branch.id==='all' ? null : "/orders/summary",
+    user.role === "kitchen" ? null : "/orders/summary",
   );
   useEffect(queue.reload, [queue.reload, live.revision]);
   useEffect(shopContext.reload, [shopContext.reload, live.revision]);
@@ -237,10 +229,9 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
         <Link className="brand" to={user.role === "kitchen" ? "/kds" : "/pos"}>
           Coffee<span>Backoffice</span>
         </Link>
-        <BranchSelector/>
         <nav aria-label="เมนูหลัก">
           {navigation
-            .filter((n) => n.roles.includes(user.role)&&(n.to!=='/menu'||user.role==='owner')&&(branch.id!=='all'||['/branches','/reports','/users'].includes(n.to)))
+            .filter((n) => n.roles.includes(user.role)&&(n.to!=='/menu'||user.role==='owner'))
             .map((n) => (
               <NavLink key={n.to} to={n.to}>
                 <n.icon size={20} />
@@ -297,12 +288,12 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
             {dateText(new Date().toISOString())}
           </time>
           <span
-            className={"connection " + (branch.id==='all'?'':live.connected ? "online" : "offline")}
+            className={"connection " + (live.connected ? "online" : "offline")}
             role="status"
           >
-            {branch.id==='all'?<BarChart3 size={16}/>:live.connected ? <Wifi size={16} /> : <WifiOff size={16} />}
+            {live.connected ? <Wifi size={16} /> : <WifiOff size={16} />}
             <span>
-              {branch.id==='all'?'รายงานรวม':live.connected
+              {live.connected
                 ? "เชื่อมต่อแล้ว"
                 : "ขาดการเชื่อมต่อ · กำลังลองใหม่"}
             </span>
@@ -322,7 +313,6 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
             </Notice>
           )}
           {failure && <Notice tone="danger">{failure}</Notice>}
-          {branch.id==='all'&&!['/reports','/branches','/users','/account'].some(p=>location.pathname.startsWith(p))?<Notice>เลือกสาขาเพื่อใช้งานหน้านี้ หรือ <Link to="/reports">เปิดรายงานรวม</Link></Notice>:
           <Suspense
             fallback={
               <div className="loading">
@@ -331,8 +321,6 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
             }
           >
             <Routes>
-              <Route path="/branches" element={<Only roles={['owner','manager']}><Branches/></Only>}/>
-              <Route path="/branch-products" element={<Only roles={['owner','manager']}><BranchProducts/></Only>}/>
               <Route
                 path="/tables"
                 element={
@@ -435,7 +423,7 @@ function Shell({ logout }: { logout: () => Promise<void> }) {
                 }
               />
             </Routes>
-          </Suspense>}
+          </Suspense>
         </main>
       </div>
     </div>
@@ -487,14 +475,9 @@ function Session() {
     );
   return (
     <AuthContext value={{ user, refresh }}>
-      <BranchProvider user={user} logout={logout}>
-        <Workspace logout={logout}/>
-      </BranchProvider>
+      <LiveProvider><Shell logout={logout} /></LiveProvider>
     </AuthContext>
   );
-}
-function Workspace({logout}:{logout:()=>Promise<void>}){
- const branch=useBranch();return <LiveProvider key={branch.id}><Shell logout={logout}/></LiveProvider>;
 }
 export function App() {
   const location = useLocation();

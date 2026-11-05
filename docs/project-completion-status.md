@@ -1,6 +1,6 @@
 # Project completion status — 4 November 2026
 
-This is the maintained current status for the authorized items 1–13. Earlier dated release/research reports remain historical evidence. It distinguishes implemented features from real-world validation, which cannot be fabricated.
+This records the authorized items 1–13 as of 4 November. The [single-shop cutover](single-shop.md) supersedes the multiple-branch features and records the latest workflow checks.
 
 | Item | Status | Delivered / remaining |
 |---|---|---|

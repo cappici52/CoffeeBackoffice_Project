@@ -111,9 +111,9 @@ Public Historical Replay is a separate owner/manager view at `/forecast/replay`,
 
 Replay source information is driven by each imported dataset's own target/quantity, zero and price metadata. The shared native selector distinguishes a physical outlet from an unidentified source stream; Coffee Sales `index_1` is not presented as a verified store. Raw counts are labeled source rows rather than universally called receipts. The same dark grid, graph, metrics, saved-round and daily-table workflow serves both datasets. No new theme, chart semantics or recipe mapping is introduced.
 
-## Multi-branch extension (2026-11-04)
+## Single shop
 
-The shared native branch selector sits below the sidebar brand and remains visible on narrow screens. Keep the existing charcoal/sage tokens and Thai operational language. Branch and branch-menu management use the existing list/table, Form, Modal, confirmation and Toast system. Changing branches confirms loss of unsaved work and replaces the operational workspace; pending writes block switching. Aggregate reports show only permitted branches and disable day closing. Zero revenue and empty charts are real empty states; never fill them with sample values. Inactive/unassigned access has an explicit explanation and recovery/logout action. Legacy generated sales and unverified opening stock retain a compact disclosure warning until approved cleanup/reconciliation.
+The sidebar opens the shop directly after login. Owner and manager see the same shop reports, with financial fields limited by role. Menu price and availability are edited in the existing Menu screen. Keep the charcoal and sage tokens and Thai operational language. Use real empty states for zero revenue and empty charts. Unverified opening stock retains a compact warning until reconciliation.
 
 ## Forecast demonstration consistency
 

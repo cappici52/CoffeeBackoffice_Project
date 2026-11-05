@@ -10,7 +10,6 @@ import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import QRCode from "qrcode";
 import { qrBrowserChecks } from "./qr-browser-checks.mjs";
-import { branchBrowserChecks } from './branch-browser-checks.mjs';
 
 // Browser plugin not available. Use installed Edge on Windows, Chromium in CI.
 // All writes occur in a disposable PostgreSQL schema, never the shop's live tables.
@@ -595,28 +594,21 @@ try {
     assert.equal((await purchaseReceived).status(),201);
     await expect(page.getByText('รับสินค้าแล้ว 1 ครั้ง',{exact:false})).toBeVisible();
     checks.push('Supplier setup, purchase order and partial receipt into a dated/costed lot');
-    await page.getByRole('button',{name:'โอนสาขา',exact:true}).click();
-    await page.getByLabel('สาขาปลายทาง',{exact:true}).selectOption({label:'สาขา 2'});
-    await page.getByLabel('วัตถุดิบที่โอน',{exact:true}).selectOption({label:await page.getByLabel('วัตถุดิบที่โอน',{exact:true}).locator('option').filter({hasText:'เมล็ดกาแฟ (g)'}).textContent()});
-    await page.getByLabel('จำนวนโอนตามหน่วยฐาน',{exact:true}).fill('1');
-    await page.getByLabel('เหตุผลการโอน',{exact:true}).fill('QA atomic transfer');
-    await page.getByRole('button',{name:'ยืนยันโอนและรับเข้าปลายทาง',exact:true}).click();
-    await expect(page.getByRole('cell',{name:'QA atomic transfer',exact:true})).toBeVisible();
-    checks.push('Authorized branch transfer with linked source/target lot movements');
+    await expect(page.getByRole('button',{name:'โอนสาขา',exact:true})).toHaveCount(0);
     await page.getByRole('button',{name:'แผนสั่งเพิ่ม',exact:true}).click();
     const planned=page.waitForResponse(r=>r.url().includes('/replenishment-plan?'));
     await page.getByLabel('ซัพพลายเออร์สำหรับแผนสั่งเพิ่ม',{exact:true}).selectOption({label:'QA supplier · ส่ง 2 วัน'});
     assert.equal((await planned).status(),200);
     checks.push('Supplier lead-time planning with explicit genuine-forecast readiness');
     await page.getByRole('button',{name:'ต้นทุน / ค่าใช้จ่าย',exact:true}).click();
-    await page.getByText('บันทึกค่าใช้จ่ายสาขา',{exact:true}).click();
+    await page.getByText('เพิ่มค่าใช้จ่าย',{exact:true}).click();
     await page.getByLabel('หมวดค่าใช้จ่าย',{exact:true}).fill('QA utility');
     await page.getByLabel('ค่าใช้จ่าย (บาท)',{exact:true}).fill('12.34');
     await page.getByLabel('รายละเอียดค่าใช้จ่าย',{exact:true}).fill('Isolated expense fixture');
     await page.getByRole('button',{name:'บันทึกค่าใช้จ่าย',exact:true}).click();
     await expect(page.getByRole('cell',{name:'Isolated expense fixture',exact:true})).toBeVisible();
     checks.push('Owner-only branch valuation and recorded operating expenses');
-    for(const tabName of ['ตรวจนับสต็อก','ล็อต / วันหมดอายุ','จัดซื้อ','โอนสาขา','แผนสั่งเพิ่ม','ต้นทุน / ค่าใช้จ่าย']){
+    for(const tabName of ['ตรวจนับสต็อก','ล็อต / วันหมดอายุ','จัดซื้อ','แผนสั่งเพิ่ม','ต้นทุน / ค่าใช้จ่าย']){
       await page.getByRole('button',{name:tabName,exact:true}).click();
       await page.setViewportSize({width:390,height:844});
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Inventory page overflow: '+tabName);
@@ -700,7 +692,44 @@ try {
   await kitchenContext.close();
   checks.push("Kitchen-only navigation and financial-data isolation");
   await qrBrowserChecks({ browser, page, base, output, checks });
-  await branchBrowserChecks({page,base,output,checks});
+  await expect(page.getByLabel('สาขาปัจจุบัน',{exact:true})).toHaveCount(0);
+  await expect(page.locator('.sidebar nav')).not.toContainText('สาขา');
+  const archivedRequest=await page.request.get(base+'/api/orders',{headers:{'X-Branch-Id':'00000000-0000-4000-8000-000000000017'}});
+  assert.equal(archivedRequest.status(),403);
+  checks.push('Single-shop navigation and archived scope rejected for owner');
+
+  await go('/reports');
+  await page.getByRole('button',{name:'วันนี้',exact:true}).click();
+  await page.getByRole('button',{name:'ปิดวันขาย',exact:true}).click();
+  const date=await page.getByLabel('วันขายที่ต้องการปิด',{exact:true}).inputValue();
+  const closed=page.waitForResponse(r=>r.url().endsWith('/api/reports/close')&&r.request().method()==='POST');
+  await page.getByRole('button',{name:'ยืนยันปิดวันขาย',exact:true}).click();
+  assert.equal((await closed).status(),204);
+  await expect(page.getByText('ปิดวันขายแล้ว',{exact:true})).toBeVisible();
+  const reportResponse=await page.request.get(base+'/api/reports?date_from='+date+'&date_to='+date);
+  assert.equal(reportResponse.status(),200);
+  const report=await reportResponse.json();
+  const ledger=new pg.Pool({connectionString:url.toString()});
+  try {
+    const payment=(await ledger.query(`SELECT count(*)::int AS orders, sum(amount_satang)::text AS revenue_satang,
+      sum(amount_satang) FILTER (WHERE method='cash')::text AS cash_satang,
+      sum(amount_satang) FILTER (WHERE method='promptpay')::text AS promptpay_satang
+      FROM payments WHERE status='paid' AND branch_id=coffee_current_branch()
+      AND (paid_at AT TIME ZONE 'Asia/Bangkok')::date=$1`,[date])).rows[0];
+    assert(payment.orders>=2);
+    assert.deepEqual(report.summary,payment);
+    const closing=(await ledger.query('SELECT summary FROM day_closings WHERE branch_id=coffee_current_branch() AND date=$1',[date])).rows[0];
+    assert.deepEqual(closing.summary,payment);
+    const differences=(await ledger.query(`SELECT s.ingredient_id FROM branch_stock s
+      WHERE s.branch_id=coffee_current_branch() AND (s.current_stock<>coalesce(
+        (SELECT sum(qty) FROM stock_movements m WHERE m.ingredient_id=s.ingredient_id AND m.branch_id=s.branch_id),0)
+        OR s.current_stock<>coalesce((SELECT sum(remaining_qty) FROM inventory_lots l
+          WHERE l.ingredient_id=s.ingredient_id AND l.branch_id=s.branch_id),0))`)).rows;
+    assert.deepEqual(differences,[]);
+  } finally {
+    await ledger.end();
+  }
+  checks.push('Close business day in browser, reconcile paid orders to report and closing snapshot, and all stock to movements and lots');
   await go("/pos");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({

@@ -1,14 +1,12 @@
 # Coffee Backoffice
 
-ระบบหลังบ้านร้านกาแฟหลายสาขา ภาษาไทย UI minimal โทนเข้ม เชื่อม PostgreSQL จริง รองรับ owner / manager / cashier / kitchen
+ระบบหลังบ้านร้านกาแฟสาขาเดียว ภาษาไทย UI minimal โทนเข้ม เชื่อม PostgreSQL จริง รองรับ owner / manager / cashier / kitchen
 
-## ระบบหลายสาขา
+## การใช้งานร้านเดียว
 
-เลือกสาขาจากแถบด้านข้างเพื่อแยก POS, QR โต๊ะ, KDS, สต็อก, รายงาน และประวัติพยากรณ์ เริ่มต้น 3 สาขาและเพิ่มได้ต่อไป เจ้าของจัดการสาขา/พนักงาน ผู้จัดการเข้าถึงเฉพาะสาขาที่ได้รับมอบหมาย พร้อมรายงานรวมตามสิทธิ์ เมนูและสูตรใช้ร่วมกัน โดยปรับราคา/การเปิดขายแยกสาขาได้
+POS, QR โต๊ะ, KDS, สต็อก, รายงาน และพยากรณ์เปิดข้อมูลร้านเดียวตามสิทธิ์บัญชี เจ้าของแก้ราคาและการเปิดขายที่หน้าเมนู การอัปเกรดเปิดใช้ร้านเดิมและเก็บสาขาที่เลิกใช้ไว้ในฐานข้อมูลเพื่ออ้างอิงประวัติ
 
-[สถาปัตยกรรม การย้ายข้อมูล และวิธีใช้งาน](docs/multi-branch.md) · [ข้อกำหนด](docs/multi-branch-target-spec.md) · [ผล audit และแผน cleanup](docs/operational-data-cleanup.md)
-
-[ผลทดสอบ](docs/multi-branch-validation.md) · [ไฟล์ที่เปลี่ยนทั้งหมด](docs/multi-branch-changed-files.md)
+[การย้ายเป็นร้านเดียวและรายการทดสอบ](docs/single-shop.md) · [ผล audit และแผน cleanup](docs/operational-data-cleanup.md)
 
 **ล้างข้อมูลจำลองตามแผนที่อนุมัติแล้ว** เก็บ 9 ออเดอร์ ยอดตั้งต้น 10 รายการพร้อมป้ายรอตรวจนับ และข้อมูลวิจัย/forecast archives ครบ ระบบไม่สร้าง demo transactions อัตโนมัติ ดู [สถานะงาน 1–13 และข้อจำกัด](docs/project-completion-status.md)
 
@@ -177,4 +175,4 @@ Use the project's Python environment: `python forecast-service/coffee_sales_data
 
 ## Warehouse and validation work (2026-11-04)
 
-[Current status of items 1–13, preserved-data proofs, measured concurrency and external validation still pending](docs/project-completion-status.md). Inventory now includes audited counts, FEFO lots/expiry, purchasing/partial receipts, atomic branch transfers, supplier lead-time planning and owner-only valuation/expenses. `/acceptance` records manual test evidence without inventing participants; `/printer-test` provides 58/80mm calibration previews. `npm run test:load` uses a retained isolated QA schema and verifies source stock/order preservation.
+[Implementation history and external validation still pending](docs/project-completion-status.md). Inventory includes audited counts, FEFO lots and expiry, purchasing and partial receipts, supplier lead-time planning, and owner-only valuation and expenses. `/acceptance` records manual test evidence. `/printer-test` provides 58/80mm calibration previews. `npm run test:load` verifies source stock and order totals while testing a separate QA schema.

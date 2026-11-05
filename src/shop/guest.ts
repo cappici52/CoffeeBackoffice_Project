@@ -7,7 +7,7 @@ import { tokenHash } from "../security.js";
 import { createInput, createOrder } from "./orders.js";
 import { fail, idSchema, note } from "./shared.js";
 import { publicOrigin } from "./tables.js";
-import { inBranch } from '../branch-context.js';
+import { inBranch, LEGACY_BRANCH } from '../branch-context.js';
 
 const token = z.string().regex(/^[a-f0-9]{64}$/);
 export async function guestOrder(sql: Sql, trackingHash: string) {
@@ -88,12 +88,12 @@ export function guestRouter(db: Database, config: Config) {
   r.use(['/tables/:token','/tables/:token/orders','/orders/:token'],async(req,res,next)=>{
     const value=token.parse(req.params.token);
     const tracking=req.baseUrl.startsWith('/api/guest/orders');
-    const row=(await db.query(tracking
-      ? 'SELECT b.id,b.is_active FROM orders o JOIN branches b ON b.id=o.branch_id WHERE o.guest_tracking_hash=$1'
-      : 'SELECT b.id,b.is_active FROM dining_tables t JOIN branches b ON b.id=t.branch_id WHERE t.qr_token=$1 AND t.is_active',
-      [tracking?tokenHash(value):value])).rows[0];
-    fail(row&&(tracking||row.is_active),404,tracking?'ORDER_NOT_FOUND':'TABLE_UNAVAILABLE');
-    inBranch({ids:[row.id],write:row.is_active,master:false},next);
+    const row = (await db.query(tracking
+      ? 'SELECT 1 FROM orders WHERE guest_tracking_hash=$1 AND branch_id=$2'
+      : 'SELECT 1 FROM dining_tables WHERE qr_token=$1 AND branch_id=$2 AND is_active',
+      [tracking ? tokenHash(value) : value, LEGACY_BRANCH])).rows[0];
+    fail(row,404,tracking?'ORDER_NOT_FOUND':'TABLE_UNAVAILABLE');
+    inBranch({ids:[LEGACY_BRANCH],write:true,master:false},next);
   });
   r.get("/tables/:token", async (req, res) => {
     const qr = token.parse(req.params.token);

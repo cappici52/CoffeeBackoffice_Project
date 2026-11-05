@@ -182,7 +182,6 @@ export interface List<T> {
   rows?: T[];
 }
 export interface Report {
-  branches?: {id:string;name:string;code:string;paid_orders:number;placed_orders:number;revenue_satang:string;low_stock_items:number}[];
   summary: {
     orders: number;
     revenue_satang: Decimal;

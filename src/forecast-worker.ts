@@ -1,7 +1,7 @@
 import { readConfig } from "./config.js";
 import { connectDatabase } from "./db.js";
 import { runForecastSchedule } from "./forecast-scheduler.js";
-import { branchDatabase, inBranch } from './branch-context.js';
+import { branchDatabase, inBranch, LEGACY_BRANCH } from './branch-context.js';
 
 const config = readConfig();
 const db = connectDatabase(config.DATABASE_URL);
@@ -10,13 +10,9 @@ async function tick() {
   if (running) return;
   running = true;
   try {
-    const branches=(await db.query('SELECT id,code FROM branches WHERE is_active ORDER BY code')).rows;
-    for(const branch of branches) {
-      try {
-        const result=await inBranch({ids:[branch.id],write:true,master:false},()=>runForecastSchedule(branchDatabase(db),config));
-        if(result.generated.length)console.log('Nightly forecasts completed',branch.code,result.generated.join(','));
-      } catch {console.error('Branch forecast failed; retry next minute',branch.code);}
-    }
+    const result = await inBranch({ ids: [LEGACY_BRANCH], write: true, master: false },
+      () => runForecastSchedule(branchDatabase(db), config));
+    if (result.generated.length) console.log('Nightly forecasts completed', result.generated.join(','));
   } catch (error) {
     console.error(
       "Forecast job failed; will retry next minute",

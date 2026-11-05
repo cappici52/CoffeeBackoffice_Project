@@ -11,7 +11,6 @@ import { inventoryRouter } from "./shop/inventory.js";
 import { stocktakesRouter } from './shop/stocktakes.js';
 import { lotsRouter } from './shop/lots.js';
 import { purchasingRouter } from './shop/purchasing.js';
-import { transfersRouter } from './shop/transfers.js';
 import { replenishmentRouter } from './shop/replenishment.js';
 import { ordersRouter } from "./shop/orders.js";
 import { reportsRouter } from "./shop/reports.js";
@@ -23,8 +22,7 @@ import { tablesRouter } from "./shop/tables.js";
 import { imagesRouter } from "./shop/images.js";
 import { paymentQrRouter } from "./shop/payment-qr.js";
 import { branchDatabase } from './branch-context.js';
-import { branchMiddleware, branchesRouter } from './branches.js';
-import { branchProductsRouter } from './shop/branch-products.js';
+import { shopContext, validateShopScope } from './shop-context.js';
 
 export function createApp(db: Database, config: Config) {
   db = branchDatabase(db);
@@ -55,11 +53,10 @@ export function createApp(db: Database, config: Config) {
   const auth = authentication(db, config);
   app.use("/api/guest", guestRouter(db, config));
   app.use("/api", auth.router);
-  app.use('/api', branchesRouter(db,auth.authenticate,auth.requireRoles('owner')));
+  app.use('/api', validateShopScope);
   app.use('/api/users',usersRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
   app.use('/api',imagesRouter(db,auth.authenticate,auth.requireRoles('owner')));
-  app.use('/api',auth.authenticate,branchMiddleware(db));
-  app.use('/api',branchProductsRouter(db,auth.requireRoles('owner','manager')));
+  app.use('/api',auth.authenticate,shopContext);
   app.use(
     "/api",
     paymentQrRouter(
@@ -132,7 +129,6 @@ export function createApp(db: Database, config: Config) {
   app.use('/api',stocktakesRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
   app.use('/api',lotsRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
   app.use('/api',purchasingRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
-  app.use('/api',transfersRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
   app.use('/api',replenishmentRouter(db,auth.authenticate,auth.requireRoles('owner','manager')));
   const frontend = resolve("dist/client");
   if (existsSync(frontend)) {
