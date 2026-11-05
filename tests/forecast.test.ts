@@ -477,6 +477,15 @@ test("forecasts derived from replay orders retain provenance and are scored sepa
     simulation,
     order,
   ]);
+  // A closing without a simulation marker cannot turn a simulation-only day
+  // into evidence of zero operational demand for another menu.
+  const otherMenu = randomUUID();
+  await fixture.db.query(
+    "INSERT INTO products(id,category_id,name,price_satang,station,forecast_since) SELECT $1,category_id,'Unsold menu',7500,'bar',$2 FROM products WHERE id=$3",
+    [otherMenu, day(-3), product],
+  );
+  const actual = await dataset(fixture.db, [otherMenu], "genuine", false, { from: day(-1), to: day(-1) });
+  expect(actual.rows).toEqual([]);
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
     forecastResponse(
       JSON.stringify([

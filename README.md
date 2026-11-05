@@ -176,3 +176,5 @@ Use the project's Python environment: `python forecast-service/coffee_sales_data
 ## Warehouse and validation work (2026-11-04)
 
 [Implementation history and external validation still pending](docs/project-completion-status.md). Inventory includes audited counts, FEFO lots and expiry, purchasing and partial receipts, supplier lead-time planning, and owner-only valuation and expenses. `/acceptance` records manual test evidence. `/printer-test` provides 58/80mm calibration previews. `npm run test:load` verifies source stock and order totals while testing a separate QA schema.
+
+[ผลตรวจเมนู สต็อก จัดซื้อ และคะแนนพยากรณ์ 1/7/30 วัน](docs/shop-readiness-review.md)

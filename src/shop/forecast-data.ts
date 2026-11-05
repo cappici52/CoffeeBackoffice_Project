@@ -105,16 +105,19 @@ export async function dataset(
     WHERE o.branch_id=coffee_current_branch() AND o.completed_at >= $4::date::timestamp AT TIME ZONE 'Asia/Bangkok'
       AND o.status='completed'
       AND o.completed_at < (least($5::date,$1::date-1)+1)::timestamp AT TIME ZONE 'Asia/Bangkok'
-      AND i.product_id=ANY($2::uuid[]) GROUP BY 1,2
+      GROUP BY 1,2
   ), observed AS (
-    SELECT d.date,d.product_id,d.qty,d.revenue,'actual' AS source,d.simulated,d.mixed,c.date IS NOT NULL AS is_closed
+    SELECT d.date,d.product_id,d.qty,d.revenue,'actual' AS source,d.simulated,
+      d.mixed OR (c.simulation_run_id IS NOT NULL AND NOT d.simulated) AS mixed,c.date IS NOT NULL AS is_closed
     FROM delivered d LEFT JOIN day_closings c ON c.date=d.date AND c.branch_id=coffee_current_branch()
+    WHERE d.product_id=ANY($2::uuid[])
     UNION ALL
     SELECT c.date,p.id,0,0,'actual',c.simulation_run_id IS NOT NULL,false,true
     FROM day_closings c CROSS JOIN branch_catalog p
     WHERE c.branch_id=coffee_current_branch() AND p.id=ANY($2::uuid[]) AND c.date BETWEEN $4::date AND least($5::date,$1::date-1)
       AND (p.forecast_since<=c.date OR EXISTS(SELECT 1 FROM shop_simulation_products sp WHERE sp.run_id=c.simulation_run_id AND sp.product_id=p.id))
-      AND NOT EXISTS(SELECT 1 FROM delivered d WHERE d.date=c.date AND d.product_id=p.id)
+      AND NOT EXISTS(SELECT 1 FROM delivered d WHERE d.date=c.date
+        AND (d.product_id=p.id OR d.mixed OR d.simulated<>(c.simulation_run_id IS NOT NULL)))
     UNION ALL
     SELECT date,product_id,qty,revenue_satang,'demo',false,false,true FROM sales_daily
     WHERE branch_id=coffee_current_branch() AND source='demo' AND $3::boolean AND product_id=ANY($2::uuid[]) AND date BETWEEN $4::date AND least($5::date,$1::date-1)
