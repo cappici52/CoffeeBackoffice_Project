@@ -127,5 +127,5 @@ The existing `/forecast/replay` route owns the presentation flow. It defaults to
 - Lots: explicit receipt/cost/expiry or disclosed unknown metadata → FEFO sale allocation; expired stock requires explicit waste and cannot satisfy a sale.
 - Purchasing: owner-maintained suppliers → branch PO → partial receipt; preserve received quantities and actual prices when cancelling remaining goods.
 - Expenses: owner-only entry with request recovery → reasoned void; never overwrite the original amount/date/category. Valuation discloses unknown costs and does not claim net profit.
-- Replenishment: saved non-simulation shop forecast → supplier calendar lead time → urgent gap and review-window preview; uncounted/incomplete data is disclosed and no PO is created automatically.
+- Replenishment: saved shop-cohort forecast → supplier calendar lead time → urgent gap and review-window preview. Show the expected arrival and review dates. Withhold quantity and shortage dates when menu or date coverage is incomplete, disclose uncounted stock and unknown expiry, and keep PO creation explicit.
 - Acceptance: not-run by default → manual observations/participant code required for a tested outcome → private JSON export; a browser check is not real-user/device evidence.

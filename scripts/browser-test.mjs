@@ -575,6 +575,8 @@ try {
     await page.getByRole('button',{name:'รับล็อตเข้าสต็อก',exact:true}).click();
     await expect(page.getByRole('cell',{name:'QA-EXPIRED-LOT',exact:true})).toBeVisible();
     checks.push('Lot receipt and explicit expiry display in isolated schema');
+    await page.getByRole('button',{name:'แผนสั่งเพิ่ม',exact:true}).click();
+    await expect(page.getByText(/ยังไม่มีซัพพลายเออร์ที่เปิดใช้งาน/)).toBeVisible();
     await page.getByRole('button',{name:'จัดซื้อ',exact:true}).click();
     await page.getByText('ซัพพลายเออร์',{exact:true}).click();
     await page.getByLabel('ชื่อซัพพลายเออร์ใหม่',{exact:true}).fill('QA supplier');
@@ -599,7 +601,8 @@ try {
     const planned=page.waitForResponse(r=>r.url().includes('/replenishment-plan?'));
     await page.getByLabel('ซัพพลายเออร์สำหรับแผนสั่งเพิ่ม',{exact:true}).selectOption({label:'QA supplier · ส่ง 2 วัน'});
     assert.equal((await planned).status(),200);
-    checks.push('Supplier lead-time planning with explicit genuine-forecast readiness');
+    await expect(page.getByText(/ยังไม่มีพยากรณ์อนาคตจากข้อมูลร้านที่ไม่ติดป้ายจำลอง/)).toBeVisible();
+    checks.push('Supplier setup guidance and isolated forecasting requirements in replenishment');
     await page.getByRole('button',{name:'ต้นทุน / ค่าใช้จ่าย',exact:true}).click();
     await page.getByText('เพิ่มค่าใช้จ่าย',{exact:true}).click();
     await page.getByLabel('หมวดค่าใช้จ่าย',{exact:true}).fill('QA utility');
