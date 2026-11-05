@@ -10,7 +10,10 @@ export default function Kds() {
   const live = useLive();
   const [now, setNow] = useState(Date.now());
   const [sound, setSound] = useState(false);
+  const [enablingSound, setEnablingSound] = useState(false);
   const audio = useRef<AudioContext | null>(null);
+  const barAlert = useRef<AudioBuffer | null>(null);
+  const playing = useRef<AudioScheduledSourceNode | null>(null);
   const previous = useRef<Set<string> | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -25,29 +28,68 @@ export default function Kds() {
   useEffect(() => {
     if (!resource.data) return;
     const ids = new Set(resource.data.orders.map((o) => o.id));
-    if (
-      previous.current &&
-      sound &&
-      [...ids].some((id) => !previous.current!.has(id)) &&
-      audio.current
-    ) {
-      const oscillator = audio.current.createOscillator();
-      const gain = audio.current.createGain();
-      oscillator.connect(gain);
-      gain.connect(audio.current.destination);
-      oscillator.frequency.value = 880;
-      gain.gain.value = 0.08;
-      oscillator.start();
-      oscillator.stop(audio.current.currentTime + 0.22);
+    const seen = previous.current;
+    const context = audio.current;
+    const newOrders = seen ? resource.data.orders.filter((o) => !seen.has(o.id)) : [];
+    if (sound && context && newOrders.length) {
+      const hasBarOrder = newOrders.some((o) => o.items.some((i) => i.station === "bar"));
+      if (hasBarOrder && barAlert.current) {
+        playing.current?.stop();
+        const source = context.createBufferSource();
+        source.buffer = barAlert.current;
+        source.connect(context.destination);
+        source.onended = () => {
+          if (playing.current === source) playing.current = null;
+        };
+        playing.current = source;
+        source.start();
+      } else if (!playing.current) {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.frequency.value = 880;
+        gain.gain.value = 0.08;
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.22);
+      }
     }
     previous.current = ids;
   }, [resource.data, sound]);
   useEffect(
     () => () => {
-      void audio.current?.close();
+      const context = audio.current;
+      audio.current = null;
+      if (context) void context.close();
     },
     [],
   );
+  async function toggleSound() {
+    if (sound) {
+      playing.current?.stop();
+      playing.current = null;
+      setSound(false);
+      return;
+    }
+    setError("");
+    setEnablingSound(true);
+    try {
+      const context = (audio.current ??= new AudioContext());
+      await context.resume();
+      if (!barAlert.current) {
+        const response = await fetch("/sounds/order_5s.mp3");
+        if (!response.ok) throw new Error("Order alert unavailable");
+        const buffer = await context.decodeAudioData(await response.arrayBuffer());
+        if (audio.current !== context) return;
+        barAlert.current = buffer;
+      }
+      setSound(true);
+    } catch {
+      setError("เปิดเสียงแจ้งเตือนไม่สำเร็จ กรุณาลองอีกครั้ง");
+    } finally {
+      setEnablingSound(false);
+    }
+  }
   async function change(item: OrderItem, status: "preparing" | "ready") {
     if (busy) return;
     setBusy(item.id);
@@ -78,15 +120,9 @@ export default function Kds() {
             <option value="kitchen">ครัว</option>
           </Select>
           <button
-            onClick={() =>
-              void (async () => {
-                if (!sound) {
-                  audio.current ??= new AudioContext();
-                  await audio.current.resume();
-                }
-                setSound(!sound);
-              })().catch(() => setError("เบราว์เซอร์ไม่อนุญาตให้เปิดเสียง"))
-            }
+            onClick={() => void toggleSound()}
+            disabled={enablingSound}
+            aria-pressed={sound}
           >
             {sound ? <Volume2 size={18} /> : <VolumeX size={18} />}{" "}
             {sound ? "เปิดเสียงอยู่" : "เปิดเสียงแจ้งเตือน"}

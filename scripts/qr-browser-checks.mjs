@@ -49,6 +49,7 @@ export async function qrBrowserChecks({ browser, page, base, output, checks }) {
     timezoneId: "Asia/Bangkok",
   });
   const customer = await context.newPage();
+  let bar;
   const errors = [];
   const unexpected = [];
   customer.on("pageerror", (error) => errors.push(error.message));
@@ -159,6 +160,22 @@ export async function qrBrowserChecks({ browser, page, base, output, checks }) {
       0,
       "Unconfirmed guest order entered KDS",
     );
+    bar = await page.context().newPage();
+    await bar.addInitScript(() => {
+      window.barAlerts = [];
+      const start = AudioBufferSourceNode.prototype.start;
+      AudioBufferSourceNode.prototype.start = function (...args) {
+        const result = start.apply(this, args);
+        window.barAlerts.push(this.buffer.duration);
+        return result;
+      };
+    });
+    await bar.goto(base + "/kds");
+    await bar.getByLabel("สถานี", { exact: true }).selectOption("bar");
+    await expect(bar.getByText("ไม่มีออเดอร์รอทำ", { exact: true })).toBeVisible();
+    await bar.getByRole("button", { name: "เปิดเสียงแจ้งเตือน", exact: true }).click();
+    await expect(bar.getByRole("button", { name: "เปิดเสียงอยู่", exact: true })).toHaveAttribute("aria-pressed", "true");
+    assert.deepEqual(await bar.evaluate(() => window.barAlerts), []);
     await page.goto(base + "/orders");
     const qrRows = page.getByRole("row").filter({ hasText: "สั่งผ่าน QR" });
     await expect(qrRows).toHaveCount(1);
@@ -176,6 +193,16 @@ export async function qrBrowserChecks({ browser, page, base, output, checks }) {
     await expect(
       customer.getByRole("heading", { name: "รอทำ", exact: true }),
     ).toBeVisible({ timeout: 15000 });
+    await expect.poll(() => bar.evaluate(() => window.barAlerts.length)).toBe(1);
+    assert((await bar.evaluate(() => window.barAlerts[0])) > 0, "The decoded bar alert is empty");
+    const refreshed = bar.waitForResponse(r => r.url().endsWith("/api/kds?station=bar"));
+    await bar.getByRole("button", { name: "รีเฟรช", exact: true }).click();
+    await refreshed;
+    await expect(bar.locator(".order-card")).toHaveCount(1);
+    await bar.getByRole("button", { name: "เปิดเสียงอยู่", exact: true }).click();
+    await expect(bar.getByRole("button", { name: "เปิดเสียงแจ้งเตือน", exact: true })).toHaveAttribute("aria-pressed", "false");
+    assert.equal(await bar.evaluate(() => window.barAlerts.length), 1);
+    checks.push("New confirmed bar order plays the decoded MP3 once, with mute and refresh behavior");
     await page.goto(base + "/kds");
     await page.getByRole("button", { name: "เริ่มทำ", exact: true }).click();
     await expect(
@@ -307,6 +334,7 @@ export async function qrBrowserChecks({ browser, page, base, output, checks }) {
     );
     throw error;
   } finally {
+    await bar?.close();
     await context.close();
   }
 }
