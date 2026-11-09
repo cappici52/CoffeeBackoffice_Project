@@ -441,6 +441,8 @@ try {
   await page.getByRole("button", { name: "บันทึกเมนู", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   // Upload against the disposable schema, keeping shop records untouched.
+  // Reopen from the saved product version after the previous edit.
+  await go("/menu");
   await photoRow.getByRole("button", { name: "แก้ไข", exact: true }).click();
   await page
     .getByLabel("เลือกรูปจากเครื่อง", { exact: true })
@@ -460,8 +462,14 @@ try {
     (r) =>
       r.url().endsWith("/api/menu-images") && r.request().method() === "POST",
   );
+  const photoSave = page.waitForResponse(
+    (r) =>
+      /\/api\/products\/[^/]+$/.test(r.url()) && r.request().method() === "PATCH",
+  );
   await page.getByRole("button", { name: "บันทึกเมนู", exact: true }).click();
   assert.equal((await imageUpload).status(), 201);
+  const savedPhoto = await photoSave;
+  assert.equal(savedPhoto.status(), 200, await savedPhoto.text());
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(photoRow.locator("img")).toHaveAttribute(
     "src",
